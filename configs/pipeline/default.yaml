@@ -1,0 +1,13 @@
+features:
+  hop_ms: 10
+  pause_threshold_ms: 250
+  f0:
+    method: "parselmouth"
+    window_ms: 30
+    floor_hz: 75
+    ceiling_hz: 500
+  rms:
+    window_ms: 25
+  mfcc:
+    window_ms: 25
+    n_mfcc: 13

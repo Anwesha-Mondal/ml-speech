@@ -1,0 +1,14 @@
+version: "s1.0"
+buckets:
+  pacing:
+    max_penalty: -15.0
+  pitch:
+    max_penalty: -15.0
+  pauses:
+    max_penalty: -10.0
+  energy_clarity:
+    max_penalty: -10.0
+base_weights:
+  PACING_TOO_FAST: 1.0
+  PACING_TOO_SLOW: 1.0
+  PITCH_MONOTONE: 1.2

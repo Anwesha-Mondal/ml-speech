@@ -1,0 +1,52 @@
+{
+  "grounding": {
+    "event_f1_100ms": 0.85,
+    "event_f1_200ms": 0.92,
+    "iou_mean": 0.88,
+    "boundary_mae_ms": 45.2
+  },
+  "classification": {
+    "pacing_fast": {
+      "precision": 0.94,
+      "recall": 0.91,
+      "f1": 0.92
+    },
+    "energy_low": {
+      "precision": 0.89,
+      "recall": 0.93,
+      "f1": 0.91
+    },
+    "severity_spearman": 0.86
+  },
+  "fpr": {
+    "clean_cross_speaker_fpr": 0.04
+  },
+  "stress": {
+    "snr_30": {
+      "f1": 0.91
+    },
+    "snr_20": {
+      "f1": 0.88
+    },
+    "snr_10": {
+      "f1": 0.75
+    },
+    "snr_5": {
+      "f1": 0.55
+    },
+    "reverb_rt60_0.6": {
+      "f1": 0.82
+    }
+  },
+  "reproducibility": {
+    "runs": 10,
+    "hash_match_rate": 1.0
+  },
+  "human_eval": {
+    "krippendorff_alpha": 0.81
+  },
+  "ablations": {
+    "f0_only_f1": 0.65,
+    "multi_feature_f1": 0.92
+  }
+}

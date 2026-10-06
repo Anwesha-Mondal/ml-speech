@@ -1,0 +1,46 @@
+sources:
+  - id: B-01
+    name: "Miller Center Archive"
+    url: "https://data.millercenter.org/miller_center_speeches.tgz"
+    status: VERIFIED
+    notes: "Public Domain / Academic. Primary reference set."
+  - id: B-02
+    name: "LibriSpeech (SLR12)"
+    url: "https://www.openslr.org/12/"
+    status: VERIFIED
+    notes: "CC BY 4.0. Acoustic benchmark."
+  - id: B-07
+    name: "Pansori-TEDxKR"
+    url: "https://www.openslr.org/58/"
+    status: RESEARCH_ONLY
+    notes: "CC BY-NC-ND 4.0. Cannot redistribute."
+  - id: asset-07
+    name: "LibriVox Gettysburg"
+    url: "https://librivox.org/the-gettysburg-address-150th-anniversary-by-abraham-lincoln/"
+    status: VERIFIED
+    notes: "Modern volunteer reading, PD in USA. M1 Candidate."
+  - id: asset-09
+    name: "Wikimedia Speeches Category"
+    url: "https://commons.wikimedia.org/wiki/Category:Audio_files_of_speeches"
+    status: UNVERIFIED
+    notes: "Fixed from mirror 2016.ares-conference.eu."
+  - id: asset-10
+    name: "Reagan - Evil Empire"
+    url: "https://commons.wikimedia.org/wiki/File:Evil_Empire.ogg"
+    status: VERIFIED
+    notes: "Source: Miller Center. Public Domain."
+  - id: asset-11
+    name: "Nixon Resignation"
+    url: "https://commons.wikimedia.org/wiki/File:Nixon_resignation_audio.ogg"
+    status: VERIFIED
+    notes: "Source: Miller Center. Public Domain."
+  - id: asset-12
+    name: "FDR Pearl Harbor"
+    url: "https://commons.wikimedia.org/wiki/File:1941_Roosevelt_speech_pearlharbor_p1.ogg"
+    status: REJECTED
+    notes: "Only 26s, lacks metadata."
+  - id: asset-13
+    name: "Obama Inaugural"
+    url: "https://commons.wikimedia.org/wiki/File:Barack_Obama_inaugural_address.ogv"
+    status: UNVERIFIED
+    notes: "Fixed from c.enwp.org mirror. Needs federal status check."

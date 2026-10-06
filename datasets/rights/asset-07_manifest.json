@@ -1,0 +1,16 @@
+{
+  "asset_id": "asset-07",
+  "canonical_url": "https://librivox.org/the-gettysburg-address-150th-anniversary-by-abraham-lincoln/",
+  "provider": "LibriVox",
+  "title": "The Gettysburg Address",
+  "speaker": "LibriVox Volunteer (Not Abraham Lincoln)",
+  "performance_date": "1863-11-19",
+  "recording_date": "2013-01-01",
+  "license": "Public Domain",
+  "jurisdiction": "USA",
+  "redistribution_allowed": true,
+  "derivative_allowed": true,
+  "commercial_allowed": true,
+  "checksum": "placeholder-will-hash-at-download",
+  "notes": "Selected as the M1 short transcript baseline."
+}

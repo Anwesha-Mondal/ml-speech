@@ -1,0 +1,14 @@
+{
+  "asset_id": "asset-11",
+  "canonical_url": "https://commons.wikimedia.org/wiki/File:Nixon_resignation_audio.ogg",
+  "provider": "Miller Center / Wikimedia Commons",
+  "title": "Resignation Address",
+  "speaker": "Richard Nixon",
+  "performance_date": "1974-08-08",
+  "license": "Public Domain",
+  "jurisdiction": "USA",
+  "redistribution_allowed": true,
+  "derivative_allowed": true,
+  "commercial_allowed": true,
+  "checksum": "placeholder-will-hash-at-download"
+}

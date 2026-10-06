@@ -1,0 +1,14 @@
+{
+  "asset_id": "asset-10",
+  "canonical_url": "https://commons.wikimedia.org/wiki/File:Evil_Empire.ogg",
+  "provider": "Miller Center / Wikimedia Commons",
+  "title": "Evil Empire Speech",
+  "speaker": "Ronald Reagan",
+  "performance_date": "1983-03-08",
+  "license": "Public Domain",
+  "jurisdiction": "USA",
+  "redistribution_allowed": true,
+  "derivative_allowed": true,
+  "commercial_allowed": true,
+  "checksum": "placeholder-will-hash-at-download"
+}
