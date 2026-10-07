@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import analysis, gamification
+from .routers import analysis, gamification
 
 app = FastAPI(title="Speech Arena API")
 

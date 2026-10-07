@@ -1,77 +1,42 @@
 :root {
-  --bg-main: #FFFFFF;
-  --bg-panel: #FAFAFA;
-  --bg-secondary: #F5F5F5;
-  --bg-tertiary: #EEEEEE;
-  
-  --text-main: #111111;
-  --text-secondary: #222222;
-  --text-muted: #707070;
-  
-  --border: #E5E5E5;
-  
-  --accent: #111111;
-  --success: #65a30d;
-  --warning: #d97706;
-  --danger: #dc2626;
-  
   --mouse-x: 50%;
   --mouse-y: 50%;
 }
 
-body {
-  margin: 0;
-  padding: 0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: var(--bg-main);
-  background-image: radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(0,0,0,0.035), transparent 280px);
-  background-attachment: fixed;
-  color: var(--text-main);
-  min-height: 100vh;
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+  font-size: 19px;
+  line-height: 1;
+  display: inline-block;
+  vertical-align: middle;
+}
+.material-symbols-outlined.fill-icon {
+  font-variation-settings: 'FILL' 1, 'wght' 300, 'GRAD' 0, 'opsz' 20;
 }
 
-* {
-  box-sizing: border-box;
+/* Interactive ambient spotlight */
+#ambient-light {
+  pointer-events: none;
+  background: radial-gradient(650px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0, 0, 0, 0.025), transparent 75%);
 }
 
-.premium-card {
-  background-color: var(--bg-main);
-  border-radius: 8px;
-  padding: 24px;
-  border: 1px solid var(--border);
-  box-shadow: none;
+/* Waveform visual bars */
+.wave-bar {
+  transition: height 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease;
 }
 
-.btn {
-  background-color: var(--accent);
-  color: white;
-  border: 1px solid var(--accent);
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
+/* Subtle hair scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
 }
-
-.btn:hover {
-  background-color: #333333;
-  transform: translateY(-1px);
+::-webkit-scrollbar-track {
+  background: transparent;
 }
-
-.btn.secondary {
-  background-color: var(--bg-main);
-  color: var(--text-main);
-  border: 1px solid var(--border);
+::-webkit-scrollbar-thumb {
+  background: #e5e2e1;
+  border-radius: 9999px;
 }
-
-.btn.secondary:hover {
-  background-color: var(--bg-secondary);
-}
-
-select, input[type="text"], input[type="file"], textarea {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: var(--bg-main);
-  color: var(--text-main);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+::-webkit-scrollbar-thumb:hover {
+  background: #747878;
 }

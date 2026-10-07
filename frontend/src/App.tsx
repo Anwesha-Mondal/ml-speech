@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { Zap, TrendingUp, Swords, PartyPopper, Trophy, Activity } from 'lucide-react'
 import './index.css'
 
 import Sandbox from './pages/Sandbox'
@@ -20,38 +19,69 @@ function App() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
+  const getTabClass = (tab: string) => {
+    return activeTab === tab 
+      ? 'text-primary font-semibold border-b border-primary pb-4' 
+      : 'text-on-surface-variant hover:text-primary transition-colors duration-150 pb-4';
+  }
+
   return (
-    <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto' }}>
-      <header style={{ marginBottom: '40px', borderBottom: '1px solid var(--border)', paddingBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '2rem', margin: 0, fontWeight: 600 }}>
-          <Activity size={32} color="var(--text-main)" />
-          Speech Arena <span style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>Dashboard</span>
-        </h1>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <button className={`btn ${activeTab === 'sandbox' ? '' : 'secondary'}`} onClick={() => setActiveTab('sandbox')} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Zap size={18} /> The Sandbox
-          </button>
-          <button className={`btn ${activeTab === 'progress' ? '' : 'secondary'}`} onClick={() => setActiveTab('progress')} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <TrendingUp size={18} /> You vs You
-          </button>
-          <button className={`btn ${activeTab === 'battle' ? '' : 'secondary'}`} onClick={() => setActiveTab('battle')} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Swords size={18} /> 1v1 Battle
-          </button>
-          <button className={`btn ${activeTab === 'mimic' ? '' : 'secondary'}`} onClick={() => setActiveTab('mimic')} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <PartyPopper size={18} /> Mimic Party
-          </button>
-          <button className={`btn ${activeTab === 'leaderboard' ? '' : 'secondary'}`} onClick={() => setActiveTab('leaderboard')} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Trophy size={18} /> Leaderboard
-          </button>
+    <>
+      <header className="w-full top-0 z-50 h-14 bg-surface border-b border-outline-variant sticky flex items-center">
+        <div className="w-full px-6 flex justify-between items-center h-full">
+          {/* Brand & Global Tabs */}
+          <div className="flex items-center space-x-8">
+            <div className="font-headline text-base font-semibold tracking-tighter text-primary uppercase flex items-center space-x-2 cursor-pointer">
+              <span className="w-2.5 h-2.5 bg-primary rounded-full inline-block mr-1"></span>
+              <span>Speech Arena</span>
+            </div>
+            
+            {/* Desktop Navigation Links */}
+            <nav className="hidden md:flex items-center space-x-6 text-sm pt-4">
+              <button className={getTabClass('progress')} onClick={() => setActiveTab('progress')}>Overview</button>
+              <button className={getTabClass('mimic')} onClick={() => setActiveTab('mimic')}>Practice</button>
+              <button className={getTabClass('battle')} onClick={() => setActiveTab('battle')}>Arena</button>
+              <button className={getTabClass('leaderboard')} onClick={() => setActiveTab('leaderboard')}>Leaderboard</button>
+              <button className={getTabClass('sandbox')} onClick={() => setActiveTab('sandbox')}>Analysis</button>
+            </nav>
+          </div>
+          
+          {/* Trailing Action Controls */}
+          <div className="flex items-center space-x-3">
+            <div className="hidden sm:flex items-center space-x-1 border border-outline-variant/60 rounded-lg p-0.5 bg-surface-container-lowest">
+              <button className="p-1.5 rounded text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-150" title="Audio Spectral EQ">
+                <span className="material-symbols-outlined">graphic_eq</span>
+              </button>
+              <button className="p-1.5 rounded text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-150" title="Analysis Calibration">
+                <span className="material-symbols-outlined">tune</span>
+              </button>
+              <button className="p-1.5 rounded text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-150" title="More Options">
+                <span className="material-symbols-outlined">more_vert</span>
+              </button>
+            </div>
+            <button className="text-xs font-medium px-3.5 py-1.5 rounded-lg border border-outline-variant hover:border-outline text-on-surface hover:bg-surface-container-high transition-all duration-150">
+              Share Session
+            </button>
+            <button className="text-xs font-medium px-3.5 py-1.5 rounded-lg bg-primary text-on-primary hover:bg-neutral-800 transition-all duration-150 flex items-center space-x-1.5 shadow-sm">
+              <span>Export Report</span>
+              <span className="material-symbols-outlined text-[15px]">arrow_outward</span>
+            </button>
+            {/* User Analyst Avatar */}
+            <div className="w-8 h-8 rounded-full border border-outline-variant overflow-hidden bg-surface-container-high flex-shrink-0 ml-2">
+              <img alt="Avatar" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7u-s9Dshc11CaLBQRkghwVtuNJzsTGljCg5Fvb6lMw340BpvBdGb1zNPJCGZzc4k95JlENvcY38JQMA5FFLzi8iWYZtWx0TLUZFl8LUD5j5EZfVdLjkhiAutuc7oahm6UiZNlYCKHlVkmAIKtrKCGh6Eh9T7qxLMoxy016YZaSZrSN_ZM76kuoXmFZVXmtO9IvH7ppaupbrUW0XKw2tJQujEz9Geas81YOyRHTqwfac0gEWl7Q-dvM1LwRtwyJuGXZOktDj7S4T_g"/>
+            </div>
+          </div>
         </div>
       </header>
 
-      {activeTab === 'sandbox' && <Sandbox />}
-      {activeTab === 'progress' && <Progress />}
-      {activeTab === 'battle' && <Battle />}
-      {activeTab === 'mimic' && <MimicParty />}
-      {activeTab === 'leaderboard' && <Leaderboard />}
-    </div>
+      <main className="w-full max-w-[1600px] mx-auto px-4 md:px-8 py-7 space-y-6">
+        {activeTab === 'sandbox' && <Sandbox />}
+        {activeTab === 'progress' && <Progress />}
+        {activeTab === 'battle' && <Battle />}
+        {activeTab === 'mimic' && <MimicParty />}
+        {activeTab === 'leaderboard' && <Leaderboard />}
+      </main>
+    </>
   )
 }
 
