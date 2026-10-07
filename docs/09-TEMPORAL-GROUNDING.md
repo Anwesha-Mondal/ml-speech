@@ -99,3 +99,8 @@ A flaw in audio time (e.g., `[12.5s - 14.2s]`) must be mapped back to the text.
 This payload is required by the UI to highlight the text in yellow when the flaw marker is clicked on the waveform.
 
 *End of TEMPORAL-GROUNDING.md*
+
+
+## Updates (per Doc 20)
+- Using alignment-anchored word/phrase comparison instead of broad DTW.
+- Fixed pseudocode loops and variables.

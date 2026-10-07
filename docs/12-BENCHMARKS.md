@@ -55,3 +55,9 @@ Math is not the final arbiter of human speech.
 *   **Goal:** Calculate the `Pearson Correlation Coefficient` between the System Score and the Human Mean Opinion Score (MOS).
 
 *End of BENCHMARKS.md*
+
+
+## Updates (per Doc 20)
+- Added stress suite.
+- FPR protocol: ref vs clean cross-speaker pair.
+- Human eval: Spearman + Krippendorff's alpha.

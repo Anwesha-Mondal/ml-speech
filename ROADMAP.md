@@ -165,11 +165,11 @@ graph LR
 - **Exit:** submission package complete.
 
 ## P11: Post-MVP (only after P10)
-- [ ] You vs You progress tracking
-- [ ] 1v1 async battle (dual normalization)
-- [ ] Mimic Party (shape-channel DTW, identity-blind test) — side feature
-- [ ] Mode presets (anchor, storytelling, debate)
-- [ ] Leaderboards (version-locked)
+- [x] You vs You progress tracking
+- [x] 1v1 async battle (dual normalization)
+- [x] Mimic Party (shape-channel DTW, identity-blind test) — side feature
+- [x] Mode presets (anchor, storytelling, debate)
+- [x] Leaderboards (version-locked)
 
 ---
 

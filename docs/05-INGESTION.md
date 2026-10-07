@@ -84,3 +84,7 @@ Since we don't have human actors recording 10,000 flawed speeches, we programmat
 **Logging:** Every programmatic injection must write exactly *what* it did, the `severity` level, and the `injected_interval` timestamps to the database schema defined in Section 4 of the Dataset Spec.
 
 *End of INGESTION.md*
+
+
+## Updates (per Doc 20)
+- Flaw injection uses segment-local crossfades and phase-vocoder/time-maps. Identity resynthesis is used for references.

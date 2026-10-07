@@ -49,3 +49,6 @@ The final submission must include documentation proving that the Mimic Party alg
 *   **Result:** The Mimic score MUST be 100, proving that the change in speaker identity did not lower the score.
 
 *End of MIMIC-PARTY.md*
+
+
+> **Note:** This feature is tagged as POST-MVP. Privacy and consent considerations apply (opt-in only). API dependencies like IBM Debater are dropped.

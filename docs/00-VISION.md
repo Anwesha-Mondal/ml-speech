@@ -40,7 +40,7 @@ Speech Arena is designed to support a wide spectrum of use cases, from solitary 
 #### 3.1.1 Speech Test (The Sandbox)
 **Concept:** A low-stakes environment for users to practice specific prompts and receive immediate, granular feedback.
 **User Journey:**
-1.  The user browses a library of pre-loaded, high-quality reference speeches (e.g., famous historical speeches, well-delivered TED talks).
+1.  The user browses a library of pre-loaded, high-quality reference speeches (e.g., famous historical speeches, well-delivered TED (Note: RESEARCH_ONLY) talks).
 2.  The user selects a prompt. The dashboard displays the transcript.
 3.  The user records their attempt directly in the browser or uploads a pre-recorded file.
 4.  The system aligns the user's audio with the transcript and extracts features.
@@ -81,7 +81,7 @@ Speech Arena is designed to support a wide spectrum of use cases, from solitary 
 
 #### 3.3.2 Debate Round
 **Concept:** Timed, multi-turn competition (Opening, Response, Rebuttal).
-**Mechanism:** Combines delivery analytics with pacing constraints. Evaluates if the speaker maintained composure (stable pitch/energy) during rebuttals.
+**Mechanism:** Combines delivery analytics with pacing constraints. Evaluates if the speaker maintained acoustic stability (stable pitch/energy) during rebuttals.
 
 #### 3.3.3 Mimic Party (The Crown Jewel of Gamification)
 **Concept:** A fun, social game where users try to exactly mimic the cadence and emphasis of a famous performance.
@@ -179,3 +179,7 @@ Speech Arena operates in a sensitive domain. Evaluating human speech can inadver
 
 ---
 *End of VISION.md*
+
+
+## Note
+Interview/Debate modes are considered Post-MVP.

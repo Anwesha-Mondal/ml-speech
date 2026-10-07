@@ -65,3 +65,6 @@ The dashboard (defined in `13-DASHBOARD.md`) must support a "Split Screen" or "O
 *   **The Share Card:** When a battle ends, the UI generates a dynamic, highly-visual PNG summary card suitable for sharing on social media (e.g., "Alice beat Bob 92 to 85 on the JFK Moon Speech!").
 
 *End of BATTLES.md*
+
+
+> **Note:** This feature is tagged as POST-MVP. Privacy and consent considerations apply (opt-in only). API dependencies like IBM Debater are dropped.

@@ -141,3 +141,7 @@ Every source audio file must be tracked using this strict JSON schema.
 *   Example: LibriVox's "Gettysburg Address" was recorded in the 21st century by a volunteer. The `performance_date` is 1863. The `recording_date` is ~2013. The `speaker` is NOT Abraham Lincoln. Mislabeling this will result in massive penalties during judging.
 
 *End of RIGHTS-PROVENANCE.md*
+
+
+## Note
+Consent fields for team/user recordings are now required.

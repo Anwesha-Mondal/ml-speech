@@ -24,7 +24,7 @@ The UI must be built using modern web components capable of handling high-freque
 
 ### 2.3 Feature Overlays
 *   **Function:** Visualizing the math.
-*   **Implementation:** Line charts (e.g., `Chart.js` or `Recharts`) placed on an absolute-positioned canvas *directly above* the waveform.
+*   **Implementation:** Line charts (e.g., `Chart.js` or `uPlot`) placed on an absolute-positioned canvas *directly above* the waveform.
 *   **Toggles:** The user can toggle switches for "Show Pitch (F0)" and "Show Energy (RMS)". This reveals the normalized contour lines, allowing the user to visually see where their pitch diverged from the reference.
 
 ### 2.4 Flaw Markers & The Explanation Card

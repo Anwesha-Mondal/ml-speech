@@ -86,3 +86,9 @@ Regardless of the engine used, the `AlignmentService` must output a strict JSON 
 *Note: Pauses are inferred by the gaps between `end` of word N and `start` of word N+1.*
 
 *End of ALIGNMENT.md*
+
+
+## Updates (per Doc 20)
+- MMS_FA is the primary aligner.
+- Confidence is defined as mean per-word CTC posterior.
+- Ground truth is generated via time-maps.

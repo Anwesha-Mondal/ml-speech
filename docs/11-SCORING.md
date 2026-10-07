@@ -74,3 +74,7 @@ Every score generated MUST store the `scoring_version` in the database.
 If we adjust the `Base_Weight` for Pacing from 10 to 12 in `v1.1`, old scores calculated under `v1.0` must not automatically update, ensuring historical leaderboards remain mathematically sound based on the rules at the time of the attempt.
 
 *End of SCORING.md*
+
+
+## Updates (per Doc 20)
+- Bucket penalties are clamped. Overlaps merged. Added Mimic DTW metric.

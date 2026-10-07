@@ -98,3 +98,8 @@ The dataset must pass strict leakage checks before training or evaluation.
 3.  **Hash Verification:** Run exact deduplication on text and audio hashes (`SHA-256`) to ensure no accidental overlaps.
 
 *End of DATASET-SPEC.md*
+
+
+## Updates (per Doc 20)
+- Added fields: `inserted_tokens`, `time_map_path`, `resynth_chain`, `severity_params`.
+- Split algorithm: Connected-component splits over speaker<->transcript graph.

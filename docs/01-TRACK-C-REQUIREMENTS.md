@@ -68,7 +68,7 @@ The Hackathon explicitly lists 12 requirements that *must* be preserved.
 
 ### 3.9 Time-Series Overlays
 *   **Requirement:** Time-series baseline/participant overlay with highlighted flaws.
-*   **Spec:** The UI must feature a charting library (e.g., Recharts) synced to the audio player, showing the reference line and the participant line.
+*   **Spec:** The UI must feature a charting library (e.g., uPlot) synced to the audio player, showing the reference line and the participant line.
 *   **Metrics:** High frame-rate rendering (60fps) during audio playback.
 
 ### 3.10 Speaker-Agnostic Normalization
@@ -83,7 +83,7 @@ The Hackathon explicitly lists 12 requirements that *must* be preserved.
 
 ### 3.12 Deliverables
 *   **Requirement:** GitHub, custom dataset, dashboard, ≤6-page technical documentation and 3–10 minute demo.
-*   **Spec:** Follow the structure defined in `19-RELEASE.md`.
+*   **Spec:** Follow the structure defined in `ROADMAP.md Phase 10.md`.
 
 ---
 

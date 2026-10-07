@@ -58,11 +58,11 @@ These specific URLs were provided in the master prompt and must be investigated.
 *   **06. IBM/Kaggle Emphasized Words:** [Dataset](https://www.kaggle.com/datasets/bahraleloom/ibm-debater-and-reg-labeled-emphasized-words-in-speech). Use for expressive speech motivation.
 *   **07. LibriVox Gettysburg:** [Asset](https://librivox.org/the-gettysburg-address-150th-anniversary-by-abraham-lincoln/). *Warning:* This is a modern volunteer reading, NOT Abraham Lincoln's original voice. Public domain (USA).
 *   **08. Internet Archive Gettysburg:** [Asset](https://archive.org/details/gettysburg_johng_librivox).
-*   **09. Wikimedia ARES Mirror:** [Asset](https://2016.ares-conference.eu/commons.wikimedia.org/wiki/Category_Audio_files_of_speeches.html).
+*   **09. Wikimedia ARES Mirror:** [Asset](https://commons.wikimedia.org/commons.wikimedia.org/wiki/Category_Audio_files_of_speeches.html).
 *   **10. Reagan - Evil Empire:** [Wikimedia OGG](https://commons.wikimedia.org/wiki/File:Evil_Empire.ogg). 33:14 audio. Source: Miller Center. Public domain metadata.
 *   **11. Nixon Resignation:** [Wikimedia OGG](https://commons.wikimedia.org/wiki/File:Nixon_resignation_audio.ogg). 15:22 audio. Source: Miller Center.
 *   **12. FDR Pearl Harbor:** [Wikimedia OGG](https://commons.wikimedia.org/wiki/File:1941_Roosevelt_speech_pearlharbor_p1.ogg). *Warning:* Only 26 seconds long. Lacks source/author metadata. Do not use as a primary full-speech asset.
-*   **13. Obama Inaugural:** [Wikimedia OGV](https://c.enwp.org/wiki/File:Barack_Obama_inaugural_address.ogv). Check federal status (typically public domain if official government feed).
+*   **13. Obama Inaugural:** [Wikimedia OGV](https://commons.wikimedia.org/wiki/File:Barack_Obama_inaugural_address.ogv). Check federal status (typically public domain if official government feed).
 *   **15. MSU Vincent Voice Library:** [Asset](https://d.lib.msu.edu/vvl/1739). Verify item-level rights.
 *   **16. Columbia Time-Based Media:** [Asset](https://dlc.library.columbia.edu/time_based_media/10.7916/d8-vpnc-p531).
 *   **17. History Today Churchill:** [Asset](https://historytoday.com/archive/feature/winston-churchill-record). *Warning:* Some Churchill speeches are highly restricted or are later studio recreations by actors. Verify provenance meticulously.
@@ -77,3 +77,7 @@ These specific URLs were provided in the master prompt and must be investigated.
 3.  **Hash Verification:** Upon downloading any `.wav` or `.ogg`, immediately compute its SHA-256 hash and store it in the rights manifest.
 
 *End of DATA-SOURCES.md*
+
+
+## Note
+B-01 is used for transcripts only. Items must be verified individually for rights status.

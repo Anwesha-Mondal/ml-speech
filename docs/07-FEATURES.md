@@ -86,3 +86,9 @@ Section 15 demands ablation studies (e.g., "F0 only vs multi-feature").
 *   **Goal:** We must mathematically prove to the judges that adding MFCCs to the model improves Flaw Classification F1 scores compared to using F0 and Energy alone.
 
 *End of FEATURES.md*
+
+
+## Updates (per Doc 20)
+- 10ms global hop with per-feature windows. Praat F0 used.
+- Rule-based hesitation detection (VAD gaps).
+- Composite clarity metric.

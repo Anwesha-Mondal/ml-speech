@@ -80,3 +80,6 @@ Every production release is accompanied by:
 
 ## 8. Conclusion
 The release management strategy described herein ensures that the Speech Arena can iterate rapidly without sacrificing the stability and fairness required by its competitive user base. By leveraging GitOps, Canary deployments, and strict schema management, the engineering team can deploy with confidence, knowing that safeguards are in place to prevent catastrophic failures.
+
+
+> **Note:** This document serves as a post-hackathon production reference. Hackathon deployment relies on Docker Compose (see ARCHITECTURE.md).

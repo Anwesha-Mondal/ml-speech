@@ -143,3 +143,6 @@ Comprehensive observability is required to debug the complex, asynchronous acous
 While real-time battles run on the EKS microservices, heavy batch processing (e.g., ingesting a new 100-hour reference dataset) is orchestrated by Apache Airflow.
 *   **Airflow DAGs (Directed Acyclic Graphs):** Define the sequence of tasks: Download dataset -> Split into chunks -> Spin up spot instances -> Run alignment -> Extract Parquet -> Load metadata to PostgreSQL.
 *   **Idempotency:** All Airflow tasks are idempotent. If a task fails midway (e.g., a spot instance is reclaimed), it can be re-run safely without corrupting the data lake.
+
+
+> **Note:** This document serves as a post-hackathon production reference. Hackathon deployment relies on Docker Compose (see ARCHITECTURE.md).

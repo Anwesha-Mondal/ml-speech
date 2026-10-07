@@ -48,3 +48,6 @@ Leaderboards are read-heavy. Querying `SELECT * FROM Performance WHERE transcrip
 *   **Implementation:** Use **Redis Sorted Sets** (`ZADD`, `ZRANGE`) to maintain the top 1000 scores for every transcript in memory. The PostgreSQL database remains the source of truth, but the UI only queries Redis.
 
 *End of LEADERBOARD.md*
+
+
+> **Note:** This feature is tagged as POST-MVP. Privacy and consent considerations apply (opt-in only). API dependencies like IBM Debater are dropped.

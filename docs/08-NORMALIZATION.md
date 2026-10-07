@@ -99,3 +99,7 @@ When saving the `.parquet` file to AWS S3 (as defined in `07-FEATURES.md`), the 
 If a user contests their score on the dashboard, the backend team must be able to load the Parquet file and prove that the normalization math was executed correctly.
 
 *End of NORMALIZATION.md*
+
+
+## Updates (per Doc 20)
+- Using Two-Channel normalization: Magnitude (semitone/dB-relative) and Shape (z-scored).

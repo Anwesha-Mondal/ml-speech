@@ -58,3 +58,6 @@ A forward-looking roadmap must also plan for removing outdated components.
 
 ## 6. Conclusion
 The Speech Arena is not a static application but a continuous pipeline for analyzing and improving human speech. By maintaining strict separation of concerns—keeping the core scoring deterministic while aggressively exploring ML for analytics and content—the platform will scale efficiently while maintaining user trust and competitive integrity. This roadmap ensures that the architecture described in the preceding documents is built not just for launch day, but for the years to follow.
+
+
+> **Note:** This document serves as a post-hackathon production reference. Hackathon deployment relies on Docker Compose (see ARCHITECTURE.md).
