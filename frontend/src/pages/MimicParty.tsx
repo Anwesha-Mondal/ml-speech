@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PartyPopper, Star, Mic2 } from 'lucide-react';
+import { PartyPopper, Mic2 } from 'lucide-react';
 
 export default function MimicParty() {
   const [mimicData, setMimicData] = useState<any>(null);

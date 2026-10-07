@@ -1,6 +1,14 @@
-from fastapi import APIRouter, UploadFile, File, Form
+from fastapi import APIRouter, UploadFile, File, Form, BackgroundTasks
 from pydantic import BaseModel
 import uuid
+import asyncio
+import pandas as pd
+from typing import Dict, Any
+
+from packages.speech_arena.scoring.contrastive import compute_word_deltas
+from packages.speech_arena.scoring.detectors import run_detectors
+from packages.speech_arena.scoring.engine import compute_score
+from packages.speech_arena.scoring.explain import render_explanation
 
 router = APIRouter()
 
@@ -8,49 +16,88 @@ class JobResponse(BaseModel):
     job_id: str
     status: str
 
+# In-memory job store for P12 MVP
+job_store: Dict[str, Any] = {}
+
+def process_audio_pipeline(job_id: str, mode: str):
+    # Simulate the heavy MMS_FA alignment and feature extraction (5-15s)
+    # Using a sleep inside an async background task isn't truly async if it's blocking CPU, 
+    # but BackgroundTasks run in a separate threadpool in FastAPI.
+    import time
+    time.sleep(5)
+    
+    # Real pipeline mock logic (using the actual P6 engine)
+    try:
+        ref_df = pd.DataFrame([
+            {'word': 'four', 'start': 0.0, 'end': 0.4, 'local_rate': 2.0, 'following_pause': 0.0, 'st_range': 4.0, 'db_mean': -5.0},
+            {'word': 'score', 'start': 0.4, 'end': 0.8, 'local_rate': 2.2, 'following_pause': 0.1, 'st_range': 3.5, 'db_mean': -4.0},
+            {'word': 'and', 'start': 0.9, 'end': 1.1, 'local_rate': 1.8, 'following_pause': 0.0, 'st_range': 2.0, 'db_mean': -6.0},
+            {'word': 'seven', 'start': 1.1, 'end': 1.6, 'local_rate': 2.5, 'following_pause': 0.0, 'st_range': 5.0, 'db_mean': -3.0},
+            {'word': 'years', 'start': 1.6, 'end': 2.2, 'local_rate': 2.0, 'following_pause': 0.5, 'st_range': 3.0, 'db_mean': -5.0}
+        ])
+        
+        part_df = pd.DataFrame([
+            {'word': 'four', 'start': 0.0, 'end': 0.3, 'local_rate': 3.0, 'following_pause': 0.0, 'st_range': 1.0, 'db_mean': -15.0},
+            {'word': 'score', 'start': 0.3, 'end': 0.6, 'local_rate': 3.5, 'following_pause': 0.0, 'st_range': 1.5, 'db_mean': -14.0},
+            {'word': 'and', 'start': 0.6, 'end': 0.8, 'local_rate': 3.0, 'following_pause': 0.0, 'st_range': 1.0, 'db_mean': -16.0},
+            {'word': 'seven', 'start': 0.8, 'end': 1.2, 'local_rate': 3.2, 'following_pause': 0.0, 'st_range': 2.0, 'db_mean': -12.0},
+            {'word': 'years', 'start': 1.2, 'end': 1.8, 'local_rate': 2.8, 'following_pause': 0.0, 'st_range': 1.5, 'db_mean': -15.0}
+        ])
+        
+        deltas = compute_word_deltas(ref_df, part_df)
+        flaws = run_detectors(deltas)
+        score = compute_score(flaws)
+        
+        formatted_flaws = []
+        for f in flaws:
+            formatted_flaws.append({
+                "type": f.type,
+                "start_time": f.start_time,
+                "end_time": f.end_time,
+                "penalty": f.penalty,
+                "explanation": render_explanation(f)
+            })
+            
+        job_store[job_id] = {
+            "status": "completed",
+            "result": {
+                "mode": mode,
+                "score": {
+                    "total": score.total,
+                    "buckets": score.buckets
+                },
+                "flaws": formatted_flaws
+            }
+        }
+    except Exception as e:
+        job_store[job_id] = {
+            "status": "error",
+            "message": str(e)
+        }
+
 @router.post("/analyze", response_model=JobResponse)
 async def create_analysis(
+    background_tasks: BackgroundTasks,
     reference: UploadFile = File(None),
     participant: UploadFile = File(...),
     transcript: str = Form(...),
     mode: str = Form("sandbox")
 ):
     job_id = str(uuid.uuid4())
+    job_store[job_id] = {"status": "processing"}
+    background_tasks.add_task(process_audio_pipeline, job_id, mode)
     return {"job_id": job_id, "status": "processing"}
 
 @router.get("/jobs/{job_id}")
-async def get_job_status(job_id: str, mode: str = "sandbox"):
-    if mode == "news_anchor":
-        score = {"total": 92, "buckets": {"articulation": 5, "pitch_stability": 3}}
-        flaws = [
-            {"type": "up_talk", "start_time": 8.5, "end_time": 9.2, "penalty": 3, "explanation": "Authoritative pitch lost; ending sounded like a question."},
-            {"type": "pacing_irregular", "start_time": 12.0, "end_time": 13.5, "penalty": 5, "explanation": "Pacing fluctuated compared to steady teleprompter read."}
-        ]
-    elif mode == "storytelling":
-        score = {"total": 88, "buckets": {"dynamic_range": 8, "dramatic_pause": 4}}
-        flaws = [
-            {"type": "monotone", "start_time": 15.0, "end_time": 20.0, "penalty": 8, "explanation": "Energy and pitch variance too low for narrative delivery."},
-            {"type": "rushed_climax", "start_time": 35.0, "end_time": 38.0, "penalty": 4, "explanation": "Missed opportunity for a deliberate dramatic pause."}
-        ]
-    elif mode == "interviewer":
-        score = {"total": 78, "buckets": {"hesitation": 15, "clarity": 7}}
-        flaws = [
-            {"type": "filler_words", "start_time": 4.1, "end_time": 5.5, "penalty": 15, "explanation": "Excessive hesitation ('um', 'uh') compared to professional baseline."},
-            {"type": "mumbled", "start_time": 18.0, "end_time": 19.5, "penalty": 7, "explanation": "Clarity dropped during rapid response."}
-        ]
-    else:
-        score = {"total": 85, "buckets": {"pacing": 10, "energy": 5}}
-        flaws = [
-            {"type": "pacing_fast", "start_time": 2.5, "end_time": 3.1, "penalty": 10, "explanation": "You spoke 30% faster than the reference here."},
-            {"type": "energy_low", "start_time": 5.0, "end_time": 6.2, "penalty": 5, "explanation": "Your energy dropped significantly here."}
-        ]
-
+async def get_job_status(job_id: str):
+    if job_id not in job_store:
+        return {"job_id": job_id, "status": "not_found"}
+    
+    data = job_store[job_id]
+    if data["status"] == "processing":
+        return {"job_id": job_id, "status": "processing"}
+    
     return {
         "job_id": job_id,
-        "status": "completed",
-        "result": {
-            "mode": mode,
-            "score": score,
-            "flaws": flaws
-        }
+        **data
     }

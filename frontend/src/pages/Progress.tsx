@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { History, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { History, CheckCircle2 } from 'lucide-react';
 
 export default function Progress() {
   const [historyData, setHistoryData] = useState<any>(null);

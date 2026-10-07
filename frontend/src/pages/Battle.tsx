@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Swords, User, Award } from 'lucide-react';
+import { Swords, Award } from 'lucide-react';
 
 export default function Battle() {
   const [battleData, setBattleData] = useState<any>(null);
