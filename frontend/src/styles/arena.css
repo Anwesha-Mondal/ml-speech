@@ -1,0 +1,239 @@
+/* ---------- battle ---------- */
+.battle-board {
+  display: flex;
+  flex-direction: column;
+}
+.battle-player {
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.battle-player.is-winner {
+  background: var(--surface-2);
+}
+.battle-score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+.battle-vs {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 22px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.battle-vs > span:first-child {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  background: var(--ink);
+  color: var(--on-ink);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.battle-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 700px) {
+  .battle-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.miniwave {
+  width: 100%;
+  height: 56px;
+  display: block;
+}
+.battle-passage {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  max-width: 75ch;
+}
+.duel-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 130px minmax(0, 1fr) 52px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.duel-label {
+  text-align: center;
+  color: var(--muted);
+}
+.duel-a {
+  text-align: right;
+}
+.duel-bar {
+  height: 8px;
+  background: var(--surface-4);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+}
+.duel-bar i {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+  border-radius: 4px;
+}
+.duel-bar-a {
+  justify-content: flex-end;
+}
+.duel-bar-a i {
+  background: var(--reference);
+}
+@media (max-width: 600px) {
+  .duel-row {
+    grid-template-columns: 44px minmax(0, 1fr) 84px minmax(0, 1fr) 44px;
+    font-size: 12px;
+  }
+}
+
+/* ---------- debate ---------- */
+.debate-plan {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+.debate-plan li {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.debate-plan li + li {
+  border-left: 1px solid var(--line);
+}
+@media (max-width: 700px) {
+  .debate-plan {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .debate-plan li + li {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+}
+.debate {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.debate-track {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+.debate-track li {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  border-top: 2px solid var(--line);
+  min-width: 0;
+}
+.debate-track li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.debate-track li.is-done {
+  border-top-color: var(--ink);
+}
+.debate-track li.is-now {
+  border-top-color: var(--ink);
+  background: var(--surface-2);
+}
+@media (max-width: 700px) {
+  .debate-track {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.debate-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 36px 20px;
+}
+.debate-timer {
+  font-size: 64px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+/* ---------- mimic ---------- */
+.mimic-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 24px;
+  align-items: center;
+}
+@media (max-width: 900px) {
+  .mimic-stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.contour-plot {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.mimic-score {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mimic-num {
+  font-size: 72px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+.mimic-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+.mimic-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 12px 0 8px;
+}
+.mimic-empty svg {
+  max-width: 600px;
+}
+
+/* ---------- leaderboard ---------- */
+.rank {
+  font-family: var(--font-mono);
+  color: var(--muted);
+  width: 48px;
+}
+.rank-1,
+.rank-2,
+.rank-3 {
+  color: var(--ink);
+  font-weight: 600;
+}

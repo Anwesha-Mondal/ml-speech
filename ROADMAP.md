@@ -181,7 +181,6 @@ graph LR
 
 ---
 ## Current Status
-- **Active phase:** Project Complete (Ready for Submission)
-- **Last completed:** P12 Pipeline Integration & UI Modularization
-- **Next action:** Final review, demo presentation, and project wrap-up.
-
+- **Active phase:** Frontend rebuild on branch `frontend-redesign` (Session 24), awaiting team review.
+- **Last completed:** Full `uiux.md` frontend (shell, analysis workstation, practice, assessment, arena, leaderboard, dataset, pipeline, system, settings).
+- **Next action:** Connect `/api/analyze` to the real P2–P4 stages and return word alignment. Until then every upload is scored from fixed tables (see the Pipeline page and SESSION_LOG Session 24).
