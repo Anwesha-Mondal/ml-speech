@@ -939,6 +939,9 @@
 - Created `tests/integration/test_analysis_api.py` validating `/api/health`, `/api/analyze`, and `/api/jobs/{job_id}` end-to-end with real audio fixtures.
 - Validated all 10 unit tests and 2 integration tests (100% pass).
 - Resolved frontend type sync by installing missing router dependency and regenerating `dataset.generated.ts`; verified clean `npm run build`.
+- Removed hardcoded frontend assumptions:
+  - Updated `analysisFromApi` in `frontend/src/lib/analysis/model.ts` to consume real word alignment timestamps, actual audio duration, and contours directly from the API rather than falling back to synthetic estimates.
+  - Updated `frontend/src/lib/pipeline.ts` and `System.tsx` to mark Audio Upload, Transcript Alignment, Feature Extraction, and Neural Flaw Detection stages as fully Connected live modules.
 
 **Files changed**
 - `ml/inference/__init__.py` (new)
@@ -946,6 +949,10 @@
 - `backend/api/routers/analysis.py` (updated to run neural prediction on audio bytes)
 - `tests/integration/test_analysis_api.py` (new)
 - `frontend/src/lib/data/dataset.generated.ts` (regenerated)
+- `frontend/src/lib/analysis/model.ts` (updated to use real API words and contours)
+- `frontend/src/lib/api/types.ts` (added words, duration, contours to ApiAnalysisResult)
+- `frontend/src/lib/pipeline.ts` (updated pipeline status to connected)
+- `frontend/src/pages/system/System.tsx` (updated alignment/features service status to connected)
 - `SESSION_LOG.md` (updated Quick State, Decision Register with D-035/D-036, and Session 27)
 
 **Decisions**

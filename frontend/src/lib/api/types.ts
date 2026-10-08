@@ -28,6 +28,15 @@ export interface ApiAnalysisResult {
   mode: string
   score: { total: number; buckets: Partial<Record<Bucket, number>> }
   flaws: ApiFlaw[]
+  words?: { text: string; start: number; end: number }[]
+  duration?: number
+  contours?: {
+    t: number[]
+    pitchPart?: (number | null)[]
+    pitchRef?: (number | null)[]
+    energyPart?: number[]
+    energyRef?: number[]
+  }
 }
 
 export interface ApiJob {
