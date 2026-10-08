@@ -17,3 +17,11 @@ datasets/variants/*
 !datasets/raw/.gitkeep
 !datasets/normalized/.gitkeep
 !datasets/variants/.gitkeep
+
+# ML assets, weights, and run logs (per AGENTS.md rule 3)
+ml/checkpoints/
+ml/data/audio/
+ml/runs/
+*.pt
+*.bin
+*.safetensors
