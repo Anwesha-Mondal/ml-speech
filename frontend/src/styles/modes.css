@@ -1,0 +1,145 @@
+/* ---------- practice & assessment ---------- */
+.practice-grid,
+.mode-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 1024px) {
+  .practice-grid,
+  .mode-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.attempt {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.attempt-foot {
+  padding-top: 4px;
+}
+.attempt-progress {
+  max-width: 640px;
+}
+.mode-option {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 9px 10px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.mode-option:hover {
+  background: var(--surface-2);
+}
+.mode-option.is-on {
+  border-color: var(--line);
+  background: var(--surface-2);
+}
+.mode-option input {
+  margin-top: 3px;
+  accent-color: var(--ink);
+}
+.mode-option-title {
+  font-weight: 500;
+  font-size: 13.5px;
+}
+.howto {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.focus {
+  padding: 16px 18px;
+  border-left: 2px solid var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.focus ul {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 13.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.question-card {
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 18px 20px;
+  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.question-text {
+  font-size: 21px;
+  line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  max-width: 48ch;
+}
+
+/* teleprompter */
+.prompter-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.prompter {
+  height: 260px;
+  overflow-y: auto;
+  border-radius: var(--r-lg);
+  background: var(--ink);
+  color: var(--on-ink);
+  padding: 0 32px;
+  scrollbar-width: none;
+}
+.prompter::-webkit-scrollbar {
+  display: none;
+}
+.prompter p {
+  font-size: 30px;
+  line-height: 1.55;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  max-width: 34ch;
+  margin: 0 auto;
+}
+.prompter-pad {
+  height: 110px;
+}
+.prompter-guide {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 128px;
+  height: 0;
+  border-top: 1px dashed color-mix(in srgb, var(--on-ink) 35%, transparent);
+  pointer-events: none;
+}
+.prompter-empty {
+  height: auto;
+  padding: 32px;
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px dashed var(--line-strong);
+  text-align: center;
+}
+@media (max-width: 700px) {
+  .prompter p {
+    font-size: 22px;
+  }
+}

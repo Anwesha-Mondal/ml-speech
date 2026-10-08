@@ -10,12 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "framer-motion": "^14.0.0",
     "lucide-react": "^1.52.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "uplot": "^1.6.32",
-    "wavesurfer.js": "^8.0.1"
+    "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
