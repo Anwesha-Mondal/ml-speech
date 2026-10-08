@@ -59,7 +59,13 @@ def process_audio_pipeline(job_id: str, mode: str, transcript: str = ""):
                 "start_time": f.start_time,
                 "end_time": f.end_time,
                 "penalty": f.penalty,
-                "explanation": render_explanation(f)
+                "explanation": render_explanation(f),
+                # Extra fields for the dashboard's explanation panel.
+                "flaw_id": f.flaw_id,
+                "bucket": f.bucket,
+                "confidence": f.confidence,
+                "word": f.transcript_span.text,
+                "evidence": f.evidence.model_dump(exclude={"formula"}),
             })
             
         job_store[job_id] = {

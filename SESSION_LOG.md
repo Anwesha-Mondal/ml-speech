@@ -9,11 +9,11 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | Complete (Submission Ready) |
-| Last milestone | Unified Chat Input UI (Session 23) |
-| Next action | Hackathon Demo & Final Submission Presentation |
+| Active phase | Frontend rebuild on branch `frontend-redesign` (awaiting team review) |
+| Last milestone | Full frontend rebuild per `uiux.md` (Session 24) |
+| Next action | Team reviews `frontend-redesign`; then connect `/api/analyze` to the real P2–P4 pipeline (alignment, features, normalization) |
 | Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012 |
-| Open questions | None |
+| Open questions | See Session 24: backend still scores fixed tables; word alignment not returned by the API |
 
 ---
 
@@ -49,6 +49,11 @@
 | D-026 | 2026-10-08 | Removed pyworld optional dependency from pyproject.toml to fix MSVC build requirements on Python 3.14.0 Windows environments, and added python-multipart to resolve FastAPI file upload errors. | Agent (Session 21) |
 | D-027 | 2026-10-08 | Make Reference Transcript optional and mock an auto-transcription fallback in the analysis pipeline | Agent (Session 22) |
 | D-028 | 2026-10-08 | Replaced separated audio/transcript inputs with a unified chat-style input bar, including live MediaRecorder integration. | Agent (Session 23) |
+| D-029 | 2026-10-08 | Rebuild the frontend from `uiux.md` as a routed, modular app (sidebar shell; Overview, Practice, Assessment, Arena, Leaderboard, Analysis, Dataset, Pipeline, System, Settings) on branch `frontend-redesign`; replaces the Session 19–23 pages | User (Session 24) |
+| D-030 | 2026-10-08 | Every figure in the UI carries a source tag (Live / Example / Sample data / In browser / From repo); fixed API responses are never shown as computed results | Agent (Session 24) |
+| D-031 | 2026-10-08 | Battles score both readings through `/api/analyze`; Mimic Party runs in the browser (z-scored contours, energy-envelope DTW, score = max(0, 100 − d×50)). The fixed `/api/battle/1v1` and `/api/mimic-party` responses are not used | Agent (Session 24) |
+| D-032 | 2026-10-08 | Drop the Tailwind CDN script and Material Symbols; styles ship with the app (CSS tokens, light default + optional dark), so no runtime CDN script is needed; the Inter/JetBrains Mono web fonts fall back to system fonts when offline | Agent (Session 24) |
+| D-033 | 2026-10-08 | `/api/jobs` flaws gain additive fields (flaw_id, bucket, confidence, word, evidence) for the explanation panel; existing fields unchanged | Agent (Session 24) |
 
 
 ---
@@ -790,6 +795,45 @@
 
 **Next step**
 - Ready for demo recording.
+
+### Session 24 (2026-10-08)
+**User requests**
+- Read the whole repo and the session log, then create the frontend and UI design. Pull repo updates and use the connected tools.
+
+**What was done**
+- Pulled `5574af3` (Session 21–23 work and `training/`); `training/dataset.txt` and `training/trainning.txt` are identical prompt documents, not data or code.
+- Searched the connected tools (Notion, Linear, Asana, Slack, Canva, Figma, Mobbin): no Speech Arena material exists there; the Figma seat is view-only and Mobbin needs a paid plan.
+- Installed Node.js 24 LTS (winget) and rebuilt the frontend on branch `frontend-redesign` from `uiux.md`:
+  - Shell: grouped collapsible sidebar (drawer on mobile), breadcrumb top bar, quick-jump search (`/`), live API status pill, eased cursor light (off for touch and reduced motion), light default + dark theme.
+  - Analysis workstation: score with capped bucket deductions, canvas waveform (reference + participant), flaw markers that pause/seek/highlight/open the explanation, synced transcript with click-to-seek, pitch/energy overlays, zoom, speed, volume, keyboard controls; right drawer at ≤1280 px and bottom sheet on phones; data view with per-word table and raw API JSON.
+  - Practice (speech test, You vs You), Assessment (interviewer, news-anchor teleprompter, public speaking, storytelling), Arena (1v1 battle, debate, Mimic Party), Leaderboard, Dataset (from repo files), Pipeline (stage status), System (health, endpoints, architecture, scoring rules, DevOps), Settings.
+- Added `scripts/sync_frontend_data.py` to generate `frontend/src/lib/data/dataset.generated.ts` from `datasets/`.
+- Added evidence fields to the flaws returned by `backend/api/routers/analysis.py` (D-033).
+- Tested in the browser against the running API: all 27 routes, live upload → analysis, playback sync, offline API states, battle, Mimic identity-blindness, dark mode, 375/768/1280 px layouts. `npm run build` and `npm run lint` are clean.
+
+**Files changed**
+- `frontend/` (rebuilt: `index.html`, `vite.config.ts`, `package.json`, `src/**`, `README.md`)
+- `backend/api/routers/analysis.py` (additive response fields)
+- `scripts/sync_frontend_data.py` (created)
+- `SESSION_LOG.md` (updated)
+
+**Decisions** (also add to Decision Register)
+- D-029 … D-033 (see register).
+
+**Problems / bugs found**
+- Before this session, `main` did not build: unused imports in `ChatInput.tsx` and `SandboxResult.tsx` (commit `5574af3`).
+- `/api/analyze` ignores the uploaded audio and transcript and scores two hardcoded five-word tables, so every upload gets the same score (75.5). The UI is honest about it (Pipeline page), but the demo cannot show real per-recording results until P2–P4 are wired in.
+- The API returns no word alignment, so transcript word timing is estimated in the UI.
+- `/api/progress/history`, `/api/leaderboard`, `/api/battle/1v1`, `/api/mimic-party` return fixed sample data.
+- Root `README.md` says `docker-compose up` serves the dashboard on :3000; `docker-compose.yml` only defines the benchmark service.
+- The Battle page shows the uiux.md fairness line ("Scores use speaker-normalized acoustic features"), which describes the intended pipeline (ADR-001); the server doesn't normalize yet.
+
+**Open questions**
+- Merge `frontend-redesign` into `main` after team review?
+- Who connects `/api/analyze` to `audio/io` → `align/mms` → `features` → `normalize` before Oct 15?
+
+**Next step**
+- Team review of the branch; then wire the real pipeline into `/api/analyze` and return word alignment so the transcript sync uses real timings.
 
 <!-- Template for new sessions (copy below this line)
 ### Session N (YYYY-MM-DD, HH:MM–HH:MM IST)
