@@ -19,13 +19,17 @@ class JobResponse(BaseModel):
 # In-memory job store for P12 MVP
 job_store: Dict[str, Any] = {}
 
-def process_audio_pipeline(job_id: str, mode: str):
+def process_audio_pipeline(job_id: str, mode: str, transcript: str = ""):
     # Simulate the heavy MMS_FA alignment and feature extraction (5-15s)
     # Using a sleep inside an async background task isn't truly async if it's blocking CPU, 
     # but BackgroundTasks run in a separate threadpool in FastAPI.
     import time
     time.sleep(5)
     
+    if not transcript:
+        # Mock auto-transcribe using Whisper
+        transcript = "four score and seven years"
+
     # Real pipeline mock logic (using the actual P6 engine)
     try:
         ref_df = pd.DataFrame([
@@ -80,12 +84,12 @@ async def create_analysis(
     background_tasks: BackgroundTasks,
     reference: UploadFile = File(None),
     participant: UploadFile = File(...),
-    transcript: str = Form(...),
+    transcript: str = Form(""),
     mode: str = Form("sandbox")
 ):
     job_id = str(uuid.uuid4())
     job_store[job_id] = {"status": "processing"}
-    background_tasks.add_task(process_audio_pipeline, job_id, mode)
+    background_tasks.add_task(process_audio_pipeline, job_id, mode, transcript)
     return {"job_id": job_id, "status": "processing"}
 
 @router.get("/jobs/{job_id}")

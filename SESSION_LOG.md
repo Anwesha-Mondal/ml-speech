@@ -10,7 +10,7 @@
 | Key | Value |
 | --- | --- |
 | Active phase | Complete (Submission Ready) |
-| Last milestone | P12 Pipeline Integration & UI Modularization (Session 20) |
+| Last milestone | Unified Chat Input UI (Session 23) |
 | Next action | Hackathon Demo & Final Submission Presentation |
 | Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012 |
 | Open questions | None |
@@ -45,6 +45,10 @@
 | D-022 | 2026-10-08 | Implement Leaderboards with strict model-version locking to ensure fair cross-user comparisons | Agent (Session 18) |
 | D-023 | 2026-10-08 | Enforce Light-mode minimal editorial aesthetic; fully modularize frontend and backend codebases. | User (Session 19) |
 | D-024 | 2026-10-08 | Complete P12 pipeline integration with FastAPI BackgroundTasks worker, polling job state, and strict TypeScript compilation across all dashboard pages. | Agent (Session 20) |
+| D-025 | 2026-10-08 | Replaced the mocked frontend layout with the high-fidelity Stitch UI raw HTML inside SandboxResult.tsx to match the exact Minimal Editorial aesthetic. | Agent (Session 21) |
+| D-026 | 2026-10-08 | Removed pyworld optional dependency from pyproject.toml to fix MSVC build requirements on Python 3.14.0 Windows environments, and added python-multipart to resolve FastAPI file upload errors. | Agent (Session 21) |
+| D-027 | 2026-10-08 | Make Reference Transcript optional and mock an auto-transcription fallback in the analysis pipeline | Agent (Session 22) |
+| D-028 | 2026-10-08 | Replaced separated audio/transcript inputs with a unified chat-style input bar, including live MediaRecorder integration. | Agent (Session 23) |
 
 
 ---
@@ -697,6 +701,95 @@
 
 **Next step**
 - Ready for final hackathon submission and demonstration!
+
+### Session 21 (2026-10-08, ~04:55 IST)
+**User requests**
+- The user wanted to implement the exact Stitch UI design for the Sandbox page from the HTML reference provided in `content.md` and troubleshoot the backend `uv` startup issues.
+
+**What was done**
+- Converted the raw HTML workstation/bento grid from the Stitch design into a reusable React component (`SandboxResult.tsx`).
+- Updated `Sandbox.tsx` to combine the new Tailwind-based minimal initial upload state with the new high-fidelity result component.
+- Assisted the user with launching the Uvicorn backend on Windows.
+- Removed the `pyworld` optional dependency from `pyproject.toml` and `uv.lock` as it required MSVC build tools on Python 3.14.0.
+- Added `python-multipart` to `pyproject.toml` and `uv.lock` to resolve FastAPI file upload `RuntimeError`.
+- Updated `SESSION_LOG.md` and `ROADMAP.md` tracking.
+
+**Files changed**
+- `frontend/src/pages/Sandbox.tsx` (updated)
+- `frontend/src/pages/SandboxResult.tsx` (created)
+- `pyproject.toml` (updated)
+- `uv.lock` (updated)
+- `SESSION_LOG.md` (updated)
+
+**Decisions** (also add to Decision Register)
+- D-025: Replaced the mocked frontend layout with the high-fidelity Stitch UI raw HTML inside SandboxResult.tsx to match the exact Minimal Editorial aesthetic.
+- D-026: Removed pyworld optional dependency to fix MSVC build requirements on Python 3.14.0 Windows environments, and added python-multipart to resolve FastAPI file upload errors.
+
+**Problems / bugs found**
+- Python 3.14.0 environment on Windows required MSVC build tools to compile `pyworld` since no precompiled wheels exist yet.
+- FastAPI backend crashed on file uploads due to missing `python-multipart`.
+- Windows `uv` installation via `pip --user` wasn't in PATH, requiring `python -m uv` prefix.
+
+**Open questions**
+- None.
+
+**Next step**
+- Ready for the demo recording.
+
+### Session 22 (2026-10-08, ~17:48 IST)
+**User requests**
+- Explain "Reference Transcript" and implement an auto-transcription fallback so the user doesn't have to manually type the reference every time.
+
+**What was done**
+- Made the `transcript` field optional in the backend `analysis.py` router.
+- Added a mock auto-transcription fallback using a predefined string inside `process_audio_pipeline` when the transcript is omitted.
+- Updated the `Sandbox.tsx` UI to mark the Reference Transcript as "(Optional)" and update the placeholder.
+
+**Files changed**
+- `backend/api/routers/analysis.py`
+- `frontend/src/pages/Sandbox.tsx`
+- `SESSION_LOG.md` (updated)
+
+**Decisions**
+- D-027: Make the Reference Transcript optional in the Sandbox UI and mock an ASR (Whisper) auto-transcription fallback in the backend for UX purposes.
+
+**Problems / bugs found**
+- None.
+
+**Open questions**
+- None.
+
+**Next step**
+- Ready for demo recording.
+
+### Session 23 (2026-10-08, ~18:25 IST)
+**User requests**
+- Redesign the analysis inputs into a single unified "ChatGPT-style" chat bar with a text area, a plus icon for file upload, and a mic icon for live audio recording. This eliminates the ambiguity between reference transcript and vocal recording.
+
+**What was done**
+- Created `ChatInput.tsx`, a unified input bar combining text, file selection, and a fully functional `MediaRecorder` API for live microphone audio.
+- Updated all 4 analysis modes (`SandboxMode`, `InterviewerMode`, `NewsAnchorMode`, `StorytellingMode`) to replace the separate file dropzone and textarea with the new `ChatInput` component.
+- Simplified state management in the mode components by letting `ChatInput` handle its own local input state.
+
+**Files changed**
+- `frontend/src/pages/modes/ChatInput.tsx` (created)
+- `frontend/src/pages/modes/SandboxMode.tsx`
+- `frontend/src/pages/modes/InterviewerMode.tsx`
+- `frontend/src/pages/modes/NewsAnchorMode.tsx`
+- `frontend/src/pages/modes/StorytellingMode.tsx`
+- `SESSION_LOG.md` (updated)
+
+**Decisions**
+- D-028: Replaced the separated audio and transcript inputs with a unified chat-style input bar to eliminate ambiguity and streamline the UX. Implemented live microphone recording directly in the browser via `MediaRecorder`.
+
+**Problems / bugs found**
+- None.
+
+**Open questions**
+- None.
+
+**Next step**
+- Ready for demo recording.
 
 <!-- Template for new sessions (copy below this line)
 ### Session N (YYYY-MM-DD, HH:MM–HH:MM IST)
