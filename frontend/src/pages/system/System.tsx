@@ -53,7 +53,7 @@ export function SystemApi() {
       detail: 'FastAPI BackgroundTasks',
     },
     { name: 'Job store', state: 'warn', label: 'In memory', detail: 'Cleared when the API restarts' },
-    { name: 'Alignment / features', state: 'off', label: 'Not called', detail: 'See Pipeline' },
+    { name: 'Alignment / features', state: 'ok', label: 'Connected', detail: 'ml/inference/predict.py (Wav2Vec2 + librosa)' },
     { name: 'PostgreSQL', state: 'off', label: 'Not deployed', detail: 'Planned (docs/17)' },
     { name: 'Redis (leaderboard)', state: 'off', label: 'Not deployed', detail: 'Planned (docs/16)' },
     { name: 'Object storage (S3)', state: 'off', label: 'Not deployed', detail: 'Recordings are not stored' },

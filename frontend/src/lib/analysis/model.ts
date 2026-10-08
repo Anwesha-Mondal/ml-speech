@@ -301,7 +301,18 @@ export function analysisFromApi(args: {
   const { result } = args
   const flaws = groupFlaws(result.flaws ?? [])
   const lastFlawEnd = flaws.reduce((m, f) => Math.max(m, f.end), 0)
-  const duration = args.duration > 0 ? args.duration : Math.max(lastFlawEnd + 1, 1)
+  const duration =
+    result.duration && result.duration > 0
+      ? result.duration
+      : args.duration > 0
+        ? args.duration
+        : Math.max(lastFlawEnd + 1, 1)
+
+  const hasRealWords = Array.isArray(result.words) && result.words.length > 0
+  const words: Word[] | null = hasRealWords
+    ? (result.words as Word[])
+    : estimateWordTimes(args.transcript, duration)
+
   return {
     id: args.id,
     createdAt: new Date().toISOString(),
@@ -310,8 +321,8 @@ export function analysisFromApi(args: {
     title: args.title,
     referenceLabel: args.referenceLabel,
     transcript: args.transcript,
-    words: estimateWordTimes(args.transcript, duration),
-    wordTimingEstimated: true,
+    words,
+    wordTimingEstimated: !hasRealWords,
     duration,
     score: { total: result.score.total, buckets: normalizeBuckets(result.score.buckets) },
     flaws,
@@ -319,5 +330,6 @@ export function analysisFromApi(args: {
     jobId: args.jobId,
     participantFile: args.participantFile,
     raw: result,
+    contours: result.contours ?? undefined,
   }
 }
