@@ -33,4 +33,4 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     print("[*] Starting Speech Arena Backend on http://localhost:8000 ...")
-    uvicorn.run("backend.api.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
