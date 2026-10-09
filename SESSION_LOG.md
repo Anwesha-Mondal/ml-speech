@@ -980,3 +980,41 @@
 
 **Next step**
 - End-to-end user recording & live scoring validation across all UI modes.
+
+### Session 29 (2026-10-09) [Dataset Planning, Cleanup & Pipeline Fixes]
+
+**User requests**
+- Provide a markdown file (`FUTURE_DATASETS.md`) containing links to real-world datasets for future training (Miller Center, American Rhetoric, OpenSLR, IBM Debater, LibriVox).
+- Fix `ModuleNotFoundError: No module named 'tensorboard'` when running `train_classifier.py`.
+- Delete `ml/datasets/download_advanced_datasets.py` since the previous synthetic datasets were already downloaded.
+- Document the exact size of the whole dataset for future training in the session log.
+
+**What was done**
+- Created `ml/datasets/FUTURE_DATASETS.md` mapping out the integration of specific datasets:
+  - Miller Center Presidential Speeches & American Rhetoric (Top 100 Speeches).
+  - OpenSLR resources (including LibriSpeech 100h / Full).
+  - IBM Debater datasets (labeled emphasized words).
+  - LibriVox (Gettysburg Address).
+- Added `tensorboard` to `pyproject.toml` and installed it via `uv` to resolve the module error in the ML training pipeline.
+- Deleted `ml/datasets/download_advanced_datasets.py` to clean up the codebase after generating the synthetic mock data.
+- Updated `SESSION_LOG.md` with explicit dataset sizing constraints and a comprehensive roadmap for real data integration.
+
+**Files changed**
+- `ml/datasets/FUTURE_DATASETS.md` (created)
+- `ml/datasets/download_advanced_datasets.py` (deleted)
+- `pyproject.toml` (updated)
+- `uv.lock` (updated)
+- `SESSION_LOG.md` (updated)
+
+**Decisions**
+- The target "real" dataset size for the optimized MVP will be around 15GB (comprising LibriSpeech 100-hour [~6GB], "Bad Speech" datasets like SEP-28k [~5GB], and other specific subsets). 
+- The full, unoptimized dataset size (if using the complete LibriSpeech corpus) would be approximately 50-60 GB. We will default to the optimized 15GB subset for the MVP hackathon constraints.
+
+**Problems / bugs found**
+- Training script crashed due to missing `tensorboard` dependency.
+
+**Open questions**
+- None.
+
+**Next step**
+- Test the training pipeline with `uv run python ml/training/train_classifier.py` and then implement real dataset downloaders based on `FUTURE_DATASETS.md`.
