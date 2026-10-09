@@ -6,6 +6,13 @@ import sys
 import pandas as pd
 from typing import Dict, Any, Optional
 
+try:
+    from transformers import pipeline
+except ImportError:
+    pipeline = None
+
+_text_pipeline = None
+
 # Ensure project root is in path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 if PROJECT_ROOT not in sys.path:
@@ -68,42 +75,14 @@ def process_audio_pipeline(
             }
         }
     except Exception as e:
-        # Fallback to rule-based mock engine if neural decoding fails on corrupted audio
-        try:
-            ref_df = pd.DataFrame([
-                {'word': 'sample', 'start': 0.0, 'end': 0.5, 'local_rate': 2.0, 'following_pause': 0.0, 'st_range': 4.0, 'db_mean': -5.0}
-            ])
-            part_df = pd.DataFrame([
-                {'word': 'sample', 'start': 0.0, 'end': 0.3, 'local_rate': 2.8, 'following_pause': 0.0, 'st_range': 2.0, 'db_mean': -12.0}
-            ])
-            deltas = compute_word_deltas(ref_df, part_df)
-            flaws = run_detectors(deltas)
-            score = compute_score(flaws)
-            
-            job_store[job_id] = {
-                "status": "completed",
-                "result": {
-                    "mode": mode,
-                    "score": {"total": score.total, "buckets": score.buckets},
-                    "flaws": [{
-                        "type": f.type,
-                        "start_time": f.start_time,
-                        "end_time": f.end_time,
-                        "penalty": f.penalty,
-                        "explanation": render_explanation(f),
-                        "flaw_id": f.flaw_id,
-                        "bucket": f.bucket,
-                        "confidence": f.confidence,
-                        "word": f.transcript_span.text,
-                        "evidence": f.evidence.model_dump(exclude={"formula"}),
-                    } for f in flaws]
-                }
-            }
-        except Exception:
-            job_store[job_id] = {
-                "status": "error",
-                "message": f"Pipeline analysis error: {str(e)}"
-            }
+        import traceback
+        traceback.print_exc()
+        print(f"Exception in process_audio_pipeline: {e}")
+        
+        job_store[job_id] = {
+            "status": "error",
+            "message": f"Pipeline analysis error: {str(e)}\n\nMake sure you run the backend using `uv run uvicorn backend.api.main:app` so all dependencies (like librosa and soundfile) are loaded!"
+        }
 
 @router.post("/analyze", response_model=JobResponse)
 async def create_analysis(
@@ -143,3 +122,70 @@ async def get_job_status(job_id: str):
         "job_id": job_id,
         **data
     }
+
+@router.post("/generate-script")
+async def generate_script():
+    global _text_pipeline
+    
+    if pipeline is None:
+        return {"transcript": "transformers library is not installed."}
+
+    if _text_pipeline is None:
+        _text_pipeline = pipeline("text-generation", model="distilgpt2")
+        
+    try:
+        import random
+        prompts = [
+            "Today we will discuss the importance of communication in the modern workplace.",
+            "As we look towards the future of technology, one thing becomes clear:",
+            "The greatest challenge facing our industry right now is",
+            "Welcome everyone. I'm excited to share some new insights regarding",
+            "Let me tell you a story about a time when everything seemed to go wrong, but"
+        ]
+        prompt = random.choice(prompts)
+        result = _text_pipeline(prompt, max_new_tokens=40, do_sample=True, temperature=0.7, repetition_penalty=1.2)
+        generated_text = result[0]["generated_text"].strip()
+        # Clean up any trailing incomplete sentences
+        if not generated_text.endswith((".", "!", "?")):
+            last_punc = max(generated_text.rfind('.'), generated_text.rfind('!'), generated_text.rfind('?'))
+            if last_punc > 0:
+                generated_text = generated_text[:last_punc+1]
+                
+        return {"transcript": generated_text}
+    except Exception as e:
+        print(f"Generation error: {e}")
+        return {"transcript": "Error generating practice script."}
+
+_asr_pipeline = None
+
+@router.post("/transcribe")
+async def transcribe_audio(file: UploadFile = File(...)):
+    global _asr_pipeline
+    
+    if pipeline is None:
+        return {"transcript": "transformers library is not installed."}
+
+    if _asr_pipeline is None:
+        _asr_pipeline = pipeline("automatic-speech-recognition", model="openai/whisper-tiny.en")
+        
+    try:
+        import tempfile
+        import shutil
+        
+        # Save upload to temp file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as temp_audio:
+            shutil.copyfileobj(file.file, temp_audio)
+            temp_path = temp_audio.name
+            
+        result = _asr_pipeline(temp_path)
+        
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+            
+        return {"transcript": result["text"].strip()}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"transcript": f"Error transcribing audio: {str(e)}"}
+
+

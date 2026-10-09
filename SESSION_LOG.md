@@ -9,8 +9,8 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | ML Inference Integration Complete & Verified |
-| Last milestone | Wired Trained SpeechFlawClassifier into `/api/analyze` & Validated (Session 27) |
+| Active phase | API + Dashboard Enhancements |
+| Last milestone | Auto-transcription generation integrated (Session 28) |
 | Next action | End-to-end user recording & live scoring validation across all UI modes |
 | Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
@@ -57,6 +57,7 @@
 | D-034 | 2026-10-08 | Set up the `ml/` repository structure using a frozen Wav2Vec2 encoder and Multi-label MLP classifier head. | Agent (Session 24 - ML) |
 | D-035 | 2026-10-08 | Utilize CPU for initial local training of the frozen Wav2Vec2 MLP, proving end-to-end viability without complex CUDA dependencies on Python 3.14. | Agent (Session 26) |
 | D-036 | 2026-10-09 | Implement hybrid neural (Wav2Vec2 + MLP) and classical acoustic feature inference in `ml/inference/predict.py` connected to `/api/analyze`. | Agent (Session 27) |
+| D-037 | 2026-10-09 | Implement local, lazy-loaded Whisper model (openai/whisper-tiny.en) for optional auto-transcript generation. | Agent (Session 28) |
 
 
 ---
@@ -966,3 +967,54 @@
 
 **Next step**
 - Live testing in browser with user mic recording in Sandbox and Battles to verify end-to-end UI feedback loop.
+
+### Session 28 (2026-10-09)
+
+**User requests**
+1. "In here, add a like button or something to generate a transcript. keeping transcript manually, also we can generate a transcript."
+
+**What was done**
+- Implemented `/api/transcribe` endpoint in `backend/api/routers/analysis.py` using `transformers.pipeline` and `openai/whisper-tiny.en`.
+- Updated `frontend/src/lib/api/client.ts` with `generateTranscript` API call.
+- Added an "Auto-generate" button in `AttemptForm.tsx` to handle fetching and setting the transcript.
+
+**Next step**
+- End-to-end user recording & live scoring validation across all UI modes.
+
+### Session 29 (2026-10-09) [Dataset Planning, Cleanup & Pipeline Fixes]
+
+**User requests**
+- Provide a markdown file (`FUTURE_DATASETS.md`) containing links to real-world datasets for future training (Miller Center, American Rhetoric, OpenSLR, IBM Debater, LibriVox).
+- Fix `ModuleNotFoundError: No module named 'tensorboard'` when running `train_classifier.py`.
+- Delete `ml/datasets/download_advanced_datasets.py` since the previous synthetic datasets were already downloaded.
+- Document the exact size of the whole dataset for future training in the session log.
+
+**What was done**
+- Created `ml/datasets/FUTURE_DATASETS.md` mapping out the integration of specific datasets:
+  - Miller Center Presidential Speeches & American Rhetoric (Top 100 Speeches).
+  - OpenSLR resources (including LibriSpeech 100h / Full).
+  - IBM Debater datasets (labeled emphasized words).
+  - LibriVox (Gettysburg Address).
+- Added `tensorboard` to `pyproject.toml` and installed it via `uv` to resolve the module error in the ML training pipeline.
+- Deleted `ml/datasets/download_advanced_datasets.py` to clean up the codebase after generating the synthetic mock data.
+- Updated `SESSION_LOG.md` with explicit dataset sizing constraints and a comprehensive roadmap for real data integration.
+
+**Files changed**
+- `ml/datasets/FUTURE_DATASETS.md` (created)
+- `ml/datasets/download_advanced_datasets.py` (deleted)
+- `pyproject.toml` (updated)
+- `uv.lock` (updated)
+- `SESSION_LOG.md` (updated)
+
+**Decisions**
+- The target "real" dataset size for the optimized MVP will be around 15GB (comprising LibriSpeech 100-hour [~6GB], "Bad Speech" datasets like SEP-28k [~5GB], and other specific subsets). 
+- The full, unoptimized dataset size (if using the complete LibriSpeech corpus) would be approximately 50-60 GB. We will default to the optimized 15GB subset for the MVP hackathon constraints.
+
+**Problems / bugs found**
+- Training script crashed due to missing `tensorboard` dependency.
+
+**Open questions**
+- None.
+
+**Next step**
+- Test the training pipeline with `uv run python ml/training/train_classifier.py` and then implement real dataset downloaders based on `FUTURE_DATASETS.md`.

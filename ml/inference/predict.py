@@ -211,15 +211,41 @@ class SpeechFlawPredictor:
         elif isinstance(audio_input, bytes):
             import io
             import soundfile as sf
+            import tempfile
+            import subprocess
+
+            with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp_in:
+                tmp_in.write(audio_input)
+                tmp_in_path = tmp_in.name
+                
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_out:
+                tmp_out_path = tmp_out.name
+
             try:
-                y, sr = sf.read(io.BytesIO(audio_input))
-                if y.ndim > 1:
-                    y = np.mean(y, axis=1)
-                if sr != 16000:
-                    y = librosa.resample(y, orig_sr=sr, target_sr=16000)
-                    sr = 16000
-            except Exception:
-                y, sr = librosa.load(io.BytesIO(audio_input), sr=sr)
+                subprocess.run([
+                    "ffmpeg", "-y", "-i", tmp_in_path,
+                    "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le",
+                    tmp_out_path
+                ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                y, sr = sf.read(tmp_out_path)
+            except Exception as e:
+                # Fallback to direct reading if ffmpeg fails
+                try:
+                    y, sr = sf.read(io.BytesIO(audio_input))
+                    if y.ndim > 1:
+                        y = np.mean(y, axis=1)
+                    if sr != 16000:
+                        y = librosa.resample(y, orig_sr=sr, target_sr=16000)
+                        sr = 16000
+                except Exception:
+                    y, sr = librosa.load(io.BytesIO(audio_input), sr=sr)
+            finally:
+                if os.path.exists(tmp_in_path):
+                    try: os.remove(tmp_in_path)
+                    except: pass
+                if os.path.exists(tmp_out_path):
+                    try: os.remove(tmp_out_path)
+                    except: pass
         elif isinstance(audio_input, np.ndarray):
             y = audio_input.astype(np.float32)
             if y.ndim > 1:
@@ -244,8 +270,8 @@ class SpeechFlawPredictor:
         # Merge flaws
         raw_flaws = pause_flaws + window_flaws
 
-        # 5. Align with transcript words if provided
-        aligned_words = self._align_words(transcript, duration)
+        # 5. Align with transcript words to generate real timings
+        aligned_words = self._align_words(y, sr, transcript, duration)
         raw_flaws = self._tag_flaws_with_words(raw_flaws, aligned_words)
 
         # 6. Apply mode weighting and calculate bucket scores
@@ -472,7 +498,33 @@ class SpeechFlawPredictor:
 
         return flaws
 
-    def _align_words(self, transcript: str, duration: float) -> List[Dict[str, Any]]:
+    def _align_words(self, y: np.ndarray, sr: int, transcript: str, duration: float) -> List[Dict[str, Any]]:
+        # Attempt to use real ASR for precise word timestamps
+        try:
+            from transformers import pipeline
+            if not hasattr(self, "asr_pipeline"):
+                self.asr_pipeline = pipeline("automatic-speech-recognition", model="openai/whisper-tiny.en")
+            
+            res = self.asr_pipeline({"raw": y, "sampling_rate": sr}, return_timestamps="word")
+            chunks = res.get("chunks", [])
+            if chunks:
+                words = []
+                for chunk in chunks:
+                    text = chunk.get("text", "").strip()
+                    if not text: continue
+                    ts = chunk.get("timestamp", (0.0, duration))
+                    start = ts[0] if ts[0] is not None else 0.0
+                    end = ts[1] if ts[1] is not None else duration
+                    words.append({
+                        "text": text,
+                        "start": round(start, 2),
+                        "end": round(end, 2)
+                    })
+                return words
+        except Exception as e:
+            print(f"Real word alignment failed, falling back to synthetic: {e}")
+
+        # Fallback to synthetic alignment if ASR fails
         tokens = [t for t in transcript.strip().split() if t]
         if not tokens or duration <= 0:
             return []

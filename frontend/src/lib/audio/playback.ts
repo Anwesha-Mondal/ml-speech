@@ -81,10 +81,12 @@ export class PlaybackClock {
 
   async play() {
     if (this.audio) {
-      if (this.audio.currentTime >= this.duration - 0.05) this.audio.currentTime = 0
+      if (this.audio.ended || this.audio.currentTime >= this.duration - 0.05) {
+        this.audio.currentTime = 0
+      }
       try {
         await this.audio.play()
-      } catch {
+      } catch (e) {
         this.setPlaying(false)
       }
       return

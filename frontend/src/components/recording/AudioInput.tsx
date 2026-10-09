@@ -1,5 +1,5 @@
 import { FileAudio, Mic, Square, Upload, X } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useRecorder } from '../../lib/audio/useRecorder'
 import { fmtTime } from '../../lib/format'
 
@@ -92,6 +92,7 @@ export default function AudioInput({
                 {file.name}
               </span>
               <span className="t-small muted">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+              <AudioPlayer file={file} />
             </div>
             <button
               type="button"
@@ -125,4 +126,18 @@ export default function AudioInput({
       {error && <p className="t-small" style={{ color: 'var(--bad)' }}>{error}</p>}
     </div>
   )
+}
+
+function AudioPlayer({ file }: { file: File }) {
+  const [url, setUrl] = useState<string>('')
+
+  useEffect(() => {
+    const objectUrl = URL.createObjectURL(file)
+    setUrl(objectUrl)
+    return () => URL.revokeObjectURL(objectUrl)
+  }, [file])
+
+  if (!url) return null
+
+  return <audio controls src={url} style={{ marginTop: '8px', height: '32px', width: '100%' }} />
 }

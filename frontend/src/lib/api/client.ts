@@ -58,6 +58,16 @@ export function getJob(jobId: string): Promise<ApiJob> {
   return request(`/api/jobs/${encodeURIComponent(jobId)}`)
 }
 
+export function generateTranscript(): Promise<{ transcript: string }> {
+  return request('/api/generate-script', { method: 'POST' }, 120000) // generous timeout for model download
+}
+
+export function transcribeAudio(file: File): Promise<{ transcript: string }> {
+  const form = new FormData()
+  form.append('file', file)
+  return request('/api/transcribe', { method: 'POST', body: form }, 120000) // timeout for model download
+}
+
 export function getHistory(promptId = 'T1_Gettysburg'): Promise<ApiHistory> {
   return request(`/api/progress/history?prompt_id=${encodeURIComponent(promptId)}`)
 }
