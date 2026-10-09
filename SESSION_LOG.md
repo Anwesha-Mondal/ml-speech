@@ -9,8 +9,8 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | ML Inference Integration Complete & Verified |
-| Last milestone | Wired Trained SpeechFlawClassifier into `/api/analyze` & Validated (Session 27) |
+| Active phase | API + Dashboard Enhancements |
+| Last milestone | Auto-transcription generation integrated (Session 28) |
 | Next action | End-to-end user recording & live scoring validation across all UI modes |
 | Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
@@ -57,6 +57,7 @@
 | D-034 | 2026-10-08 | Set up the `ml/` repository structure using a frozen Wav2Vec2 encoder and Multi-label MLP classifier head. | Agent (Session 24 - ML) |
 | D-035 | 2026-10-08 | Utilize CPU for initial local training of the frozen Wav2Vec2 MLP, proving end-to-end viability without complex CUDA dependencies on Python 3.14. | Agent (Session 26) |
 | D-036 | 2026-10-09 | Implement hybrid neural (Wav2Vec2 + MLP) and classical acoustic feature inference in `ml/inference/predict.py` connected to `/api/analyze`. | Agent (Session 27) |
+| D-037 | 2026-10-09 | Implement local, lazy-loaded Whisper model (openai/whisper-tiny.en) for optional auto-transcript generation. | Agent (Session 28) |
 
 
 ---
@@ -966,3 +967,16 @@
 
 **Next step**
 - Live testing in browser with user mic recording in Sandbox and Battles to verify end-to-end UI feedback loop.
+
+### Session 28 (2026-10-09)
+
+**User requests**
+1. "In here, add a like button or something to generate a transcript. keeping transcript manually, also we can generate a transcript."
+
+**What was done**
+- Implemented `/api/transcribe` endpoint in `backend/api/routers/analysis.py` using `transformers.pipeline` and `openai/whisper-tiny.en`.
+- Updated `frontend/src/lib/api/client.ts` with `generateTranscript` API call.
+- Added an "Auto-generate" button in `AttemptForm.tsx` to handle fetching and setting the transcript.
+
+**Next step**
+- End-to-end user recording & live scoring validation across all UI modes.
