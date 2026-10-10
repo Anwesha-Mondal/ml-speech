@@ -1,9 +1,9 @@
 import { useSyncExternalStore } from 'react'
+import { getConsent, onConsentGranted } from './consent'
 
 export type Theme = 'light' | 'dark' | 'system'
 
 export interface Settings {
-  name: string
   theme: Theme
   sidebarCollapsed: boolean
   defaultMode: string
@@ -13,7 +13,6 @@ export interface Settings {
 
 const KEY = 'sa.settings.v1'
 const DEFAULTS: Settings = {
-  name: 'You',
   theme: 'light',
   sidebarCollapsed: false,
   defaultMode: 'sandbox',
@@ -37,13 +36,21 @@ export function applyTheme(theme: Theme) {
   document.documentElement.setAttribute('data-theme', theme)
 }
 
-export function updateSettings(patch: Partial<Settings>) {
-  current = { ...current, ...patch }
+function persist() {
+  // Preferences are optional storage: saved only with consent (see lib/consent.ts).
+  if (!getConsent().preferences) return
   try {
     localStorage.setItem(KEY, JSON.stringify(current))
   } catch {
     /* ignore: settings still apply for this visit */
   }
+}
+
+onConsentGranted((c) => c.preferences && persist())
+
+export function updateSettings(patch: Partial<Settings>) {
+  current = { ...current, ...patch }
+  persist()
   if (patch.theme) applyTheme(patch.theme)
   listeners.forEach((l) => l())
 }

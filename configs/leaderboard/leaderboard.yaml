@@ -1,0 +1,23 @@
+# Leaderboard settings. The Redis connection (REDIS_URL) lives in .env, not here.
+version: "lb1.0"
+
+# Boards are locked to a scoring version: when scoring changes, a new set of boards
+# starts and old scores are never compared with new ones.
+scoring_version: "s1.0"
+
+# Only these reference passages have boards. "custom" passages are never ranked,
+# since two people reading different texts can't be compared.
+prompts:
+  asset-07: "Gettysburg Address (opening)"
+  asset-10: "Evil Empire Speech"
+  asset-11: "Resignation Address"
+
+# Entries returned per board.
+top_n: 25
+
+# Redis key prefix (keys: <prefix>:<scoring_version>:<prompt>).
+key_prefix: "sa:lb"
+
+# Rows fetched from Redis per visible entry: entries of users who opted out or deleted
+# their account are skipped when a board is shown, so a board reads a little deeper.
+fetch_factor: 4

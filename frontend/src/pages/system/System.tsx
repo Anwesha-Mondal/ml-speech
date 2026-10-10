@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom'
 import PageHeader from '../../components/ui/PageHeader'
 import { API_BASE } from '../../lib/api/client'
 import { BUCKETS, SCORING_VERSION } from '../../lib/analysis/model'
-import { checkHealth, useApiHealth } from '../../lib/useApiHealth'
+import { checkHealth, useApiHealth, type ServiceState } from '../../lib/useApiHealth'
 import { fmtDateTime } from '../../lib/format'
 
 export function SystemLayout() {
@@ -27,14 +27,25 @@ export function SystemLayout() {
 type Svc = { name: string; state: 'ok' | 'warn' | 'bad' | 'off'; label: string; detail: string }
 
 const ENDPOINTS: { method: string; path: string; returns: string; kind: 'live' | 'fixed' | 'unused' }[] = [
-  { method: 'GET', path: '/api/health', returns: 'Service status', kind: 'live' },
+  { method: 'GET', path: '/api/health', returns: 'Service status (public)', kind: 'live' },
+  { method: 'POST', path: '/api/auth/login', returns: 'Session cookie + CSRF token (public, rate-limited)', kind: 'live' },
+  { method: 'POST', path: '/api/auth/register', returns: 'New account + session (public, rate-limited)', kind: 'live' },
+  { method: 'GET', path: '/api/auth/me', returns: 'Signed-in user', kind: 'live' },
+  { method: 'POST', path: '/api/auth/change-password', returns: 'Signs out other sessions', kind: 'live' },
+  { method: 'GET', path: '/api/auth/sessions', returns: "Your signed-in devices", kind: 'live' },
+  { method: 'GET', path: '/api/admin/users', returns: 'All accounts (admin only)', kind: 'live' },
+  { method: 'GET', path: '/api/admin/audit', returns: 'Security audit log (admin only)', kind: 'live' },
   { method: 'POST', path: '/api/analyze', returns: 'Job ID; runs scoring in a background task', kind: 'live' },
-  { method: 'GET', path: '/api/jobs/{job_id}', returns: 'Job status and analysis result', kind: 'live' },
+  { method: 'GET', path: '/api/jobs/{job_id}', returns: 'Job status and result (owner only)', kind: 'live' },
   { method: 'GET', path: '/api/progress/history', returns: 'Fixed sample history', kind: 'fixed' },
-  { method: 'GET', path: '/api/leaderboard', returns: 'Fixed sample rankings', kind: 'fixed' },
+  { method: 'GET', path: '/api/leaderboard', returns: 'Opt-in rankings per passage, or all passages (Redis)', kind: 'live' },
+  { method: 'PUT', path: '/api/leaderboard/opt-in', returns: 'Join or leave the leaderboards', kind: 'live' },
   { method: 'POST', path: '/api/battle/1v1', returns: 'Fixed sample battle (UI scores battles via /analyze)', kind: 'unused' },
   { method: 'POST', path: '/api/mimic-party', returns: 'Fixed score of 94 (UI computes Mimic in the browser)', kind: 'unused' },
 ]
+
+const dbState = (s?: ServiceState): Svc['state'] => (s === 'up' ? 'ok' : s === 'down' ? 'bad' : 'off')
+const dbLabel = (s?: ServiceState) => (s === 'up' ? 'Connected' : s === 'down' ? 'Unreachable' : 'Unknown')
 
 export function SystemApi() {
   const h = useApiHealth()
@@ -53,9 +64,19 @@ export function SystemApi() {
       detail: 'FastAPI BackgroundTasks',
     },
     { name: 'Job store', state: 'warn', label: 'In memory', detail: 'Cleared when the API restarts' },
+    {
+      name: 'MongoDB (accounts)',
+      state: dbState(h.services.mongodb),
+      label: dbLabel(h.services.mongodb),
+      detail: 'Accounts, sessions, consent records, audit log',
+    },
     { name: 'Alignment / features', state: 'ok', label: 'Connected', detail: 'ml/inference/predict.py (Wav2Vec2 + librosa)' },
-    { name: 'PostgreSQL', state: 'off', label: 'Not deployed', detail: 'Planned (docs/17)' },
-    { name: 'Redis (leaderboard)', state: 'off', label: 'Not deployed', detail: 'Planned (docs/16)' },
+    {
+      name: 'Redis (leaderboard)',
+      state: dbState(h.services.redis),
+      label: dbLabel(h.services.redis),
+      detail: 'Best score per passage; opt-in only',
+    },
     { name: 'Object storage (S3)', state: 'off', label: 'Not deployed', detail: 'Recordings are not stored' },
   ]
   return (
@@ -169,7 +190,7 @@ export function SystemArchitecture() {
           <Node x={630} y={170} w={200} title="Gamification router" sub="routers/gamification.py" />
           <Node x={50} y={244} w={200} title="Object storage" sub="S3 · recordings" planned />
           <Node x={340} y={244} w={200} title="Scoring engine" sub="packages/speech_arena/scoring" />
-          <Node x={630} y={244} w={200} title="PostgreSQL + Redis" sub="battles · leaderboard" planned />
+          <Node x={630} y={244} w={200} title="MongoDB + Redis" sub="accounts · leaderboard" />
           <text x={340} y={312} className="arch-sub">
             Jobs run as FastAPI background tasks; results are held in memory.
           </text>

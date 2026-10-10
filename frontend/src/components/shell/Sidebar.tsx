@@ -1,5 +1,6 @@
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
+import { useAuth } from '../../lib/auth/context'
 import { NAV_GROUPS, SETTINGS_ITEM, type NavItem } from './nav'
 
 function Item({ item, collapsed, onNavigate }: { item: NavItem; collapsed: boolean; onNavigate: () => void }) {
@@ -29,6 +30,8 @@ export default function Sidebar({
   mobileOpen: boolean
   onNavigate: () => void
 }) {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   return (
     <aside className={`sidebar ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'is-open' : ''}`} aria-label="Main navigation">
       <div className="sidebar-brand">
@@ -48,7 +51,7 @@ export default function Sidebar({
         {NAV_GROUPS.map((g) => (
           <div key={g.label} className="nav-group">
             <div className="nav-group-label">{g.label}</div>
-            {g.items.map((item) => (
+            {g.items.filter((item) => !item.adminOnly || isAdmin).map((item) => (
               <Item key={item.to} item={item} collapsed={collapsed} onNavigate={onNavigate} />
             ))}
           </div>

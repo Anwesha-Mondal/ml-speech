@@ -1,5 +1,5 @@
 data/
-models/
+/models/
 .venv/
 node_modules/
 __pycache__/
@@ -10,7 +10,10 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+# Local settings and secrets: only the .env.example templates are tracked.
 .env
+.env.*
+!.env.example
 datasets/raw/*
 datasets/normalized/*
 datasets/variants/*
@@ -25,3 +28,6 @@ ml/runs/
 *.pt
 *.bin
 *.safetensors
+
+# Local Claude Code session files
+.claude/

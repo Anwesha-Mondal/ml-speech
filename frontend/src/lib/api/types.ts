@@ -76,9 +76,16 @@ export interface ApiMimic {
   feedback: string
 }
 
+/** One board: a passage, or "global" (each person's best per passage, summed). */
 export interface ApiLeaderboard {
   prompt_id: string
-  version: string
-  last_updated: string
-  rankings: { rank: number; user_id: string; score: number; flaw_density: number; mode: string }[]
+  title: string
+  scoring_version: string
+  rankings: { rank: number; display_name: string; score: number; you: boolean }[]
+  you: { opted_in: boolean; best_score: number | null }
+}
+
+export interface ApiLeaderboardPrompts {
+  scoring_version: string
+  prompts: { id: string; title: string }[]
 }

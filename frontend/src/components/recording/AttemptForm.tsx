@@ -81,6 +81,8 @@ export default function AttemptForm({
           transcript: transcript.trim(),
           mode,
           title: ref.id === 'custom' ? 'Practice attempt' : ref.title,
+          // Only a chosen reference passage can be ranked; custom text never is.
+          promptId: showReferencePicker && ref.id !== 'custom' ? ref.id : undefined,
           referenceLabel: ref.id === 'custom' ? (refAudio ? refAudio.name : 'none') : `${ref.speaker} · ${ref.license.toLowerCase()}`,
         })
       }}
@@ -144,7 +146,8 @@ export default function AttemptForm({
                   setIsTranscribing(true)
                   try {
                     const res = await transcribeAudio(participant)
-                    setTranscript(res.transcript)
+                    if (res.error) alert(res.error)
+                    else setTranscript(res.transcript)
                   } catch (e: any) {
                     alert(e.message)
                   } finally {

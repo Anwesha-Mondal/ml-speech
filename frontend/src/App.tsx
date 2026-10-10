@@ -1,6 +1,9 @@
 import type { ComponentType } from 'react'
 import { createBrowserRouter, Link, Navigate, RouterProvider } from 'react-router-dom'
+import AuthProvider from './components/auth/AuthProvider'
+import { PublicOnly, RequireAdmin, RequireAuth } from './components/auth/Guards'
 import AppShell from './components/shell/AppShell'
+import RootLayout from './components/legal/RootLayout'
 import RouteError from './components/shell/RouteError'
 import EmptyState from './components/ui/EmptyState'
 import AnalysisData from './pages/analysis/AnalysisData'
@@ -13,6 +16,9 @@ import PracticeLayout from './pages/practice/PracticeLayout'
 import SpeechTest from './pages/practice/SpeechTest'
 import YouVsYou from './pages/practice/YouVsYou'
 import Settings from './pages/settings/Settings'
+import { AdminAudit, AdminLayout, AdminUsers } from './pages/admin/Admin'
+import { LoginPage, RegisterPage } from './pages/auth/AuthPages'
+import LegalPage from './pages/legal/LegalPage'
 
 // Less-visited sections load on first visit to keep the first download small.
 // Each section is one module, so its pages share a single chunk.
@@ -43,73 +49,119 @@ function NotFound() {
 
 const router = createBrowserRouter([
   {
-    path: '/',
-    element: <AppShell />,
+    // Root layout: the cookie banner shows on every page, signed in or not.
+    element: <RootLayout />,
     errorElement: <RouteError />,
     children: [
+      // Legal pages are public so they can be read before creating an account.
+      { path: '/privacy', element: <LegalPage slug="privacy" /> },
+      { path: '/terms', element: <LegalPage slug="terms" /> },
+      { path: '/cookies', element: <LegalPage slug="cookies" /> },
       {
-        // Errors inside a page keep the sidebar and top bar on screen.
+        path: '/login',
+        element: (
+          <PublicOnly>
+            <LoginPage />
+          </PublicOnly>
+        ),
+        errorElement: <RouteError />,
+      },
+      {
+        path: '/register',
+        element: (
+          <PublicOnly>
+            <RegisterPage />
+          </PublicOnly>
+        ),
+        errorElement: <RouteError />,
+      },
+      {
+        path: '/',
+        // Every app page needs a signed-in user; the API checks the session on every request too.
+        element: (
+          <RequireAuth>
+            <AppShell />
+          </RequireAuth>
+        ),
         errorElement: <RouteError />,
         children: [
-          { index: true, element: <Overview /> },
           {
-            path: 'practice',
-            element: <PracticeLayout />,
+            // Errors inside a page keep the sidebar and top bar on screen.
+            errorElement: <RouteError />,
             children: [
-              { index: true, element: <SpeechTest /> },
-              { path: 'progress', element: <YouVsYou /> },
+              { index: true, element: <Overview /> },
+              {
+                path: 'practice',
+                element: <PracticeLayout />,
+                children: [
+                  { index: true, element: <SpeechTest /> },
+                  { path: 'progress', element: <YouVsYou /> },
+                ],
+              },
+              {
+                path: 'assessment',
+                element: <AssessmentLayout />,
+                children: [
+                  { index: true, element: <Navigate to="interviewer" replace /> },
+                  { path: 'interviewer', element: <Interviewer /> },
+                  { path: 'news-anchor', element: <NewsAnchor /> },
+                  { path: 'public-speaking', element: <PublicSpeaking /> },
+                  { path: 'storytelling', element: <Storytelling /> },
+                ],
+              },
+              {
+                path: 'arena',
+                lazy: lazy(arena, (m) => m.ArenaLayout),
+                children: [
+                  { index: true, element: <Navigate to="battle" replace /> },
+                  { path: 'battle', lazy: lazy(arena, (m) => m.Battle) },
+                  { path: 'debate', lazy: lazy(arena, (m) => m.Debate) },
+                  { path: 'mimic', lazy: lazy(arena, (m) => m.Mimic) },
+                ],
+              },
+              { path: 'leaderboard', element: <Leaderboard /> },
+              { path: 'analysis', element: <AnalysisIndex /> },
+              { path: 'analysis/:id', element: <AnalysisPage /> },
+              { path: 'analysis/:id/data', element: <AnalysisData /> },
+              {
+                path: 'dataset',
+                lazy: lazy(dataset, (m) => m.DatasetLayout),
+                children: [
+                  { index: true, lazy: lazy(dataset, (m) => m.DatasetOverview) },
+                  { path: 'references', lazy: lazy(dataset, (m) => m.DatasetReferences) },
+                  { path: 'variants', lazy: lazy(dataset, (m) => m.DatasetVariants) },
+                  { path: 'flaws', lazy: lazy(dataset, (m) => m.DatasetFlaws) },
+                  { path: 'severity', lazy: lazy(dataset, (m) => m.DatasetSeverity) },
+                  { path: 'rights', lazy: lazy(dataset, (m) => m.DatasetRights) },
+                ],
+              },
+              { path: 'pipeline', lazy: lazy(pipeline, (m) => m.default) },
+              {
+                path: 'system',
+                lazy: lazy(system, (m) => m.SystemLayout),
+                children: [
+                  { index: true, lazy: lazy(system, (m) => m.SystemApi) },
+                  { path: 'architecture', lazy: lazy(system, (m) => m.SystemArchitecture) },
+                  { path: 'scoring', lazy: lazy(system, (m) => m.SystemScoring) },
+                  { path: 'devops', lazy: lazy(system, (m) => m.SystemDevops) },
+                ],
+              },
+              { path: 'settings', element: <Settings /> },
+              {
+                path: 'admin',
+                element: (
+                  <RequireAdmin>
+                    <AdminLayout />
+                  </RequireAdmin>
+                ),
+                children: [
+                  { index: true, element: <AdminUsers /> },
+                  { path: 'audit', element: <AdminAudit /> },
+                ],
+              },
+              { path: '*', element: <NotFound /> },
             ],
           },
-          {
-            path: 'assessment',
-            element: <AssessmentLayout />,
-            children: [
-              { index: true, element: <Navigate to="interviewer" replace /> },
-              { path: 'interviewer', element: <Interviewer /> },
-              { path: 'news-anchor', element: <NewsAnchor /> },
-              { path: 'public-speaking', element: <PublicSpeaking /> },
-              { path: 'storytelling', element: <Storytelling /> },
-            ],
-          },
-          {
-            path: 'arena',
-            lazy: lazy(arena, (m) => m.ArenaLayout),
-            children: [
-              { index: true, element: <Navigate to="battle" replace /> },
-              { path: 'battle', lazy: lazy(arena, (m) => m.Battle) },
-              { path: 'debate', lazy: lazy(arena, (m) => m.Debate) },
-              { path: 'mimic', lazy: lazy(arena, (m) => m.Mimic) },
-            ],
-          },
-          { path: 'leaderboard', element: <Leaderboard /> },
-          { path: 'analysis', element: <AnalysisIndex /> },
-          { path: 'analysis/:id', element: <AnalysisPage /> },
-          { path: 'analysis/:id/data', element: <AnalysisData /> },
-          {
-            path: 'dataset',
-            lazy: lazy(dataset, (m) => m.DatasetLayout),
-            children: [
-              { index: true, lazy: lazy(dataset, (m) => m.DatasetOverview) },
-              { path: 'references', lazy: lazy(dataset, (m) => m.DatasetReferences) },
-              { path: 'variants', lazy: lazy(dataset, (m) => m.DatasetVariants) },
-              { path: 'flaws', lazy: lazy(dataset, (m) => m.DatasetFlaws) },
-              { path: 'severity', lazy: lazy(dataset, (m) => m.DatasetSeverity) },
-              { path: 'rights', lazy: lazy(dataset, (m) => m.DatasetRights) },
-            ],
-          },
-          { path: 'pipeline', lazy: lazy(pipeline, (m) => m.default) },
-          {
-            path: 'system',
-            lazy: lazy(system, (m) => m.SystemLayout),
-            children: [
-              { index: true, lazy: lazy(system, (m) => m.SystemApi) },
-              { path: 'architecture', lazy: lazy(system, (m) => m.SystemArchitecture) },
-              { path: 'scoring', lazy: lazy(system, (m) => m.SystemScoring) },
-              { path: 'devops', lazy: lazy(system, (m) => m.SystemDevops) },
-            ],
-          },
-          { path: 'settings', element: <Settings /> },
-          { path: '*', element: <NotFound /> },
         ],
       },
     ],
@@ -117,5 +169,9 @@ const router = createBrowserRouter([
 ])
 
 export default function App() {
-  return <RouterProvider router={router} />
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  )
 }

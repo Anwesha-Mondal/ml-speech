@@ -1,0 +1,32 @@
+# Privacy, legal-document and data-limit settings (version privacy-1.0).
+
+version: "privacy-1.0"
+
+legal:
+  # Markdown files with a front-matter header (title, version, effective).
+  # Bumping a document's version asks every signed-in user to accept it again.
+  dir: "docs/legal"
+  documents: ["privacy", "terms", "cookies"]
+  required_on_signup: ["terms", "privacy"]
+  controller: "The Speech Arena project team"
+  # The contact link shown by the API comes from PRIVACY_CONTACT_URL in .env.
+  minimum_age: 16
+
+retention:
+  # Sign-in sessions (with IP and browser) live in Redis and are deleted the moment they end:
+  # on sign-out, after 24 h idle, or after 7 days (configs/auth/auth.yaml → session).
+  # Security audit events (sign-ins, failures, admin actions, with IP).
+  audit_days: 90
+  # Analysis results held in server memory. Recordings themselves are never stored.
+  job_results_minutes: 60
+
+uploads:
+  max_mb: 50
+  allowed_extensions: [".wav", ".mp3", ".m4a", ".flac", ".ogg", ".webm", ".aac", ".mp4"]
+
+rate_limit:
+  # Per signed-in user, per hour. These endpoints run expensive ML models.
+  analyze_per_hour: 30
+  transcribe_per_hour: 30
+  generate_per_hour: 30
+  export_per_hour: 5

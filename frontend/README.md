@@ -12,15 +12,19 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-The app expects the API at `http://localhost:8000`. Start it from the repo root:
+The API also needs MongoDB and Redis running and the root `.env` filled in (see [docs/SECURITY.md](../docs/SECURITY.md)). Start it from the repo root:
 
 ```bash
 python -m uvicorn backend.api.main:app --port 8000
 ```
 
-To point at another API, set `VITE_API_URL` (for example in `frontend/.env.local`).
+The API address comes from `VITE_API_URL` in `frontend/.env` (gitignored). Copy `frontend/.env.example` to `frontend/.env` first; `npm run dev` and `npm run build` stop with a clear message if it's missing.
 
 Other scripts: `npm run build` (type-check and production build), `npm run lint` (oxlint), `npm run preview` (serve the build).
+
+## Accounts
+
+Every page needs a signed-in account; `/login` and `/register` are the only public pages. The session is an HttpOnly cookie set by the API, so all requests go through `request()` in `src/lib/api/client.ts`, which sends credentials and adds the CSRF headers. Don't call `fetch` against the API directly. See [docs/SECURITY.md](../docs/SECURITY.md) for the design and how to create the first admin.
 
 ## Where things are
 
@@ -28,7 +32,8 @@ Other scripts: `npm run build` (type-check and production build), `npm run lint`
 src/
   App.tsx                 routes (Arena, Dataset, Pipeline, System load lazily)
   components/
-    shell/                AppShell, Sidebar, Topbar, CursorLight, RouteError
+    auth/                 AuthProvider, route guards, password field, account settings
+    shell/                AppShell, Sidebar, Topbar, UserMenu, CursorLight, RouteError
     analysis/             Waveform, Transcript, ScoreBlock, FlawPanel
     recording/            AudioInput (upload / mic), AttemptForm, ProcessingSteps
     arena/                MiniWave

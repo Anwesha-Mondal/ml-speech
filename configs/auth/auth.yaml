@@ -1,0 +1,54 @@
+# Authentication and authorization settings (version auth-1.1: sessions moved to Redis).
+# Deployment values (MONGODB_URI, REDIS_URL, CORS_ORIGINS, COOKIE_SECURE, ...) live in .env, not here.
+
+version: "auth-1.1"
+
+password:
+  # NIST SP 800-63B: length over composition rules, plus a blocklist.
+  min_length: 12
+  max_length: 128
+  blocklist_file: "configs/auth/common_passwords.txt"
+  # Reject passwords that contain the email's local part or the display name
+  # when those are at least this many characters long.
+  min_personal_token: 4
+  # ...or any run of this many characters taken from them ("anwes" from "Anwesha").
+  personal_window: 5
+  # Reject runs of this many sequential characters ("12345", "abcde", "qwert"), either direction.
+  sequence_run: 5
+
+hashing:
+  # scrypt parameters (OWASP Password Storage Cheat Sheet: N=2^17, r=8, p=1).
+  # Stored hashes record their own parameters, so raising these later
+  # re-hashes each password on that user's next sign-in.
+  algorithm: "scrypt"
+  n: 131072
+  r: 8
+  p: 1
+  salt_bytes: 16
+  key_bytes: 32
+
+session:
+  # Sessions live in Redis (REDIS_URL in .env) under this key prefix.
+  redis_prefix: "sa:sess"
+  cookie_name: "sa_session"
+  same_site: "strict"
+  token_bytes: 32
+  absolute_lifetime_hours: 168   # 7 days
+  idle_timeout_hours: 24
+  touch_interval_seconds: 60
+
+lockout:
+  # Per-account: lock after this many consecutive failures.
+  max_failed_attempts: 5
+  lock_minutes: 15
+
+rate_limit:
+  # Per-IP sliding windows for unauthenticated endpoints.
+  login_per_minute: 10
+  register_per_hour: 20
+
+registration:
+  # When false, only admins can create accounts.
+  open: true
+
+# Database, Redis, CORS origins and cookie security are deployment settings: see .env.example.

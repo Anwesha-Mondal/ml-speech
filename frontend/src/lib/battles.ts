@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { getConsent, onConsentGranted } from './consent'
 import type { Bucket } from './api/types'
 
 export interface BattleRecord {
@@ -10,13 +11,24 @@ export interface BattleRecord {
   winner: number | null
 }
 
-const KEY = 'sa.battles.v1'
+// Saved per account, like analyses (see analysis/store.ts).
+const KEY_BASE = 'sa.battles.v1'
 const listeners = new Set<() => void>()
-let snapshot: BattleRecord[] = read()
+let userKey: string | null = null
+let snapshot: BattleRecord[] = []
+
+export function setBattleUser(userId: string | null) {
+  const next = userId ? `${KEY_BASE}:${userId}` : null
+  if (next === userKey) return
+  userKey = next
+  snapshot = read()
+  listeners.forEach((l) => l())
+}
 
 function read(): BattleRecord[] {
+  if (!userKey) return []
   try {
-    const raw = localStorage.getItem(KEY)
+    const raw = localStorage.getItem(userKey)
     const v = raw ? (JSON.parse(raw) as BattleRecord[]) : []
     return Array.isArray(v) ? v : []
   } catch {
@@ -26,18 +38,26 @@ function read(): BattleRecord[] {
 
 export function saveBattle(b: BattleRecord) {
   snapshot = [b, ...snapshot].slice(0, 20)
+  persist()
+  listeners.forEach((l) => l())
+}
+
+function persist() {
+  // History is optional storage (see lib/consent.ts).
+  if (!userKey || !getConsent().history) return
   try {
-    localStorage.setItem(KEY, JSON.stringify(snapshot))
+    localStorage.setItem(userKey, JSON.stringify(snapshot))
   } catch {
     /* keep in memory */
   }
-  listeners.forEach((l) => l())
 }
+
+onConsentGranted((c) => c.history && persist())
 
 export function clearBattles() {
   snapshot = []
   try {
-    localStorage.removeItem(KEY)
+    if (userKey) localStorage.removeItem(userKey)
   } catch {
     /* ignore */
   }
