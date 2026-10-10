@@ -1,0 +1,298 @@
+<title>Speech Arena Build Status</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: summary strip on top, phase ledger as the main body, pipeline trace and next steps below. */
+:root {
+  --bg: #f6f7f8;
+  --surface: #ffffff;
+  --ink: #16202a;
+  --muted: #5b6875;
+  --line: #dde2e7;
+  --accent: #1f5f8b;
+  --ok: #2f7d4f;      --ok-bg: #e5f2ea;
+  --warn: #9a6200;    --warn-bg: #fbf0dc;
+  --bad: #b03a2e;     --bad-bg: #f9e4e1;
+  --none: #6b7580;    --none-bg: #eceff2;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161b; --surface: #182029; --ink: #e6ebf0; --muted: #94a2b0; --line: #2a3541; --accent: #6fb0dd;
+    --ok: #6fcf97; --ok-bg: #19301f; --warn: #f0b860; --warn-bg: #352a14; --bad: #f08a7e; --bad-bg: #3a1d1a; --none: #a3adb8; --none-bg: #242d37;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161b; --surface: #182029; --ink: #e6ebf0; --muted: #94a2b0; --line: #2a3541; --accent: #6fb0dd;
+  --ok: #6fcf97; --ok-bg: #19301f; --warn: #f0b860; --warn-bg: #352a14; --bad: #f08a7e; --bad-bg: #3a1d1a; --none: #a3adb8; --none-bg: #242d37;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-inline: 20px; padding-block: 32px 64px; display: grid; gap: 36px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.mono { font-family: var(--font-mono); font-size: 0.85em; }
+.muted { color: var(--muted); }
+code { font-family: var(--font-mono); font-size: 0.85em; background: var(--none-bg); padding: 1px 5px; border-radius: 3px; overflow-wrap: anywhere; }
+
+header { display: grid; gap: 10px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+
+.notice { border: 1px solid var(--line); border-left: 4px solid var(--accent); background: var(--surface); padding: 14px 16px; border-radius: 4px; display: grid; gap: 6px; max-width: 75ch; }
+.notice strong { font-weight: 600; }
+
+/* summary */
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 16px; display: grid; gap: 4px; align-content: start; }
+.stat .num { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat .num small { font-size: 1rem; font-weight: 500; color: var(--muted); }
+
+.compare { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 18px; display: grid; gap: 16px; }
+.barrow { display: grid; grid-template-columns: 170px 1fr; gap: 12px; align-items: center; }
+.barrow .lbl { font-size: 0.9rem; font-weight: 500; }
+.barrow .lbl span { display: block; font-size: 0.78rem; color: var(--muted); font-weight: 400; }
+.bar { display: flex; height: 28px; border-radius: 3px; overflow: hidden; background: var(--none-bg); }
+.bar > div { display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; color: var(--surface); min-width: 0; white-space: nowrap; overflow: hidden; }
+.seg-ok { background: var(--ok); } .seg-warn { background: var(--warn); } .seg-bad { background: var(--bad); } .seg-claim { background: var(--accent); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 0.82rem; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+/* pills */
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.p-ok { color: var(--ok); background: var(--ok-bg); }
+.p-warn { color: var(--warn); background: var(--warn-bg); }
+.p-bad { color: var(--bad); background: var(--bad-bg); }
+.p-none { color: var(--none); background: var(--none-bg); }
+
+/* phase ledger */
+.section { display: grid; gap: 14px; }
+.section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.filters button { font: inherit; font-size: 0.8rem; padding: 4px 11px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; cursor: pointer; }
+.filters button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.filters button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.ledger { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
+.phase { border-top: 1px solid var(--line); }
+.phase:first-child { border-top: 0; }
+.phase summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 46px minmax(0, 1fr) auto 18px; gap: 12px; align-items: center; padding: 13px 16px; }
+.phase summary::-webkit-details-marker { display: none; }
+.phase summary:hover { background: var(--bg); }
+.pid { font-family: var(--font-mono); font-size: 0.85rem; color: var(--muted); }
+.pname { font-weight: 600; min-width: 0; }
+.pname span { display: block; font-weight: 400; font-size: 0.85rem; color: var(--muted); }
+.chev { color: var(--muted); transition: transform .15s; font-size: 0.8rem; }
+.phase[open] .chev { transform: rotate(90deg); }
+.pbody { padding: 0 16px 16px 74px; display: grid; gap: 10px; font-size: 0.9rem; }
+.pbody ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.pbody h3 { font-size: 0.75rem; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; }
+
+/* pipeline trace */
+.trace { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 6px 0; }
+.step { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 10px 16px; position: relative; }
+.step .dot { width: 14px; height: 14px; border-radius: 50%; margin: 4px 0 0 7px; border: 2px solid; position: relative; z-index: 1; background: var(--surface); }
+.step:not(:last-child)::after { content: ""; position: absolute; left: 37px; top: 30px; bottom: -6px; width: 2px; background: var(--line); }
+.d-ok { border-color: var(--ok); background: var(--ok) !important; }
+.d-bad { border-color: var(--bad); }
+.d-warn { border-color: var(--warn); background: var(--warn-bg) !important; }
+.step .t { font-weight: 500; }
+.step .t span { display: block; font-weight: 400; font-size: 0.85rem; color: var(--muted); }
+
+/* next steps */
+.next { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 16px; display: grid; gap: 8px; align-content: start; }
+.card .when { font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent); }
+.card h3 { font-size: 1rem; font-weight: 600; }
+.card p { font-size: 0.88rem; color: var(--muted); }
+
+footer { font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+
+@media (max-width: 600px) {
+  .barrow { grid-template-columns: 1fr; gap: 6px; }
+  .phase summary { grid-template-columns: 36px minmax(0, 1fr) 14px; }
+  .phase summary .pill { grid-column: 2; justify-self: start; }
+  .pbody { padding-left: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Speech Arena · Track C hackathon</p>
+    <h1>Build status: what actually works</h1>
+    <div class="meta">
+      <span>Checked against commit aafe64b</span>
+      <span>As of 8 Oct 2026</span>
+      <span id="deadline">Deadline 15 Oct 2026</span>
+    </div>
+  </header>
+
+  <div class="notice">
+    <p><strong>There is no model training in this project.</strong> Speech Arena doesn't train a neural network. It uses a pretrained model (MMS_FA) to find when each word is spoken, then compares pitch, loudness and pace against a reference recording using fixed rules. So instead of training progress, this page shows how much of the build is real, partly done, or a placeholder.</p>
+  </div>
+
+  <section class="summary" aria-label="Summary">
+    <div class="stat">
+      <span class="eyebrow">Roadmap says</span>
+      <span class="num">88<small> / 89 items ticked</small></span>
+      <span class="muted">ROADMAP.md and SESSION_LOG.md mark the project "Complete (Submission Ready)".</span>
+    </div>
+    <div class="stat">
+      <span class="eyebrow">Phases with real code</span>
+      <span class="num">5<small> / 13</small></span>
+      <span class="muted">Built, but the 10 unit tests have not been run in this checkout.</span>
+    </div>
+    <div class="stat">
+      <span class="eyebrow">Phases only partly done</span>
+      <span class="num">4<small> / 13</small></span>
+      <span class="muted">Some real code, with large pieces missing or hardcoded.</span>
+    </div>
+    <div class="stat">
+      <span class="eyebrow">Phases that are placeholders</span>
+      <span class="num">4<small> / 13</small></span>
+      <span class="muted">Return fixed numbers or contain no real data.</span>
+    </div>
+  </section>
+
+  <section class="compare" aria-label="Claimed versus actual progress">
+    <div class="barrow">
+      <div class="lbl">Claimed<span>Roadmap checkboxes</span></div>
+      <div class="bar" role="img" aria-label="99 percent of roadmap items ticked"><div class="seg-claim" style="width:98.9%">88 of 89 ticked</div></div>
+    </div>
+    <div class="barrow">
+      <div class="lbl">Actual<span>13 phases, P0 to P12</span></div>
+      <div class="bar" role="img" aria-label="5 phases built, 4 partial, 4 placeholder">
+        <div class="seg-ok" style="width:38.46%">5 built</div>
+        <div class="seg-warn" style="width:30.77%">4 partial</div>
+        <div class="seg-bad" style="width:30.77%">4 placeholder</div>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i class="seg-ok"></i>Built: real code exists (tests not yet run)</span>
+      <span><i class="seg-warn"></i>Partial: real code with big gaps</span>
+      <span><i class="seg-bad"></i>Placeholder: fixed or fake output</span>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="phases-h">
+    <div class="section-head">
+      <h2 id="phases-h">Phase by phase</h2>
+      <div class="filters" role="group" aria-label="Filter phases">
+        <button type="button" id="f-all" data-f="all" aria-pressed="true">All</button>
+        <button type="button" id="f-ok" data-f="ok" aria-pressed="false">Built</button>
+        <button type="button" id="f-warn" data-f="warn" aria-pressed="false">Partial</button>
+        <button type="button" id="f-bad" data-f="bad" aria-pressed="false">Placeholder</button>
+      </div>
+    </div>
+    <div class="ledger" id="ledger"></div>
+  </section>
+
+  <section class="section" aria-labelledby="trace-h">
+    <div class="section-head">
+      <h2 id="trace-h">What happens when someone uploads a recording today</h2>
+    </div>
+    <p class="muted" style="max-width:75ch">The path through <code>backend/api/routers/analysis.py</code> when the dashboard calls <code>/analyze</code>. Every upload gets the same result.</p>
+    <div class="trace">
+      <div class="step"><span class="dot d-bad"></span><div class="t">Receive audio and transcript<span>Accepted by the API, then never read.</span></div><span class="pill p-bad">Ignored</span></div>
+      <div class="step"><span class="dot d-bad"></span><div class="t">Load and clean audio (P2)<span><code>audio/io.py</code> exists but isn't called.</span></div><span class="pill p-bad">Not called</span></div>
+      <div class="step"><span class="dot d-bad"></span><div class="t">Find word timings with MMS_FA (P3)<span>Replaced by <code>time.sleep(5)</code>.</span></div><span class="pill p-bad">Not called</span></div>
+      <div class="step"><span class="dot d-bad"></span><div class="t">Measure pitch, loudness, pace per word (P4)<span>Replaced by two hardcoded tables for "four score and seven years".</span></div><span class="pill p-bad">Not called</span></div>
+      <div class="step"><span class="dot d-bad"></span><div class="t">Normalize both speakers (P4)<span><code>normalize/two_channel.py</code> isn't called.</span></div><span class="pill p-bad">Not called</span></div>
+      <div class="step"><span class="dot d-warn"></span><div class="t">Detect flaws and score (P6)<span>Real code, run on the hardcoded tables. Thresholds are written into the code instead of the YAML config.</span></div><span class="pill p-warn">Runs on fake input</span></div>
+      <div class="step"><span class="dot d-ok"></span><div class="t">Write explanations (P6)<span>Real template-based explanations.</span></div><span class="pill p-ok">Works</span></div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="next-h">
+    <div class="section-head"><h2 id="next-h">Plan to the deadline</h2></div>
+    <div class="next">
+      <div class="card"><span class="when">Step 1 · ~30 min</span><h3>Run the existing code</h3><p>Install the Python environment, run the 10 unit tests, and push one real Gettysburg clip through each step to see what breaks on Windows.</p></div>
+      <div class="card"><span class="when">Step 2 · ~1 day</span><h3>Connect /analyze</h3><p>Use the uploaded audio and transcript, call the real steps, make mode presets change scoring, and move thresholds into YAML.</p></div>
+      <div class="card"><span class="when">Step 3 · ~2 days</span><h3>Real recordings and numbers</h3><p>Each of the 4 teammates records 1–2 passages, the injector adds known flaws, and the benchmark script measures them instead of using typed-in numbers.</p></div>
+      <div class="card"><span class="when">Step 4 · if time</span><h3>Game features</h3><p>Point Mimic Party and 1v1 at the real pipeline. Otherwise label them "preview" instead of showing fixed scores.</p></div>
+      <div class="card"><span class="when">Step 5 · ~half day</span><h3>Submission cleanup</h3><p>Make the README and technical report claim only what's real, add an honest log entry, and create the v1.0.0 tag.</p></div>
+    </div>
+  </section>
+
+  <footer>Sources: ROADMAP.md, SESSION_LOG.md and the code in packages/, backend/, frontend/, datasets/ and benchmarks/. "Built" means the code exists; it hasn't been run in this checkout.</footer>
+</div>
+
+<script>
+const phases = [
+  { id: "P0", name: "Foundation", sub: "Repo, schemas, configs, CI", s: "ok",
+    real: ["Pydantic schemas in packages/schemas/", "configs/pipeline/default.yaml and configs/scoring/s1.0.yaml", ".github/workflows/ci.yml and docker/Dockerfile.engine"],
+    gaps: ["CI has never been seen passing in the log"] },
+  { id: "P1", name: "Sources and rights", sub: "Audio sources, licenses, consent", s: "ok",
+    real: ["datasets/registry/sources.yaml, with TED marked research-only", "Rights manifests for 3 recordings", "Team consent form template"],
+    gaps: ["No signed consent from the team yet"] },
+  { id: "P2", name: "Audio and text input", sub: "Loading, quality checks, speech detection", s: "ok",
+    real: ["audio/io.py (FFmpeg), audio/qc.py, audio/vad.py (Silero)", "text/normalize.py", "4 audio tests and 1 text test"],
+    gaps: ["Never run on a real recording in the log"] },
+  { id: "P3", name: "Word timing", sub: "MMS_FA forced alignment", s: "ok",
+    real: ["align/mms.py wraps torchaudio MMS_FA", "align/textgrid.py exports to Praat"],
+    gaps: ["Only 1 test, which checks the TextGrid export, not the alignment itself", "Optional MFA cross-check not done (the one unticked item)"] },
+  { id: "P4", name: "Features and normalization", sub: "Pitch, loudness, pace per word", s: "ok",
+    real: ["features/frame.py (Parselmouth, Librosa)", "features/units.py for per-word values", "normalize/two_channel.py per ADR-001"],
+    gaps: ["The roadmap's fixed-audio golden test isn't among the 3 tests here"] },
+  { id: "P5", name: "Flaw injector", sub: "Adds known flaws to clean audio", s: "warn",
+    real: ["Pacing operator (time-stretch) and energy operator (gain with crossfades)", "Severity configs for those two"],
+    gaps: ["Only 2 of about 8 flaw types exist: no pause, pitch, emphasis, clarity or hesitation operators, though all are ticked", "WORLD/PSOLA resynthesis replaced with librosa's simpler phase vocoder", "No listening check recorded"] },
+  { id: "P6", name: "Scoring and explanations", sub: "Milestone M1", s: "warn",
+    real: ["Word-by-word comparison, detectors, scoring engine, Jinja2 explanations", "sa analyze command in cli.py"],
+    gaps: ["Thresholds (1.3, 0.5, 5 dB) are written into detectors.py; nothing reads YAML, against rule D-014", "Only 1 scoring test", "The \"repeat 10 times, same hash\" check has no evidence"] },
+  { id: "P7", name: "Dataset v1", sub: "380 variants", s: "bad",
+    real: ["380 rows in dataset_v1.jsonl", "Dataset card"],
+    gaps: ["0 audio files in datasets/", "dataset_v1.parquet contains only the text \"MOCK PARQUET DATA\"", "Train/test split is random, not the connected-component split from ADR-006", "No acted recordings or human labels"] },
+  { id: "P8", name: "API and dashboard", sub: "FastAPI + React", s: "warn",
+    real: ["Frontend builds with zero TypeScript errors", "5 pages: Sandbox, Progress, Battle, Mimic Party, Leaderboard", "Backend split into analysis and gamification routers"],
+    gaps: ["wavesurfer.js and uPlot are listed in package.json but not used in the pages", "Jobs live in memory and disappear on restart; no database worker"] },
+  { id: "P9", name: "Benchmarks and stress tests", sub: "F1, IoU, noise robustness", s: "bad",
+    real: ["benchmarks/run_benchmarks.py and the Docker setup to run it"],
+    gaps: ["Every number is typed into the script (F1 0.92, IoU 0.88 and so on)", "No ablations, stress runs or human ratings were actually done"] },
+  { id: "P10", name: "Release", sub: "Docs, demo script, v1.0.0", s: "warn",
+    real: ["README, TECHNICAL_REPORT.md, SYSTEM_CARD.md, DEMO_SCRIPT.md"],
+    gaps: ["The v1.0.0 git tag doesn't exist", "Docs may present the typed-in benchmark numbers as results"] },
+  { id: "P11", name: "Game features", sub: "You vs You, 1v1, Mimic Party, modes, leaderboard", s: "bad",
+    real: ["UI tabs for each feature"],
+    gaps: ["Every endpoint returns fixed data: the battle winner is always player 1 (88 to 82), Mimic Party always scores 94", "No DTW code exists, though D-020 says Mimic Party uses it", "Mode presets don't change the score"] },
+  { id: "P12", name: "Pipeline integration", sub: "Replace placeholders with real code", s: "bad",
+    real: ["/analyze calls the real scoring and explanation code", "Dashboard polls job status"],
+    gaps: ["Uploaded audio and transcript are ignored", "Word timing, features and normalization are never called", "Every upload returns the same result for 5 hardcoded words"] },
+];
+const label = { ok: "Built", warn: "Partial", bad: "Placeholder" };
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const ledger = document.getElementById("ledger");
+ledger.innerHTML = phases.map(p => `
+  <details class="phase" data-s="${p.s}">
+    <summary>
+      <span class="pid">${p.id}</span>
+      <span class="pname">${esc(p.name)}<span>${esc(p.sub)}</span></span>
+      <span class="pill p-${p.s}">${label[p.s]}</span>
+      <span class="chev" aria-hidden="true">▶</span>
+    </summary>
+    <div class="pbody">
+      <h3>What exists</h3><ul>${p.real.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+      <h3>What's missing</h3><ul>${p.gaps.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+    </div>
+  </details>`).join("");
+
+const buttons = document.querySelectorAll(".filters button");
+function applyFilter(f) {
+  buttons.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.f === f)));
+  ledger.querySelectorAll(".phase").forEach(el => { el.hidden = f !== "all" && el.dataset.s !== f; });
+  try { localStorage.setItem("sa-filter", f); } catch (e) {}
+}
+buttons.forEach(b => b.addEventListener("click", () => applyFilter(b.dataset.f)));
+try { const saved = localStorage.getItem("sa-filter"); if (saved) applyFilter(saved); } catch (e) {}
+
+const days = Math.ceil((new Date("2026-10-15T23:59:00+05:30") - new Date()) / 86400000);
+if (days >= 0) document.getElementById("deadline").textContent = `Deadline 15 Oct 2026 · ${days} day${days === 1 ? "" : "s"} left`;
+</script>
