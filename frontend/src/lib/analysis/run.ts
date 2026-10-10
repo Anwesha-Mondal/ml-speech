@@ -1,6 +1,6 @@
 import { getJob, startAnalysis } from '../api/client'
 import type { Mode } from '../api/types'
-import { computeContours, computePeaks, decodeFile, encodeWav, type DecodedAudio } from '../audio/analyze'
+import { computeContours, computePeaks, decodeFile, type DecodedAudio } from '../audio/analyze'
 import { uid } from '../format'
 import { analysisFromApi, type Analysis } from './model'
 import { saveAnalysis } from './store'
@@ -15,6 +15,7 @@ export interface RunInput {
   mode: Mode
   title: string
   referenceLabel: string
+  promptId?: string
 }
 
 export interface RunProgress {

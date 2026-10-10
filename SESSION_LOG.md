@@ -9,10 +9,10 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | API + Dashboard Enhancements |
-| Last milestone | Auto-transcription generation integrated (Session 28) |
-| Next action | End-to-end user recording & live scoring validation across all UI modes |
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036 |
+| Active phase | MongoDB (accounts, consent, audit) + Redis (sign-in sessions, leaderboards); all deployment settings in gitignored `.env` (Sessions 33–34) |
+| Last milestone | Sign-in sessions moved to Redis; full repo check: no conflicts, no hardcoded endpoints, frontend↔backend routes match (Session 34) |
+| Next action | Install Memurai from an admin terminal (required for sign-in); commit on `feat/mongodb-redis-env`; review legal text; commit `ml/models/flaw_classifier.py` |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-052 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
 
 ---
@@ -58,6 +58,21 @@
 | D-035 | 2026-10-08 | Utilize CPU for initial local training of the frozen Wav2Vec2 MLP, proving end-to-end viability without complex CUDA dependencies on Python 3.14. | Agent (Session 26) |
 | D-036 | 2026-10-09 | Implement hybrid neural (Wav2Vec2 + MLP) and classical acoustic feature inference in `ml/inference/predict.py` connected to `/api/analyze`. | Agent (Session 27) |
 | D-037 | 2026-10-09 | Implement local, lazy-loaded Whisper model (openai/whisper-tiny.en) for optional auto-transcript generation. | Agent (Session 28) |
+| D-038 | 2026-10-10 | All pages and API routes except `/api/health`, sign-in and registration require an account. Server-side sessions in an HttpOnly, SameSite=Strict cookie; only the token's SHA-256 is stored; 24 h idle / 7 day absolute expiry. | User (Session 30) |
+| D-039 | 2026-10-10 | Passwords hashed with stdlib scrypt (N=2^17, r=8, p=1) instead of a new dependency, so `uv.lock` stays valid; NIST 800-63B policy (12–128 chars, blocklist, no personal tokens); settings in `configs/auth/auth.yaml`. | Agent (Session 30) |
+| D-040 | 2026-10-10 | CSRF defence: custom `X-Requested-With` header on every state change plus a per-session `X-CSRF-Token`; CORS credentials only from configured origins (replaces `allow_origins=["*"]`). | Agent (Session 30) |
+| D-041 | 2026-10-10 | Roles `user`/`admin`; first admin created via `python -m backend.auth.cli create-admin`, never by first sign-up. Analysis jobs are owner-scoped; browser-saved data is namespaced per account. | Agent (Session 30) |
+| D-042 | 2026-10-10 | Accounts stored with SQLAlchemy in SQLite at `data/speech_arena.db` (per D-010); `.gitignore` `models/` narrowed to `/models/` so `ml/models/` source can be committed. | Agent (Session 30) |
+| D-043 | 2026-10-10 | `analysis.py` imports the ML predictor inside the job, so the API (auth, other pages) starts even when model code or the ML stack is missing; the job reports the error instead. Password policy also rejects 5-character parts of the name/email and 5-character sequential runs. | Agent (Session 31) |
+| D-044 | 2026-10-10 | Legal documents are versioned Markdown in `docs/legal/` (privacy, terms, cookies), read by the API and bundled into the frontend from the same files. Sign-up requires explicit Terms/Privacy and 16+ checkboxes; new versions block app endpoints (`CONSENT_REQUIRED`) until accepted. | User (Session 32) |
+| D-045 | 2026-10-10 | Only one cookie (session). Preferences and history in browser storage are opt-in via a cookie banner (equal "Essential only"/"Allow all"), deleted on withdrawal, and recorded server-side for signed-in users. | User (Session 32) |
+| D-046 | 2026-10-10 | No third-party requests from the browser: fonts self-hosted (@fontsource), production CSP limited to self + API, API `/docs` (CDN) off by default. | Agent (Session 32) |
+| D-047 | 2026-10-10 | Data minimisation and retention per `configs/privacy/privacy.yaml`: sessions 30 days after ending, audit 90 days, results 60 minutes, recordings never stored; self-service export and account deletion; admins can't read others' results. | Agent (Session 32) |
+| D-048 | 2026-10-11 | Accounts, sessions, consent records and the audit log move from SQLite/SQLAlchemy to MongoDB (supersedes D-042; PostgreSQL was never used). Retention is enforced by MongoDB TTL indexes, with the explicit purge kept as a backstop. Old SQLite data is copied once with `python -m backend.auth.migrate_sqlite`. | User (Session 33) |
+| D-049 | 2026-10-11 | Leaderboards live in Redis (Memurai on Windows): one sorted set per scoring version and whitelisted passage, best score only (`ZADD GT`), global = sum of bests. Opt-in, off by default. Redis holds user IDs only; names come from MongoDB at read time for opted-in accounts. Settings in `configs/leaderboard/leaderboard.yaml`. | User (Session 33) |
+| D-050 | 2026-10-11 | Every deployment value (MongoDB/Redis URLs, CORS origins, cookie flag, host/port, docs flag, contact URL, frontend `VITE_API_URL`) lives in gitignored `.env` files with tracked `.env.example` templates. No fallbacks in code: API and Vite refuse to start and name the missing key. Thresholds stay in YAML (rule 3). | User (Session 33) |
+| D-051 | 2026-10-11 | Privacy Policy 1.1 adds the leaderboard and storage locations, so existing users re-accept it. Account deletion also clears IPs from audit events and removes leaderboard scores. | Agent (Session 33) |
+| D-052 | 2026-10-11 | Sign-in sessions move from MongoDB to Redis (supersedes the session part of D-048): one hash per session keyed by the token's SHA-256, Redis expiry enforces the idle timeout (capped at the absolute lifetime), sign-out deletes immediately, nothing kept after a session ends. Redis is now required; an outage returns `503`, never a silent sign-out. One shared Redis client (`backend/redis_client.py`) serves sessions and leaderboards. | User (Session 34) |
 
 
 ---
@@ -1018,3 +1033,150 @@
 
 **Next step**
 - Test the training pipeline with `uv run python ml/training/train_classifier.py` and then implement real dataset downloaders based on `FUTURE_DATASETS.md`.
+
+### Session 30 (2026-10-10) [Authentication & Authorization]
+
+**User requests**
+- Add strong authentication and authorization to the website, frontend and backend (passwords, sign-in, account settings), and keep up to date with the repo.
+
+**What was done**
+- Pulled `6c99a94` (Sessions 26–29: neural inference in `/api/analyze`, Whisper transcription, ML training, dataset planning) and read Sessions 24–29.
+- Backend `backend/auth/`: config loader (`configs/auth/auth.yaml`), scrypt hashing with self-describing parameters and rehash-on-login, password policy with blocklist (`configs/auth/common_passwords.txt`), SQLAlchemy models (users, sessions, audit_events), session cookie + CSRF dependencies, per-IP sliding-window rate limits, per-account lockout, generic sign-in errors with timing-equalised unknown-email checks, admin endpoints (users, roles, enable/disable/unlock, audit log, last-admin guard), security-header middleware, CLI (`create-admin`, `promote`, `unlock`).
+- `backend/api/main.py`: strict CORS from config, security middleware, auth + admin routers. `analysis.py`: every endpoint requires a user; jobs carry `owner_id` and are hidden from other users. `gamification.py`: router-level sign-in requirement.
+- Frontend: `AuthProvider` (session check, in-memory CSRF token, 401 → sign-in with "session ended" notice), route guards with safe `next` redirects, `/login` and `/register` with live password checklist, strength meter and server blocklist check, Settings → account, change password, signed-in devices (sign out one / all others), top-bar user menu, admin **Users & access** page and audit log, admin-only nav. Saved analyses and battles are namespaced per account.
+- Tests `tests/api/test_auth.py` (18): hashing, policy, cookie flags, CSRF, generic errors, lockout + admin unlock, rate limit, idle/absolute expiry, revocation, password change, session isolation, roles, audit. Ruff and strict mypy clean on `backend/auth`; `npm run build` and lint clean for new code.
+- Browser end to end against the real `main.py`: register, weak-password rejection, sign-in redirect to `next`, cookie hidden from `document.cookie`, forged CSRF rejected, user blocked from admin (UI and API), lockout and unlock, sign out, session revoked elsewhere → sign-in notice, sign out other devices, password change, job owner isolation.
+- Added `docs/SECURITY.md`; `frontend/README.md` accounts section; `httpx` dev dependency; Ruff FastAPI `Depends` exemption.
+
+**Files changed**
+- `backend/auth/*` (new), `configs/auth/*` (new), `backend/api/main.py`, `backend/api/routers/analysis.py`, `backend/api/routers/gamification.py`
+- `frontend/src/components/auth/*`, `frontend/src/pages/auth/*`, `frontend/src/pages/admin/*`, `frontend/src/lib/auth/*`, `frontend/src/lib/api/auth.ts` (new); `client.ts`, `App.tsx`, `main.tsx`, shell (Topbar, Sidebar, nav, UserMenu), Settings, System, analysis store, battles, `styles/auth.css`
+- `frontend/src/lib/analysis/run.ts` (removed unused `encodeWav` import that broke `npm run build` on main)
+- `tests/api/*` (new), `docs/SECURITY.md` (new), `pyproject.toml`, `.gitignore`, `frontend/README.md`, `ROADMAP.md`, `SESSION_LOG.md`
+
+**Decisions**
+- D-038 … D-042 (see register).
+
+**Problems / bugs found**
+- `ml/models/flaw_classifier.py` was never committed: `.gitignore` `models/` matched `ml/models/`. `ml/inference/predict.py` imports it, so `backend.api.main` fails to import on a clean clone. Rule narrowed to `/models/`; the author must commit the file.
+- `main` didn't build: unused `encodeWav` import in `run.ts` (commit `53482e5`). Fixed.
+- `tests/unit/*` were deleted upstream and `tests/integration/test_analysis_api.py` (Session 27) is not in the repo.
+- `test.wav` (raw audio) is committed at the repo root, against the AGENTS.md rule on audio files.
+- Decision IDs D-029/D-030 are used twice (Session 24 ML and Session 25 UI).
+
+**Open questions**
+- Close open registration for the demo, or keep it open?
+- Who commits `ml/models/flaw_classifier.py`?
+
+**Next step**
+- Commit the missing classifier module; create the first admin; run `uv lock` to add `httpx`.
+
+### Session 31 (2026-10-10) [Backend start-up & password policy fixes]
+
+**User requests**
+- Registration page showed "Can't reach the Speech Arena API"; start the backend.
+
+**What was done**
+- The API process had been stopped. `backend.api.main` could not start with the standard command because `ml/models/flaw_classifier.py` is still missing; moved the `SpeechFlawPredictor` import inside `process_audio_pipeline` (D-043). The API now starts with `python -m uvicorn backend.api.main:app --port 8000`; analysis jobs return a clear error until the module is committed.
+- Fixed: the "Not a commonly used password" check showed as passed when the API was unreachable; it now shows as not checked.
+- Tightened the policy (server and form): rejects passwords containing any 5-character part of the display name or email local part, and 5-character sequential runs (`12345`, `54321`, `qwert`). Settings `personal_window` and `sequence_run` in `configs/auth/auth.yaml`. 19 tests pass; ruff and mypy clean.
+
+**Files changed**
+- `backend/api/routers/analysis.py`, `backend/auth/passwords.py`, `backend/auth/config.py`, `configs/auth/auth.yaml`, `frontend/src/lib/auth/password.ts`, `frontend/src/components/auth/PasswordField.tsx`, `tests/api/test_auth.py`, `docs/SECURITY.md`, `SESSION_LOG.md`
+
+**Problems / bugs found**
+- A password typed in plain text was shared in a screenshot during this session; it should not be used.
+
+**Next step**
+- Commit `ml/models/flaw_classifier.py`; create the first admin.
+
+### Session 32 (2026-10-10) [Privacy, legal pages, cookie consent, auth review]
+
+**User requests**
+- Show the dashboard; keep up to date; check authentication; add Privacy Policy, Terms and Cookie Policy pages; check cookie consent; collect only necessary data; check third-party embeds; flag other risks.
+
+**What was done**
+- Synced (no new commits). Inventory found: Google Fonts loaded on every page (third-party IP leak), browser storage written without consent, Whisper temp file left on transcription failure, unbounded uploads, analysis results kept forever and readable by admins, `/docs` loading a CDN, `main.py` binding 0.0.0.0.
+- Backend `backend/privacy/`: legal document loader and public `/api/legal`, consent records (`consent_records` table), `/api/privacy/accept`, `/cookie-consent`, `/export`, `/delete-account`, retention purge. Auth: sign-up agreement fields, `consent_needed` in session payload, server-side consent gate in `require_user`/`require_admin`, unknown-email lockout parity, HSTS when secure, API CSP header. Analysis: upload size/type limits, per-user hourly limits, mode/transcript validation, 60-min result expiry, owner-only results, temp-file cleanup, generic error messages.
+- Frontend: public `/privacy`, `/terms`, `/cookies` (safe Markdown renderer), cookie banner + Settings controls, consent-gated browser storage, registration checkboxes, re-consent screen, data export and account deletion in Settings, site footer, self-hosted fonts, production CSP.
+- Tests: 33 pass (14 new). Found and fixed a crash where the retention purge ran inside sign-in (aware vs naive datetimes).
+- Browser checks: banner and no storage before choice, choices saved/withdrawn with deletion, legal pages public, re-consent gate (UI and `403 CONSENT_REQUIRED`), export, account deletion with anonymised audit.
+- Wrote `docs/PRIVACY_REVIEW.md` (fixed risks and 14 open risks); updated `docs/SECURITY.md`.
+
+**Files changed**
+- `backend/privacy/*`, `backend/api/uploads.py`, `configs/privacy/privacy.yaml`, `docs/legal/*.md`, `docs/PRIVACY_REVIEW.md` (new); `backend/auth/{db,router,sessions,security}.py`, `backend/api/main.py`, `backend/api/routers/analysis.py`
+- `frontend/src/components/legal/*`, `frontend/src/pages/legal/*`, `frontend/src/lib/{consent.ts,legal/docs.ts}`, `frontend/src/components/auth/PrivacySettings.tsx`, `frontend/src/styles/legal.css` (new); App, AuthProvider, Guards, AuthPages, Settings, AppShell, stores, client, `vite.config.ts`, `index.html`, `package.json`
+- `tests/api/test_privacy.py` (new), `tests/api/*`, `docs/SECURITY.md`, `SESSION_LOG.md`
+
+**Decisions**
+- D-044 … D-047 (see register).
+
+**Problems / bugs found**
+- See `docs/PRIVACY_REVIEW.md` → Open risks (legal review, no private contact, no email verification/reset, lockout DoS, model downloads, unfiltered generated scripts, HTTPS, frontend frame-ancestors header, committed `test.wav`, missing classifier module).
+
+**Next step**
+- Team review; commit; legal review before any public launch.
+
+### Session 33 (2026-10-11) [MongoDB + Redis leaderboard + .env-only config]
+
+**User requests**
+- Use Redis for the leaderboard and MongoDB "instead of PostgreSQL"; keep every setting and API address in a gitignored `.env`, nothing hardcoded; don't commit or push, give the git commands instead. Chose local installs (MongoDB server, Memurai).
+
+**What was done**
+- Confirmed there was no PostgreSQL: storage was SQLite (D-042). Rewrote `backend/auth/{db,sessions,router,admin,cli}.py` and `backend/privacy/{router,consent,retention}.py` for pymongo. Unique indexes on email and token hash, TTL indexes for ended sessions and audit events, atomic `$inc` for failed sign-ins, `DuplicateKeyError` → 409.
+- `backend/env.py`: loads the root `.env`; `require()` names any missing key. Removed DB/CORS/cookie/contact values from YAML and the `localhost:8000` fallbacks from `client.ts` and `vite.config.ts`. Added `.env.example` and `frontend/.env.example`; `.gitignore` covers `.env`, `.env.*` (except the examples) and `.claude/`.
+- New `backend/leaderboard/` (config, Redis store, router): `GET /api/leaderboard[?prompt_id=]`, `GET /api/leaderboard/prompts`, `PUT /api/leaderboard/opt-in`. `/api/analyze` takes `prompt_id`, and finished jobs submit scores for opted-in users. Redis down → 503 for boards; analyses unaffected. Removed the mock leaderboard from `gamification.py`. Health now reports `mongodb`/`redis`.
+- Data export includes leaderboard entries and opt-in; deletion removes scores and clears audit IPs. Privacy Policy 1.1.
+- Frontend: real Leaderboard page (passage selector, All passages, opt-in card), Settings → Leaderboard toggle, `prompt_id` sent from AttemptForm (reference passages only), System page shows live MongoDB/Redis state.
+- `python -m backend.auth.migrate_sqlite data/speech_arena.db` copied 4 accounts, 8 consent records and 28 audit events (idempotent; sessions not copied).
+- Installed MongoDB 9.0.2 (running as a service). Memurai's installer failed twice with 1603 (temp-directory access denied inside the agent sandbox); install it from an admin terminal.
+- Tests: 43 pass (mongomock + fakeredis, hermetic env; 9 new leaderboard tests, TTL-index test). ruff and strict mypy clean on the new modules. `npm run build` passes; no new lint warnings.
+- Browser check on real MongoDB: migrated account signs in, Privacy 1.1 re-consent works, opt-in saves, Leaderboard shows a clean 503 without Redis, System shows MongoDB connected / Redis unreachable. Found and fixed CORS rejecting `PUT` (preflight 400).
+
+**Files changed**
+- New: `backend/env.py`, `backend/leaderboard/*`, `backend/auth/migrate_sqlite.py`, `configs/leaderboard/leaderboard.yaml`, `.env.example`, `frontend/.env.example`, `frontend/src/components/leaderboard/OptInToggle.tsx`, `tests/api/test_leaderboard.py`
+- Changed: `backend/auth/*`, `backend/privacy/*`, `backend/api/main.py`, `backend/api/routers/{analysis,gamification}.py`, `configs/{auth/auth.yaml,privacy/privacy.yaml}`, `pyproject.toml`, `.gitignore`, `docs/legal/privacy.md`, `docs/SECURITY.md`, `docs/PRIVACY_REVIEW.md`, `frontend/README.md`, frontend client/types/Leaderboard/Settings/System/AttemptForm/run/useApiHealth/vite config, `tests/api/*`
+- Local only (gitignored): `.env`, `frontend/.env`
+
+**Decisions**
+- D-048 … D-051 (see register).
+
+**Problems / bugs found**
+- Memurai installer 1603 in the sandbox (see above).
+- `uv` isn't installed here, so `uv.lock` still lists SQLAlchemy and lacks pymongo/redis/python-dotenv. Run `uv lock`.
+- Leaderboard scores aren't checked against the passage actually read (PRIVACY_REVIEW risk 15).
+- `/api/health` takes ~2 s while Redis is down (connect timeout).
+
+**Next step**
+- Install Memurai, run `uv lock`, commit on a branch, open a PR.
+
+### Session 34 (2026-10-11) [Full repo check; sessions in Redis]
+
+**User requests**
+- Check everything from scratch: merge conflicts, no hardcoded API or server addresses (everything in gitignored `.env`), frontend merged with backend; use Redis for sessions and MongoDB instead of PostgreSQL; no commits, give the commands.
+
+**What was done**
+- Git state: the work had been stashed on `main` and re-applied onto the old local `frontend-redesign` branch (missing upstream `ml/` and deps). On the user's new `feat/mongodb-redis-env` branch (from `main`) only new files were staged. Applied the backup stash (`stash@{1}`): clean, no conflict markers anywhere, no unmerged paths. No new upstream commits.
+- Sessions → Redis: rewrote `backend/auth/sessions.py` (`sa:sess:tok:<sha256>`, `:id:`, `:user:` keys, pipelined writes, sliding expiry, `503` on outage); added `backend/redis_client.py` shared by sessions and leaderboards; removed the MongoDB `sessions` collection, its indexes and the 30-day ended-session retention (`privacy.yaml`, `retention.py`); router/admin/privacy updated (deletion ends sessions first). `auth.yaml` → auth-1.1 with `session.redis_prefix`. Dropped the retired local `sessions` collection.
+- `/api/health` is `degraded` unless both MongoDB and Redis are up. Frontend treats `503` like "API unreachable" (no silent sign-out) and the notice mentions MongoDB/Redis.
+- Scan: no hardcoded hosts, ports, URLs or keys in app code; only `.env.example` templates tracked; `.agents/gsd-core` (upstream tooling) has localhost defaults for local LLM tools, not app endpoints. Every frontend API path has a backend route (30 routes).
+- `uv sync` had dropped dev tools from `.venv`; re-synced with `--all-extras`; added `types-pyyaml` (mypy needed it); `uv lock` regenerated.
+- Docs: Privacy Policy 1.1 (unreleased) session row and storage paragraph, `SECURITY.md`, `PRIVACY_REVIEW.md`, `.env.example`.
+- Tests: 45 pass (new: Redis TTL, sign-out deletes keys, store-down 503; fakeredis disconnected server for outages). ruff + strict mypy clean; frontend build passes, no new lint warnings.
+- Live check with Redis down: health `degraded`, `/me` 503 with a clear message, wrong password still 401, sign-in page shows "session store can't be reached".
+- Memurai install retried outside the sandbox: still MSI 1603 (installer can't create its temp directory, error 5). Needs an admin terminal.
+
+**Files changed**
+- New: `backend/redis_client.py`
+- Changed: `backend/auth/{sessions,db,config,router,admin}.py`, `backend/privacy/{router,retention,config}.py`, `backend/leaderboard/{store,config}.py`, `backend/api/main.py`, `configs/{auth/auth.yaml,privacy/privacy.yaml}`, `pyproject.toml`, `uv.lock`, `.env.example`, `docs/legal/privacy.md`, `docs/SECURITY.md`, `docs/PRIVACY_REVIEW.md`, `frontend/src/components/auth/AuthProvider.tsx`, `frontend/src/pages/auth/AuthPages.tsx`, `tests/api/*`
+
+**Decisions**
+- D-052 (see register).
+
+**Problems / bugs found**
+- Memurai not installed; until it is, nobody can sign in.
+- Rate limits are still in process memory (PRIVACY_REVIEW risk 10); now that Redis is required they could move there.
+
+**Next step**
+- Install Memurai, sign in once to confirm, commit and open a PR from `feat/mongodb-redis-env`.
+
