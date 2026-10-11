@@ -9,10 +9,10 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | Full Stack Integration & Live App Verification (Session 42) |
-| Last milestone | Tier 1 real-world dataset specifications documented; DATASET_CARD_v1.md & session logs synchronized (Session 42) |
-| Next action | Run full stack services (FastAPI, Redis, MongoDB, Vite) and perform live browser microphone testing in Sandbox |
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-059 |
+| Active phase | Full Stack Integration & Live App Verification (Session 43) |
+| Last milestone | Tier 1 labels wired into inference/training validation; incompatible or missing checkpoints now fail explicitly (Session 43) |
+| Next action | Transfer the preserved OpenSLR archive to the training system; do not train on this machine |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-060 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
 
 ---
@@ -80,6 +80,7 @@
 | D-057 | 2026-10-11 | Scaled real-world audio dataset ingestion to 240 clean seeds yielding 1,680 physical balanced audio files (1,344 train, 336 val across 40 OpenSLR speakers) and initiated fresh 35-epoch multi-label training. | User (Session 40) |
 | D-058 | 2026-10-11 | Validated scaled real-speech model: achieved record low validation loss of 0.1357 at Epoch 24 (best checkpoint auto-secured). Verified grounded inference on test audio (`ENERGY_LOW` detected with -100 dB acoustic evidence). Production model frozen for vertical slice integration. | User (Session 41) |
 | D-059 | 2026-10-11 | Documented Tier 1 real-world speech dataset expansion (1,680 physical 16 kHz WAV files across 40 OpenSLR speakers with 7 balanced flaw categories and speaker-disjoint splits) in DATASET_CARD_v1.md and synchronized training data logs. | User (Session 42) |
+| D-060 | 2026-10-11 | Production inference uses the seven Tier 1 labels; training validates manifests and requires speaker-disjoint validation; inference rejects missing or incompatible checkpoints instead of serving an untrained/random classifier. | Agent (Session 43) |
 
 
 
@@ -1448,3 +1449,50 @@
 
 **Next step**
 - Run the full stack services (MongoDB, Redis, FastAPI, Vite dev server) and perform live end-to-end recording in the web UI.
+
+---
+
+### Session 43 (2026-10-11, ~22:35 IST) [Tier 1 Model/API Integration Contract]
+**User requests**
+- Confirm whether first-year/Tier 1 training is complete and connect the trained dataset and model to the API and backend.
+
+**What was done**
+- Confirmed the training is documented as complete, but the current checkout does not contain the ignored Tier 1 audio corpus, validation manifest, or `best_checkpoint.pt`.
+- Replaced the stale 15-class label configuration with the seven Tier 1 production classes.
+- Added manifest validation and required the speaker-disjoint validation manifest before training can proceed.
+- Added checkpoint label metadata to newly written checkpoints.
+- Made inference reject missing or classifier-shape-incompatible checkpoints instead of serving an untrained/random classifier.
+- Documented runtime provisioning and API integration in `datasets/DATASET_CARD_v1.md`.
+
+**Files changed**
+- `ml/configs/labels.yaml`
+- `ml/inference/predict.py`
+- `ml/training/train_classifier.py`
+- `datasets/DATASET_CARD_v1.md`
+- `SESSION_LOG.md`
+- `ROADMAP.md`
+
+**Decisions**
+- D-060: Production inference uses the seven Tier 1 labels; training validates manifests and requires speaker-disjoint validation; inference rejects missing or incompatible checkpoints instead of serving an untrained/random classifier.
+
+**Problems / bugs found**
+- The installed `latest_checkpoint.pt` has a 15-output classifier, while the Tier 1 contract requires 7 outputs. The Tier 1 `best_checkpoint.pt`, 1,680 generated audio files, and `val.csv` are absent from this checkout because those artifacts are ignored by Git.
+
+**Next step**
+- Provision or regenerate the Tier 1 artifacts, then start the FastAPI and frontend services and test live analysis.
+
+---
+
+### Session 43 follow-up (2026-10-11, ~22:47 IST) [Training Host Decision]
+**User clarification**
+- Do not train on this system. Training will be performed on another system.
+
+**What was done**
+- Stopped the local dataset-generation command before training began.
+- Preserved the downloaded `ml/data/raw/dev-clean.tar.gz` archive; no cleanup or deletion was performed.
+
+**Decision**
+- The local system is an integration/API host only. Dataset generation and model training belong on the separate training system.
+
+**Next step**
+- Transfer the preserved archive, or the generated Tier 1 manifests/audio/checkpoint, to the training system. Do not run training locally.
