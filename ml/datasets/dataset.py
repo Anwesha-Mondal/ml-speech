@@ -1,3 +1,4 @@
+import os
 import torch
 from torch.utils.data import Dataset
 import librosa
@@ -23,7 +24,14 @@ class SpeechFlawDataset(Dataset):
         
     def __getitem__(self, idx):
         row = self.df.iloc[idx]
-        audio_path = row['file_path']
+        audio_path = str(row['file_path'])
+        
+        # Cross-platform resolution (e.g. Windows -> Docker/Linux or relocated directory)
+        if not os.path.exists(audio_path):
+            filename = os.path.basename(audio_path.replace("\\", "/"))
+            candidate = os.path.join(os.path.dirname(__file__), "..", "data", "audio", filename)
+            if os.path.exists(candidate):
+                audio_path = candidate
         
         # Load audio
         y, _ = librosa.load(audio_path, sr=self.sr)

@@ -9,10 +9,10 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | ML Inference Integration Complete & Verified |
-| Last milestone | Wired Trained SpeechFlawClassifier into `/api/analyze` & Validated (Session 27) |
+| Active phase | ML Containerization & Dockerized Training Complete |
+| Last milestone | Containerized ML training environment with GPU/CPU support & offline caching (Session 28) |
 | Next action | End-to-end user recording & live scoring validation across all UI modes |
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036 |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-037 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
 
 ---
@@ -57,6 +57,7 @@
 | D-034 | 2026-10-08 | Set up the `ml/` repository structure using a frozen Wav2Vec2 encoder and Multi-label MLP classifier head. | Agent (Session 24 - ML) |
 | D-035 | 2026-10-08 | Utilize CPU for initial local training of the frozen Wav2Vec2 MLP, proving end-to-end viability without complex CUDA dependencies on Python 3.14. | Agent (Session 26) |
 | D-036 | 2026-10-09 | Implement hybrid neural (Wav2Vec2 + MLP) and classical acoustic feature inference in `ml/inference/predict.py` connected to `/api/analyze`. | Agent (Session 27) |
+| D-037 | 2026-10-11 | Containerize ML training with dual GPU/CPU support, automatic offline Wav2Vec2 caching, Docker Compose, and cross-platform path resolution in dataset loader | User (Session 28) |
 
 
 ---
@@ -966,3 +967,40 @@
 
 **Next step**
 - Live testing in browser with user mic recording in Sandbox and Battles to verify end-to-end UI feedback loop.
+
+### Session 28 (2026-10-11, 12:41–12:47 IST) [ML Training Dockerization & Portability]
+**User requests**
+- Create Dockerfile and container environment with all dependencies packaged so model training can be run directly on another PC without manual dependency installation.
+
+**What was done**
+- Created root [Dockerfile](file:///d:/random_shit/js/ml%20speech%20training/Dockerfile) built on `python:3.11-slim-bookworm`:
+  - Installed system audio and build libraries: `ffmpeg`, `libsndfile1`, `git`, `build-essential`, `curl`.
+  - Installed PyTorch and Torchaudio with CUDA 12.1 wheel support, with automatic CPU fallback when running without GPU.
+  - Pre-cached Hugging Face `facebook/wav2vec2-base` encoder and processor weights inside the image layer so training runs completely offline on other PCs.
+  - Set `CMD ["python", "ml/training/train_classifier.py"]`.
+- Created [.dockerignore](file:///d:/random_shit/js/ml%20speech%20training/.dockerignore) excluding local virtual environments (`.venv`), node_modules, git history, and caches to keep build context lean and fast.
+- Created [requirements.txt](file:///d:/random_shit/js/ml%20speech%20training/requirements.txt) and updated [pyproject.toml](file:///d:/random_shit/js/ml%20speech%20training/pyproject.toml) declaring all ML training and acoustic feature dependencies (`transformers`, `pyyaml`, `tensorboard`, `librosa`, `soundfile`, `praat-parselmouth`).
+- Updated [docker-compose.yml](file:///d:/random_shit/js/ml%20speech%20training/docker-compose.yml) with `train`, `train-gpu`, and `tensorboard` services with volume mounts (`ml/checkpoints`, `ml/runs`, `ml/data`).
+- Updated [ml/datasets/dataset.py](file:///d:/random_shit/js/ml%20speech%20training/ml/datasets/dataset.py) to resolve audio filepaths across operating systems and Docker containers (e.g., Windows drive paths gracefully remapped to container-relative paths).
+- Ran full test suite (12 passed, 100%).
+
+**Files changed**
+- `Dockerfile` (created)
+- `.dockerignore` (created)
+- `requirements.txt` (created)
+- `pyproject.toml` (updated dependencies)
+- `docker-compose.yml` (updated services)
+- `ml/datasets/dataset.py` (cross-platform path resolution)
+- `SESSION_LOG.md` (updated Quick State, Decision Register with D-037, and Session 28)
+
+**Decisions**
+- D-037: Containerize ML training with dual GPU/CPU support, automatic offline Wav2Vec2 caching, Docker Compose, and cross-platform path resolution in dataset loader.
+
+**Problems / bugs found**
+- None. All 12 unit and integration tests passing.
+
+**Open questions**
+- None.
+
+**Next step**
+- Deploy and execute containerized training on target PC (CPU or NVIDIA GPU).
