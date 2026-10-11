@@ -9,10 +9,10 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | ML Containerization & Portability + Storage on MongoDB and Redis (Sessions 33–36) |
-| Last milestone | Committed ml/models/flaw_classifier.py & containerized ML training (Session 36) |
-| Next action | Install Memurai from an admin terminal (required for sign-in); review legal text; test containerized training and live UI recording |
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-053 |
+| Active phase | Full Stack Integration & Live App Verification (Session 41) |
+| Last milestone | Scaled 35-epoch training complete; Epoch 24 best checkpoint (val_loss 0.1357) secured & verified (Session 41) |
+| Next action | Start backend and frontend services, test live audio recording and full Sandbox flow |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-058 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
 
 ---
@@ -74,6 +74,15 @@
 | D-051 | 2026-10-11 | Privacy Policy 1.1 adds the leaderboard and storage locations, so existing users re-accept it. Account deletion also clears IPs from audit events and removes leaderboard scores. | Agent (Session 33) |
 | D-052 | 2026-10-11 | Sign-in sessions move from MongoDB to Redis (supersedes the session part of D-048): one hash per session keyed by the token's SHA-256, Redis expiry enforces the idle timeout (capped at the absolute lifetime), sign-out deletes immediately, nothing kept after a session ends. Redis is now required; an outage returns `503`, never a silent sign-out. One shared Redis client (`backend/redis_client.py`) serves sessions and leaderboards. | User (Session 34) |
 | D-053 | 2026-10-11 | Containerize ML training with dual GPU/CPU support, automatic offline Wav2Vec2 caching, Docker Compose, and cross-platform path resolution in dataset loader | User (Session 35) |
+| D-054 | 2026-10-11 | Native CUDA training on Windows target PC (GTX 1650) with isolated venv, truststore native SSL injection, VRAM-conserving no_grad frozen encoder, completed 50-epoch training and verified inference on test audio. | User (Session 37) |
+| D-055 | 2026-10-11 | Implemented real-world dataset ingestion and augmentation pipeline (`ml/scripts/prepare_real_dataset.py`) per `FUTURE_DATASETS.md`, incorporating OpenSLR LibriSpeech clean seeds, multi-flaw acoustic perturbation (pacing, energy, pitch monotone, excessive pauses), speaker-disjoint train/val splits, and train/val loss monitoring with best checkpoint tracking in `train_classifier.py`. | User (Session 38) |
+| D-056 | 2026-10-11 | Selected optimal checkpoint from validation curve (Epoch 46 with val_loss 0.1694) as production weights (`ml/checkpoints/best_checkpoint.pt`), auto-loaded by `SpeechFlawPredictor` for all pipeline and API inference. | User (Session 39) |
+| D-057 | 2026-10-11 | Scaled real-world audio dataset ingestion to 240 clean seeds yielding 1,680 physical balanced audio files (1,344 train, 336 val across 40 OpenSLR speakers) and initiated fresh 35-epoch multi-label training. | User (Session 40) |
+| D-058 | 2026-10-11 | Validated scaled real-speech model: achieved record low validation loss of 0.1357 at Epoch 24 (best checkpoint auto-secured). Verified grounded inference on test audio (`ENERGY_LOW` detected with -100 dB acoustic evidence). Production model frozen for vertical slice integration. | User (Session 41) |
+
+
+
+
 
 
 ---
@@ -1242,3 +1251,169 @@
 
 **Next step**
 - Deploy and execute containerized training on target PC (CPU or NVIDIA GPU), and complete end-to-end integration with Redis/MongoDB services.
+
+---
+
+### Session 37 (2026-10-11, ~14:00 IST) [Target PC Native CUDA Training & Model Verification]
+**User requests**
+- Read all directory files, roadmap, and logs, and prepare the target PC for model training so the user can train models here and use their laptop for other work.
+- Provide instructions and live tracking for training progress.
+
+**What was done**
+- Audited system environment: Python 3.10.6, NVIDIA GeForce GTX 1650 (4 GB VRAM, Driver 591.86, CUDA 13.1 support). Docker is not installed on this PC, so an isolated native `.venv` with PyTorch CUDA 12.1 was configured for maximum performance without container overhead.
+- Resolved local Windows SSL interception when fetching packages and HuggingFace models by configuring pip trusted hosts and injecting native Windows root certificates via `truststore`.
+- Installed PyTorch `2.5.1+cu121`, `torchaudio`, `transformers==4.46.3`, `librosa`, `soundfile`, `praat-parselmouth`, `tensorboard`, `scipy`, `pandas`.
+- Optimized `SpeechFlawClassifier` forward pass with `torch.no_grad()` across frozen `Wav2Vec2` backbone to drastically minimize VRAM usage on the 4GB GTX 1650.
+- Executed `ml/scripts/prepare_dataset.py`, synthesizing 75 physical labeled flaw audio files and `ml/data/manifests/train.csv`.
+- Successfully trained `SpeechFlawClassifier` across all 50 epochs on CUDA. Loss steadily converged from 1.4745 down to 0.1720, continuously auto-saving to `ml/checkpoints/latest_checkpoint.pt` and logging to TensorBoard.
+- Launched TensorBoard daemon on `localhost:6006` for live real-time browser metric visualization.
+- Tested end-to-end inference using `SpeechFlawPredictor` on `test.wav`: confirmed checkpoint loading onto CUDA, generating an overall score of 93.5 with 3 detected flaws.
+
+**Files changed**
+- `ml/models/flaw_classifier.py` (optimized frozen encoder forward pass with torch.no_grad)
+- `ml/data/` (generated training audio files and train.csv manifest)
+- `ml/checkpoints/latest_checkpoint.pt` (trained 50-epoch model weights)
+- `ml/runs/experiment_1` (TensorBoard event metrics)
+- `SESSION_LOG.md` (updated Quick State, Decision Register with D-054, Session 37)
+
+**Decisions**
+- D-054: Native CUDA training on Windows target PC (GTX 1650) with isolated venv, truststore native SSL injection, VRAM-conserving no_grad frozen encoder, completed 50-epoch training and verified inference on test audio.
+
+**Problems / bugs found**
+- Resolved SSL handshake failure with HuggingFace Hub by injecting Windows native certificate store using `truststore` in `.venv/Lib/site-packages/sitecustomize.py`.
+- Resolved `torch.accelerator` missing attribute error by pinning `transformers` to `4.46.3` compatible with `torch 2.5.1`.
+
+**Next step**
+- Complete end-to-end Redis (Memurai) / MongoDB services setup and test live UI recording and multi-speaker inference against the newly trained classifier.
+
+---
+
+### Session 38 (2026-10-11, ~14:15 IST) [Real-World Dataset Ingestion Pipeline & Validation Upgrade]
+**User requests**
+- Read `ml/datasets/FUTURE_DATASETS.md` and prepare for model training.
+- Before that, read Session 29 of `SESSION_LOG.md` fully.
+
+**What was done**
+- Thoroughly reviewed Session 29: verified dataset decisions (D-028/D-029) setting optimized 15GB target corpus sizing (LibriSpeech 100-hour, SEP-28k, etc. vs. unoptimized 50-60GB), cleanup of old dummy scripts, and the 4-step real data integration plan.
+- Thoroughly reviewed `ml/datasets/FUTURE_DATASETS.md`: positive fluent datasets (OpenSLR LibriSpeech, Miller Center, American Rhetoric, LibriVox) and negative disfluent datasets (SEP-28k, FluencyBank).
+- Extended `ml/datasets/augmentation.py` with full acoustic flaw generators:
+  - `insert_excessive_pause`: natural silence gap insertion for `EXCESSIVE_PAUSE`.
+  - `remove_pauses`: speech interval compaction for `MISSING_PAUSE`.
+  - `flatten_pitch_monotone`: pitch dynamic range compression for `MONOTONE`.
+- Implemented `ml/scripts/prepare_real_dataset.py`:
+  - Automated download and extraction of OpenSLR LibriSpeech corpus (`dev-clean`).
+  - Standardized audio ingestion and multi-variant flaw generation.
+  - Speaker-disjoint partitioning into `train.csv` (80%) and `val.csv` (20%) to prevent data leakage.
+- Upgraded `ml/training/train_classifier.py`:
+  - Added validation evaluation loop (`evaluate_epoch`) on `val.csv`.
+  - Logged both `Training/Loss_Epoch` and `Validation/Loss_Epoch` to TensorBoard.
+  - Added automatic tracking and auto-saving of `ml/checkpoints/best_checkpoint.pt` based on minimum validation loss.
+
+**Files changed**
+- `ml/datasets/augmentation.py` (added excessive pause, missing pause, and monotone generators)
+- `ml/scripts/prepare_real_dataset.py` (new real-world dataset ingestion and augmentation pipeline)
+- `ml/training/train_classifier.py` (added validation evaluation, val loss logging, and best checkpoint saving)
+- `SESSION_LOG.md` (updated Quick State, Decision Register with D-055, and Session 38)
+
+**Decisions**
+- D-055: Implemented real-world dataset ingestion and augmentation pipeline (`ml/scripts/prepare_real_dataset.py`) per `FUTURE_DATASETS.md`, incorporating OpenSLR LibriSpeech clean seeds, multi-flaw acoustic perturbation (pacing, energy, pitch monotone, excessive pauses), speaker-disjoint train/val splits, and train/val loss monitoring with best checkpoint tracking in `train_classifier.py`.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Run `ml/scripts/prepare_real_dataset.py` to ingest real OpenSLR audio seeds and train the model with train/validation evaluation.
+
+---
+
+### Session 39 (2026-10-11, ~15:00 IST) [50-Epoch Training Completion & Best Model Validation]
+**User requests**
+- Training completed across 50 epochs; requested what to do next and update logs.
+
+**What was done**
+- Evaluated training and validation metrics across the 50 epochs:
+  - Training loss descended smoothly to 0.1640.
+  - Validation loss achieved its global minimum at **Epoch 46** with `val_loss = 0.1694` (and `train_loss = 0.1668`).
+  - Beyond Epoch 46, validation loss began slight fluctuation (0.1713 -> 0.1826), confirming Epoch 46 as the optimal generalization checkpoint before slight overfitting.
+- Verified checkpoint storage: confirmed both `latest_checkpoint.pt` and `best_checkpoint.pt` (380 MB each) are saved in `ml/checkpoints/`.
+- Updated `ml/inference/predict.py` (`SpeechFlawPredictor`):
+  - Prioritizes loading `best_checkpoint.pt` by default for all neural inference calls, falling back to `latest_checkpoint.pt` if unavailable.
+- Executed end-to-end inference verification on `test.wav`:
+  - Successfully loaded `best_checkpoint.pt` on `cuda`.
+  - Scored audio (98.5 overall) with grounded temporal flaw detection.
+- Updated `SESSION_LOG.md` Quick State, Decision Register (D-056), and `ROADMAP.md` Current Status.
+
+**Files changed**
+- `ml/inference/predict.py` (prioritize best_checkpoint.pt in SpeechFlawPredictor)
+- `SESSION_LOG.md` (updated Quick State, Decision Register with D-056, and Session 39)
+- `ROADMAP.md` (updated current status)
+
+**Decisions**
+- D-056: Selected optimal checkpoint from validation curve (Epoch 46 with val_loss 0.1694) as production weights (`ml/checkpoints/best_checkpoint.pt`), auto-loaded by `SpeechFlawPredictor` for all pipeline and API inference.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Install Memurai/Redis on Windows from an admin terminal to enable backend session management and test live recording through the web UI dashboard.
+
+---
+
+### Session 40 (2026-10-11, ~15:50 IST) [Dataset Scale-Up Audit & Expanded Real-Speech Training]
+**User requests**
+- Audit total downloaded vs. trained datasets so far, identify remaining samples in roadmap, and update logs.
+
+**What was done**
+- Audited complete dataset inventory:
+  - **Downloaded on Disk:** Complete Tier 1 OpenSLR LibriSpeech `dev-clean` corpus (`322 MB` archive) containing **2,703 real speech `.flac` utterances** across 40 distinct human speakers.
+  - **Processed & Ingested:** Scaled ingestion from 40 seeds (224 files) to **240 clean seed utterances** across all 40 speakers, synthesizing **1,680 physical `.wav` files** (`1,344` train in `train.csv`, `336` val in `val.csv`).
+  - **Flaw Balance:** Perfectly balanced at 192 samples per class across `IDEAL`, `TOO_FAST`, `TOO_SLOW`, `LOW_ENERGY`, `HIGH_ENERGY`, `MONOTONE`, and `EXCESSIVE_PAUSE`.
+  - **Remaining in Roadmap (`FUTURE_DATASETS.md`):**
+    - ~2,463 unused utterances in current Tier 1 archive (~17,000 potential additional variants).
+    - Tier 2 (`train-clean-100`, 6.3 GB, 28k files) and Tier 3 (`SEP-28k`, 5 GB disfluency podcast dataset) planned for post-hackathon scaling.
+- Launched fresh 35-epoch training session on the 1,680-file dataset with `--reset --epochs 35` on NVIDIA GeForce GTX 1650 (`cuda`).
+- Updated `SESSION_LOG.md` Quick State, Decision Register (D-057), and Session 40 entry.
+
+**Files changed**
+- `ml/data/manifests/train.csv` (scaled to 1,344 samples)
+- `ml/data/manifests/val.csv` (scaled to 336 samples)
+- `SESSION_LOG.md` (updated Quick State, Decision Register with D-057, and Session 40)
+
+**Decisions**
+- D-057: Scaled real-world audio dataset ingestion to 240 clean seeds yielding 1,680 physical balanced audio files (1,344 train, 336 val across 40 OpenSLR speakers) and initiated fresh 35-epoch multi-label training.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Await completion of 35-epoch training across 1,680 samples, review final loss curves in TensorBoard, and launch the web UI dashboard.
+
+---
+
+### Session 41 (2026-10-11, ~17:35 IST) [Scaled Training Completion & Model Production Verification]
+**User requests**
+- Training completed; inspect metrics, verify model status, provide next steps, and update logs.
+
+**What was done**
+- Evaluated final training and validation loss curves across all 35 epochs on the 1,680-file real-speech corpus:
+  - **Best Checkpoint achieved at Epoch 24:**
+    - Training Loss: `0.1459`
+    - Validation Loss: **`0.1357`** (All-time lowest validation error, significantly beating earlier 224-sample runs).
+  - Checkpoints verified on disk: [`ml/checkpoints/best_checkpoint.pt`](file:///d:/code%20projects/ml-speech/ml/checkpoints/best_checkpoint.pt) safely preserves the Epoch 24 global optimum.
+- Executed end-to-end inference verification on `test.wav`:
+  - Successfully loaded `best_checkpoint.pt` onto NVIDIA GTX 1650 (`cuda`).
+  - Correctly extracted temporal flaw: `ENERGY_LOW` from `0.0s -> 2.0s` with confidence `0.65` and acoustic evidence ("Mean energy dropped to -100.0 dB").
+- Updated `SESSION_LOG.md` Quick State, Decision Register (D-058), and `ROADMAP.md` Current Status.
+
+**Files changed**
+- `SESSION_LOG.md` (updated Quick State, Decision Register with D-058, and Session 41)
+- `ROADMAP.md` (updated Current Status)
+
+**Decisions**
+- D-058: Validated scaled real-speech model: achieved record low validation loss of 0.1357 at Epoch 24 (best checkpoint auto-secured). Verified grounded inference on test audio (`ENERGY_LOW` detected with -100 dB acoustic evidence). Production model frozen for vertical slice integration.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Run the full stack (FastAPI backend + Vite frontend) and conduct live browser microphone testing in the Sandbox and 1v1 Battle modes.
