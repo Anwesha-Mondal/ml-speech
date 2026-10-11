@@ -3,13 +3,17 @@ import { getHealth } from './api/client'
 
 export type ApiState = 'checking' | 'online' | 'offline'
 
+export type ServiceState = 'up' | 'down'
+
 interface Health {
   state: ApiState
   checkedAt: number | null
   latencyMs: number | null
+  /** Databases behind the API, as the API reports them. */
+  services: { mongodb?: ServiceState; redis?: ServiceState }
 }
 
-let health: Health = { state: 'checking', checkedAt: null, latencyMs: null }
+let health: Health = { state: 'checking', checkedAt: null, latencyMs: null, services: {} }
 const listeners = new Set<() => void>()
 let timer: ReturnType<typeof setInterval> | null = null
 let inflight = false
@@ -19,10 +23,15 @@ export async function checkHealth() {
   inflight = true
   const t0 = performance.now()
   try {
-    await getHealth()
-    health = { state: 'online', checkedAt: Date.now(), latencyMs: Math.round(performance.now() - t0) }
+    const body = await getHealth()
+    health = {
+      state: 'online',
+      checkedAt: Date.now(),
+      latencyMs: Math.round(performance.now() - t0),
+      services: body.services ?? {},
+    }
   } catch {
-    health = { state: 'offline', checkedAt: Date.now(), latencyMs: null }
+    health = { state: 'offline', checkedAt: Date.now(), latencyMs: null, services: {} }
   } finally {
     inflight = false
     listeners.forEach((l) => l())
