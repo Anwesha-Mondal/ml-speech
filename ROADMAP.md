@@ -181,6 +181,6 @@ graph LR
 
 ---
 ## Current Status
-- **Active phase:** Storage on MongoDB (accounts, consent, audit) and Redis (sign-in sessions, opt-in leaderboards); all deployment settings in gitignored `.env` files (Sessions 33–34).
-- **Last completed:** MongoDB migration with TTL retention, real version-locked leaderboards in Redis, `.env`-only configuration, Privacy Policy 1.1 (Session 33). Earlier: privacy/legal (32), authentication (30–31).
-- **Next action:** Install Memurai/Redis locally (required for sign-in); commit on `feat/mongodb-redis-env`; legal review of `docs/legal/`; commit the missing `ml/models/flaw_classifier.py`.
+- **Active phase:** ML Containerization & Portability + Storage on MongoDB and Redis (Sessions 33–36).
+- **Last completed:** Committed missing `ml/models/flaw_classifier.py` neural classifier head, containerized ML training (Docker & Compose), Redis session store and MongoDB storage.
+- **Next action:** Install Memurai/Redis locally (required for sign-in); legal review of `docs/legal/`; live testing across all UI modes and containerized training run.

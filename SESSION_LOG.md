@@ -9,8 +9,8 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | MongoDB (accounts, consent, audit) + Redis (sign-in sessions, leaderboards) + ML Containerization (Sessions 33–35) |
-| Last milestone | Containerized ML training environment with GPU/CPU support & offline caching (Session 35) + Redis sessions & full repo integration (Session 34) |
+| Active phase | ML Containerization & Portability + Storage on MongoDB and Redis (Sessions 33–36) |
+| Last milestone | Committed ml/models/flaw_classifier.py & containerized ML training (Session 36) |
 | Next action | Install Memurai from an admin terminal (required for sign-in); review legal text; test containerized training and live UI recording |
 | Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-053 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
@@ -1210,6 +1210,32 @@
 
 **Decisions**
 - D-053: Containerize ML training with dual GPU/CPU support, automatic offline Wav2Vec2 caching, Docker Compose, and cross-platform path resolution in dataset loader.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Deploy and execute containerized training on target PC (CPU or NVIDIA GPU), and complete end-to-end integration with Redis/MongoDB services.
+
+---
+
+### Session 36 (2026-10-11, ~13:00 IST) [Model Classifier Head Commit & Export]
+**User requests**
+- Push all latest changes to main branch.
+
+**What was done**
+- Staged and committed the previously missing neural classifier model head `ml/models/flaw_classifier.py` (`SpeechFlawClassifier`) with package initializer `ml/models/__init__.py`.
+- Verified importability of `SpeechFlawClassifier` in the Python environment.
+- Updated `ROADMAP.md` Current Status and `SESSION_LOG.md`.
+
+**Files changed**
+- `ml/models/flaw_classifier.py` (committed)
+- `ml/models/__init__.py` (created)
+- `ROADMAP.md` (updated)
+- `SESSION_LOG.md` (updated)
+
+**Decisions**
+- None (follows D-042 and D-053).
 
 **Problems / bugs found**
 - None.
