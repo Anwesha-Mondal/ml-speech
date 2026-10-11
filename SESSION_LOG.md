@@ -9,10 +9,10 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | Full Stack Integration & Live App Verification (Session 41) |
-| Last milestone | Scaled 35-epoch training complete; Epoch 24 best checkpoint (val_loss 0.1357) secured & verified (Session 41) |
-| Next action | Start backend and frontend services, test live audio recording and full Sandbox flow |
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-058 |
+| Active phase | Full Stack Integration & Live App Verification (Session 42) |
+| Last milestone | Tier 1 real-world dataset specifications documented; DATASET_CARD_v1.md & session logs synchronized (Session 42) |
+| Next action | Run full stack services (FastAPI, Redis, MongoDB, Vite) and perform live browser microphone testing in Sandbox |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-059 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
 
 ---
@@ -79,6 +79,7 @@
 | D-056 | 2026-10-11 | Selected optimal checkpoint from validation curve (Epoch 46 with val_loss 0.1694) as production weights (`ml/checkpoints/best_checkpoint.pt`), auto-loaded by `SpeechFlawPredictor` for all pipeline and API inference. | User (Session 39) |
 | D-057 | 2026-10-11 | Scaled real-world audio dataset ingestion to 240 clean seeds yielding 1,680 physical balanced audio files (1,344 train, 336 val across 40 OpenSLR speakers) and initiated fresh 35-epoch multi-label training. | User (Session 40) |
 | D-058 | 2026-10-11 | Validated scaled real-speech model: achieved record low validation loss of 0.1357 at Epoch 24 (best checkpoint auto-secured). Verified grounded inference on test audio (`ENERGY_LOW` detected with -100 dB acoustic evidence). Production model frozen for vertical slice integration. | User (Session 41) |
+| D-059 | 2026-10-11 | Documented Tier 1 real-world speech dataset expansion (1,680 physical 16 kHz WAV files across 40 OpenSLR speakers with 7 balanced flaw categories and speaker-disjoint splits) in DATASET_CARD_v1.md and synchronized training data logs. | User (Session 42) |
 
 
 
@@ -1417,3 +1418,33 @@
 
 **Next step**
 - Run the full stack (FastAPI backend + Vite frontend) and conduct live browser microphone testing in the Sandbox and 1v1 Battle modes.
+
+---
+
+### Session 42 (2026-10-11, ~22:20 IST) [Dataset Documentation & Training Data Synchronization]
+**User requests**
+- Update the session logs and training data.
+
+**What was done**
+- Synchronized dataset documentation in [`datasets/DATASET_CARD_v1.md`](file:///d:/code%20projects/ml-speech/datasets/DATASET_CARD_v1.md) with the scaled Tier 1 real-world corpus:
+  - Documented provenance: OpenSLR LibriSpeech `dev-clean` (322 MB archive, 2,703 human `.flac` utterances).
+  - Documented 240 clean seeds yielding 1,680 physical 16 kHz mono `.wav` files at `ml/data/audio/`.
+  - Documented class balance across 7 flaw categories (`IDEAL`, `TOO_FAST`, `TOO_SLOW`, `LOW_ENERGY`, `HIGH_ENERGY`, `MONOTONE`, `EXCESSIVE_PAUSE`) at 192 train / 48 val samples each.
+  - Documented strict speaker-disjoint splits: 32 human speakers in `train.csv` (1,344 samples) and 8 unseen human speakers in `val.csv` (336 samples).
+  - Documented benchmark metrics achieved during 35-epoch training on NVIDIA GTX 1650 (`cuda`): Epoch 24 best checkpoint with training loss `0.1459` and record validation loss `0.1357` saved at `ml/checkpoints/best_checkpoint.pt`.
+- Added `dump.rdb` to [`.gitignore`](file:///d:/code%20projects/ml-speech/.gitignore) to keep Redis persistence snapshots out of source control.
+- Updated `SESSION_LOG.md` Quick State, Decision Register (D-059), and Session 42 entry.
+
+**Files changed**
+- `.gitignore` (added `dump.rdb` ignore rule)
+- `datasets/DATASET_CARD_v1.md` (upgraded with Tier 1 real-world dataset specification, taxonomy, splits, and training metrics)
+- `SESSION_LOG.md` (updated Quick State, Decision Register with D-059, and appended Session 42)
+
+**Decisions**
+- D-059: Documented Tier 1 real-world speech dataset expansion (1,680 physical 16 kHz WAV files across 40 OpenSLR speakers with 7 balanced flaw categories and speaker-disjoint splits) in DATASET_CARD_v1.md and synchronized training data logs.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Run the full stack services (MongoDB, Redis, FastAPI, Vite dev server) and perform live end-to-end recording in the web UI.
