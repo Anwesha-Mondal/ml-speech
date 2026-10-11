@@ -181,6 +181,6 @@ graph LR
 
 ---
 ## Current Status
-- **Active phase:** Full Stack Integration & Live App Verification (Session 41).
-- **Last completed:** Scaled real-world dataset to 1,680 audio files across 40 OpenSLR speakers; completed 35-epoch training reaching all-time low validation loss of 0.1357 at Epoch 24; verified end-to-end inference on CUDA.
-- **Next action:** Launch backend and frontend services, test live browser recording in Sandbox and Battles.
+- **Active phase:** Full Stack Integration & Live App Verification (Session 43).
+- **Last completed:** Wired the Tier 1 seven-class contract into inference/training validation and made missing or incompatible checkpoints fail explicitly.
+- **Next action:** Provision the ignored Tier 1 audio/manifests and 7-class best checkpoint, then launch backend and frontend services for live recording tests.
