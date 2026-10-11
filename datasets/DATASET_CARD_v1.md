@@ -74,3 +74,18 @@ Trained using `train_classifier.py` with frozen Wav2Vec2 encoder (`facebook/wav2
 - **Train Loss:** `0.1459`
 - **Validation Loss:** `0.1357` (global minimum across all runs).
 - **Active Weights:** `ml/checkpoints/best_checkpoint.pt`
+
+## Runtime Integration
+
+The FastAPI `/api/analyze` job loads `ml/inference/predict.py`, which uses the
+Tier 1 seven-class configuration in `ml/configs/labels.yaml`. The production
+checkpoint and generated audio are intentionally excluded from Git because of
+their size; provision them on the backend host before starting analysis:
+
+```powershell
+python ml/scripts/prepare_real_dataset.py --max-seeds 240
+python ml/training/train_classifier.py --epochs 35
+```
+
+The predictor prefers `ml/checkpoints/best_checkpoint.pt` and rejects missing
+or incompatible checkpoints rather than running an untrained classifier.

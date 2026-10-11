@@ -20,6 +20,29 @@ warnings.filterwarnings("ignore")
 import argparse
 from tqdm import tqdm
 
+
+def validate_manifest(manifest: pd.DataFrame, labels: list[str], split: str) -> None:
+    required_columns = {"file_path", "flaws"}
+    missing_columns = required_columns.difference(manifest.columns)
+    if missing_columns:
+        raise ValueError(f"{split} manifest is missing columns: {sorted(missing_columns)}")
+
+    observed = {
+        label.strip()
+        for value in manifest["flaws"].fillna("")
+        for label in str(value).split(",")
+        if label.strip()
+    }
+    unknown = observed.difference(labels)
+    if unknown:
+        raise ValueError(
+            f"{split} manifest contains labels not present in ml/configs/labels.yaml: "
+            f"{sorted(unknown)}"
+        )
+    if not observed:
+        raise ValueError(f"{split} manifest contains no recognized flaw labels.")
+
+
 def train_epoch(
     model: nn.Module,
     dataloader: DataLoader[Any],
@@ -150,15 +173,22 @@ def main() -> None:
         val_dataloader = None
         if has_real_data:
             df = pd.read_csv(manifest_path)
+            validate_manifest(df, labels, "Training")
             dataset = SpeechFlawDataset(df, labels)
             dataloader = DataLoader(dataset, batch_size=4, collate_fn=collate_fn, shuffle=True)
             print(f"[*] Training on {len(df)} samples ({len(dataloader)} batches/epoch)")
             
             if has_val_data:
                 val_df = pd.read_csv(val_manifest_path)
+                validate_manifest(val_df, labels, "Validation")
                 val_dataset = SpeechFlawDataset(val_df, labels)
                 val_dataloader = DataLoader(val_dataset, batch_size=4, collate_fn=collate_fn, shuffle=False)
                 print(f"[*] Evaluating on {len(val_df)} validation samples")
+            else:
+                raise FileNotFoundError(
+                    "Tier 1 validation manifest is missing at "
+                    "ml/data/manifests/val.csv; refusing to train without speaker-disjoint validation."
+                )
         else:
             print("WARNING: 'ml/data/manifests/train.csv' not found.")
             print("Running a simulated training loop so you can test the Pause/Continue feature...")
@@ -186,6 +216,7 @@ def main() -> None:
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': avg_loss,
                 'val_loss': val_loss,
+                'labels': labels,
             }
             torch.save(checkpoint_state, checkpoint_path)
             

@@ -181,16 +181,27 @@ class SpeechFlawPredictor:
         # Initialize model architecture
         self.model = SpeechFlawClassifier(num_classes=len(self.labels)).to(self.device)
         
-        # Load checkpoint weights if present
-        if os.path.exists(self.checkpoint_path):
-            checkpoint = torch.load(self.checkpoint_path, map_location=self.device)
-            state_dict = checkpoint.get("model_state_dict", checkpoint)
-            self.model.load_state_dict(state_dict)
-            self.model.eval()
-            print(f"[+] Loaded model checkpoint from {self.checkpoint_path} on {self.device}")
-        else:
-            print(f"[!] Warning: Checkpoint not found at {self.checkpoint_path}. Running with base initialized head.")
-            self.model.eval()
+        if not os.path.exists(self.checkpoint_path):
+            raise FileNotFoundError(
+                "Production speech model checkpoint is missing. "
+                "Place ml/checkpoints/best_checkpoint.pt on the backend host."
+            )
+
+        checkpoint = torch.load(self.checkpoint_path, map_location=self.device)
+        state_dict = checkpoint.get("model_state_dict", checkpoint)
+        output_layer = state_dict.get("fusion_layer.6.weight")
+        expected_outputs = len(self.labels)
+        if output_layer is None or output_layer.shape[0] != expected_outputs:
+            actual_outputs = output_layer.shape[0] if output_layer is not None else "unknown"
+            raise RuntimeError(
+                "Incompatible speech model checkpoint: "
+                f"expected {expected_outputs} Tier 1 labels, found {actual_outputs}. "
+                "Retrain or install the matching best_checkpoint.pt."
+            )
+
+        self.model.load_state_dict(state_dict)
+        self.model.eval()
+        print(f"[+] Loaded model checkpoint from {self.checkpoint_path} on {self.device}")
 
     def predict_audio(
         self,
