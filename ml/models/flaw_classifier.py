@@ -31,12 +31,10 @@ class SpeechFlawClassifier(nn.Module):
         input_values: (batch_size, sequence_length) - raw audio array for wav2vec2
         acoustic_features: (batch_size, num_acoustic_features)
         """
-        # Get embeddings from Wav2Vec2
-        outputs = self.encoder(input_values)
-        
-        # Mean pooling over the sequence length
-        # outputs.last_hidden_state shape: (batch, seq_len, 768)
-        embeddings = outputs.last_hidden_state.mean(dim=1) 
+        # Get embeddings from Wav2Vec2 (no grad to conserve VRAM on 4GB GPU)
+        with torch.no_grad():
+            outputs = self.encoder(input_values)
+            embeddings = outputs.last_hidden_state.mean(dim=1) 
         
         # Concatenate neural embeddings with classical features
         fused = torch.cat((embeddings, acoustic_features), dim=1)

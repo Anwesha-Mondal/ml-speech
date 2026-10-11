@@ -12,17 +12,31 @@ from ml.models.flaw_classifier import SpeechFlawClassifier
 from ml.datasets.dataset import SpeechFlawDataset, collate_fn
 import pandas as pd
 import yaml
-import os
 import time
+from typing import Optional, Any
+import warnings
+warnings.filterwarnings("ignore")
 
-def train_epoch(model, dataloader, criterion, optimizer, device, epoch, writer):
+import argparse
+from tqdm import tqdm
+
+def train_epoch(
+    model: nn.Module,
+    dataloader: DataLoader[Any],
+    criterion: nn.Module,
+    optimizer: optim.Optimizer,
+    device: torch.device,
+    epoch: int,
+    writer: SummaryWriter
+) -> float:
     model.train()
-    total_loss = 0
+    total_loss = 0.0
     
     if len(dataloader) == 0:
-        return 0
+        return 0.0
 
-    for step, batch in enumerate(dataloader):
+    pbar = tqdm(enumerate(dataloader), total=len(dataloader), desc=f"Epoch {epoch+1:02d} [Train]", leave=False)
+    for step, batch in pbar:
         optimizer.zero_grad()
         
         input_values = batch['input_values'].to(device)
@@ -37,26 +51,57 @@ def train_epoch(model, dataloader, criterion, optimizer, device, epoch, writer):
         
         total_loss += loss.item()
         
+        # Live progress bar stats
+        current_avg = total_loss / (step + 1)
+        pbar.set_postfix({"step_loss": f"{loss.item():.4f}", "avg_loss": f"{current_avg:.4f}"})
+        
         # Dashboard Logging: Live update every step
         global_step = epoch * len(dataloader) + step
         writer.add_scalar('Training/Loss_Step', loss.item(), global_step)
         
     return total_loss / len(dataloader)
 
-def main():
+def evaluate_epoch(
+    model: nn.Module,
+    dataloader: Optional[DataLoader[Any]],
+    criterion: nn.Module,
+    device: torch.device
+) -> float:
+    model.eval()
+    total_loss = 0.0
+    if not dataloader or len(dataloader) == 0:
+        return 0.0
+    with torch.no_grad():
+        pbar = tqdm(dataloader, total=len(dataloader), desc="Validation", leave=False)
+        for batch in pbar:
+            input_values = batch['input_values'].to(device)
+            acoustic_features = batch['acoustic_features'].to(device)
+            labels = batch['labels'].to(device)
+            logits = model(input_values, acoustic_features)
+            loss = criterion(logits, labels)
+            total_loss += loss.item()
+            pbar.set_postfix({"val_loss": f"{loss.item():.4f}"})
+    return total_loss / len(dataloader)
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Train Speech Flaw Classifier")
+    parser.add_argument("--epochs", type=int, default=50, help="Total number of epochs to train (default: 50)")
+    parser.add_argument("--reset", action="store_true", help="Start training fresh instead of resuming from previous checkpoint")
+    args = parser.parse_args()
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"[*] Hardware Detected: {device}")
+    print(f"[*] Hardware Detected: {device} ({torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'})")
     
     # 1. SETUP TENSORBOARD DASHBOARD
-    # This automatically tracks metrics so you can view them in a web interface
     log_dir = os.path.join(os.path.dirname(__file__), '..', 'runs', 'experiment_1')
     writer = SummaryWriter(log_dir=log_dir)
-    print(f"[*] TensorBoard Dashboard initialized at: ml/runs/")
+    print(f"[*] TensorBoard Dashboard initialized at: ml/runs/ (View live at http://localhost:6006)")
     
     # 2. SETUP AUTO-SAVE DIRECTORY
     checkpoint_dir = os.path.join(os.path.dirname(__file__), '..', 'checkpoints')
     os.makedirs(checkpoint_dir, exist_ok=True)
     checkpoint_path = os.path.join(checkpoint_dir, "latest_checkpoint.pt")
+    best_checkpoint_path = os.path.join(checkpoint_dir, "best_checkpoint.pt")
     
     # 3. LOAD LABELS & MODEL
     config_path = os.path.join(os.path.dirname(__file__), '..', 'configs', 'labels.yaml')
@@ -69,33 +114,51 @@ def main():
     optimizer = optim.AdamW(model.fusion_layer.parameters(), lr=1e-3)
     
     start_epoch = 0
+    best_val_loss = float('inf')
     
     # 4. PAUSE / CONTINUE FEATURE (AUTO-LOAD)
-    # If a checkpoint exists from a previous run, automatically resume from where we left off
-    if os.path.exists(checkpoint_path):
+    if os.path.exists(checkpoint_path) and not args.reset:
         print(f"\n[+] Found existing checkpoint: {checkpoint_path}")
         print("[+] Resuming training session...")
         checkpoint = torch.load(checkpoint_path, map_location=device)
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         start_epoch = checkpoint['epoch'] + 1
+        best_val_loss = checkpoint.get('val_loss', float('inf'))
         print(f"[+] Successfully resumed from Epoch {start_epoch}")
     else:
-        print("\n[*] No existing checkpoint found. Starting fresh training session.")
+        if args.reset and os.path.exists(checkpoint_path):
+            print("\n[*] Reset flag detected. Starting fresh training session from Epoch 1.")
+        else:
+            print("\n[*] No existing checkpoint found. Starting fresh training session.")
         
-    num_epochs = 50
+    num_epochs = args.epochs
+    if start_epoch >= num_epochs:
+        print(f"\n[!] Previous training already finished {start_epoch} epochs (Target: {num_epochs}).")
+        num_epochs = start_epoch + 25
+        print(f"[+] Extending target to {num_epochs} epochs so you can continue training!")
+    
     print("\n--- TRAINING LOOP STARTED ---")
     print("TIP: You can press Ctrl+C anytime to pause/terminate. Progress is saved automatically!\n")
     
     try:
-        # Check if real data exists, otherwise run a simulated loop to test the saving mechanics
         manifest_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'manifests', 'train.csv')
+        val_manifest_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'manifests', 'val.csv')
         has_real_data = os.path.exists(manifest_path)
+        has_val_data = os.path.exists(val_manifest_path)
         
+        val_dataloader = None
         if has_real_data:
             df = pd.read_csv(manifest_path)
             dataset = SpeechFlawDataset(df, labels)
             dataloader = DataLoader(dataset, batch_size=4, collate_fn=collate_fn, shuffle=True)
+            print(f"[*] Training on {len(df)} samples ({len(dataloader)} batches/epoch)")
+            
+            if has_val_data:
+                val_df = pd.read_csv(val_manifest_path)
+                val_dataset = SpeechFlawDataset(val_df, labels)
+                val_dataloader = DataLoader(val_dataset, batch_size=4, collate_fn=collate_fn, shuffle=False)
+                print(f"[*] Evaluating on {len(val_df)} validation samples")
         else:
             print("WARNING: 'ml/data/manifests/train.csv' not found.")
             print("Running a simulated training loop so you can test the Pause/Continue feature...")
@@ -105,22 +168,38 @@ def main():
             
             if has_real_data:
                 avg_loss = train_epoch(model, dataloader, criterion, optimizer, device, epoch, writer)
+                val_loss = evaluate_epoch(model, val_dataloader, criterion, device) if val_dataloader else avg_loss
             else:
-                time.sleep(2) # Fake processing time
-                avg_loss = max(0.1, 1.0 - (epoch * 0.05)) # Fake loss decreasing
+                time.sleep(2)
+                avg_loss = max(0.1, 1.0 - (epoch * 0.05))
+                val_loss = avg_loss
             
             # Dashboard Logging
             writer.add_scalar('Training/Loss_Epoch', avg_loss, epoch)
+            if val_dataloader:
+                writer.add_scalar('Validation/Loss_Epoch', val_loss, epoch)
             
-            # AUTO-SAVE CHECKPOINT
-            torch.save({
+            # Checkpoint saving
+            checkpoint_state = {
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': avg_loss,
-            }, checkpoint_path)
+                'val_loss': val_loss,
+            }
+            torch.save(checkpoint_state, checkpoint_path)
             
-            print(f" ✓ Epoch {epoch+1} Complete | Loss: {avg_loss:.4f} | Auto-saved\n")
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                torch.save(checkpoint_state, best_checkpoint_path)
+                saved_status = "Auto-saved (New Best!)"
+            else:
+                saved_status = "Auto-saved"
+            
+            if val_dataloader:
+                print(f" ✓ Epoch {epoch+1} Complete | Train Loss: {avg_loss:.4f} | Val Loss: {val_loss:.4f} | {saved_status}\n")
+            else:
+                print(f" ✓ Epoch {epoch+1} Complete | Loss: {avg_loss:.4f} | {saved_status}\n")
             
     except KeyboardInterrupt:
         print("\n\n[!] Training paused by user (Ctrl+C).")
