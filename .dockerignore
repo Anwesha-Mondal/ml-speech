@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+.github
+
+# Virtual environments
+.venv
+venv
+ENV/
+env/
+
+# Python caches and build artifacts
+__pycache__
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.next/
+
+# IDE / Planning
+.planning
+.agents
+.kilo
+.vscode
+.idea
+
+# Temporary files
+*.tmp
+*.log

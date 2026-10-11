@@ -1,6 +1,51 @@
 version: '3.8'
 
 services:
+  # ML Training on CPU
+  train:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./ml/checkpoints:/app/ml/checkpoints
+      - ./ml/runs:/app/ml/runs
+      - ./ml/data:/app/ml/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python ml/training/train_classifier.py
+
+  # ML Training with NVIDIA GPU acceleration (RTX 3050 / CUDA)
+  train-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./ml/checkpoints:/app/ml/checkpoints
+      - ./ml/runs:/app/ml/runs
+      - ./ml/data:/app/ml/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: python ml/training/train_classifier.py
+
+  # TensorBoard live experiment dashboard
+  tensorboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "6006:6006"
+    volumes:
+      - ./ml/runs:/app/ml/runs
+    command: tensorboard --logdir=/app/ml/runs --host=0.0.0.0 --port=6006
+
+  # Benchmarks
   benchmark:
     build:
       context: .
