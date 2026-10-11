@@ -11,7 +11,7 @@
 | --- | --- |
 | Active phase | Full Stack Integration & Live App Verification (Session 43) |
 | Last milestone | Tier 1 labels wired into inference/training validation; incompatible or missing checkpoints now fail explicitly (Session 43) |
-| Next action | Provision the ignored Tier 1 audio/manifests and 7-class best checkpoint, then start backend and frontend services |
+| Next action | Transfer the preserved OpenSLR archive to the training system; do not train on this machine |
 | Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-060 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
 
@@ -1480,3 +1480,19 @@
 
 **Next step**
 - Provision or regenerate the Tier 1 artifacts, then start the FastAPI and frontend services and test live analysis.
+
+---
+
+### Session 43 follow-up (2026-10-11, ~22:47 IST) [Training Host Decision]
+**User clarification**
+- Do not train on this system. Training will be performed on another system.
+
+**What was done**
+- Stopped the local dataset-generation command before training began.
+- Preserved the downloaded `ml/data/raw/dev-clean.tar.gz` archive; no cleanup or deletion was performed.
+
+**Decision**
+- The local system is an integration/API host only. Dataset generation and model training belong on the separate training system.
+
+**Next step**
+- Transfer the preserved archive, or the generated Tier 1 manifests/audio/checkpoint, to the training system. Do not run training locally.

@@ -183,4 +183,4 @@ graph LR
 ## Current Status
 - **Active phase:** Full Stack Integration & Live App Verification (Session 43).
 - **Last completed:** Wired the Tier 1 seven-class contract into inference/training validation and made missing or incompatible checkpoints fail explicitly.
-- **Next action:** Provision the ignored Tier 1 audio/manifests and 7-class best checkpoint, then launch backend and frontend services for live recording tests.
+- **Next action:** Transfer Tier 1 source/generated artifacts to the separate training system; do not train locally, then provision the compatible checkpoint for backend integration.
