@@ -31,3 +31,6 @@ ml/runs/
 
 # Local Claude Code session files
 .claude/
+
+# Redis database dump
+dump.rdb
