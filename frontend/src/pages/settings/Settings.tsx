@@ -1,5 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { ChangePasswordForm, ProfileForm, SessionsPanel } from '../../components/auth/AccountSettings'
+import { CookiePreferences, DeleteAccount, ExportData } from '../../components/auth/PrivacySettings'
+import OptInToggle from '../../components/leaderboard/OptInToggle'
 import PageHeader from '../../components/ui/PageHeader'
 import { MODES, SCORING_VERSION } from '../../lib/analysis/model'
 import { clearAnalyses, useAnalyses } from '../../lib/analysis/store'
@@ -28,21 +31,22 @@ export default function Settings() {
 
   return (
     <>
-      <PageHeader title="Settings" description="Saved in this browser only." />
+      <PageHeader title="Settings" description="Account and security settings are stored on the server. Appearance and practice defaults are saved in this browser." />
       <div className="settings">
-        <Section title="Profile" desc="Shown on battles and in the top bar.">
-          <label className="field">
-            <span>Display name</span>
-            <input
-              id="settings-name"
-              className="input"
-              style={{ maxWidth: 320 }}
-              value={s.name}
-              maxLength={32}
-              onChange={(e) => updateSettings({ name: e.target.value })}
-              onBlur={(e) => !e.target.value.trim() && updateSettings({ name: 'You' })}
-            />
-          </label>
+        <Section title="Account" desc="Your sign-in identity. The display name is shown on battles and in the top bar.">
+          <ProfileForm />
+        </Section>
+
+        <Section title="Password" desc="Use a long passphrase you don't use anywhere else.">
+          <ChangePasswordForm />
+        </Section>
+
+        <Section title="Signed-in devices" desc="Sessions end after 24 hours without activity, or 7 days at most.">
+          <SessionsPanel />
+        </Section>
+
+        <Section title="Leaderboard" desc="Off by default. Turning it off removes your name and deletes your stored scores.">
+          <OptInToggle />
         </Section>
 
         <Section title="Appearance" desc="Light is the default. System follows your operating system.">
@@ -83,16 +87,29 @@ export default function Settings() {
           </label>
         </Section>
 
-        <Section title="Privacy" desc="What leaves your device.">
+        <Section title="Privacy" desc="What leaves your device, and your choices.">
           <ul className="howto">
-            <li>Recordings are sent to the Speech Arena API at <span className="mono">{API_BASE}</span> for scoring.</li>
-            <li>The browser never stores recordings. Scores, flaws and transcripts are kept in local storage.</li>
+            <li>Recordings are sent to the Speech Arena API at <span className="mono">{API_BASE}</span> for scoring and are never stored.</li>
+            <li>Passwords are stored only as salted scrypt hashes; the sign-in cookie can't be read by page scripts.</li>
             <li>Mimic Party runs entirely in your browser; nothing is uploaded.</li>
-            <li>No speaker identity, emotion or personality is inferred.</li>
+            <li>No speaker identity, emotion or personality is inferred. No ads, analytics or third-party cookies.</li>
           </ul>
+          <p className="t-small">
+            Read the <Link to="/privacy">Privacy Policy</Link>, <Link to="/terms">Terms</Link> and{' '}
+            <Link to="/cookies">Cookie Policy</Link>.
+          </p>
         </Section>
 
-        <Section title="Data" desc="Everything saved in this browser.">
+        <Section title="Cookies & browser storage" desc="Optional storage is off unless you turn it on.">
+          <CookiePreferences />
+        </Section>
+
+        <Section title="Your data" desc="Download everything the server holds about you, or delete your account.">
+          <ExportData />
+          <DeleteAccount />
+        </Section>
+
+        <Section title="Saved in this browser" desc="Analyses and battles kept here for your account (only if you allowed History).">
           <p className="t-small">
             {analyses.length} analyses and {battles.length} battles saved.
           </p>
