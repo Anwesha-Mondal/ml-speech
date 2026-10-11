@@ -1,9 +1,10 @@
 import { Menu, Search } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../lib/auth/context'
 import { useApiHealth } from '../../lib/useApiHealth'
-import { useSettings } from '../../lib/settings'
 import { JUMP_TARGETS } from './nav'
+import UserMenu from './UserMenu'
 
 const SECTION_LABELS: Record<string, string> = {
   practice: 'Practice',
@@ -15,6 +16,7 @@ const SECTION_LABELS: Record<string, string> = {
   pipeline: 'Pipeline',
   system: 'System',
   settings: 'Settings',
+  admin: 'Admin',
 }
 
 function useCrumbs(): { label: string; to?: string }[] {
@@ -39,14 +41,15 @@ function QuickJump() {
   const [active, setActive] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
 
   const results = useMemo(() => {
     const s = q.trim().toLowerCase()
-    const list = s
-      ? JUMP_TARGETS.filter((t) => `${t.label} ${t.section}`.toLowerCase().includes(s))
-      : JUMP_TARGETS.slice(0, 8)
+    const allowed = JUMP_TARGETS.filter((t) => !t.adminOnly || isAdmin)
+    const list = s ? allowed.filter((t) => `${t.label} ${t.section}`.toLowerCase().includes(s)) : allowed.slice(0, 8)
     return list.slice(0, 8)
-  }, [q])
+  }, [q, isAdmin])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -136,8 +139,6 @@ function QuickJump() {
 export default function Topbar({ onMenu }: { onMenu: () => void }) {
   const crumbs = useCrumbs()
   const health = useApiHealth()
-  const { name } = useSettings()
-  const initial = (name.trim()[0] ?? 'Y').toUpperCase()
 
   return (
     <header className="topbar">
@@ -170,9 +171,7 @@ export default function Topbar({ onMenu }: { onMenu: () => void }) {
             {health.state === 'online' ? 'API online' : health.state === 'offline' ? 'API offline' : 'Checking API'}
           </span>
         </Link>
-        <Link to="/settings" className="avatar" aria-label={`Profile: ${name}`} title={name}>
-          {initial}
-        </Link>
+        <UserMenu />
       </div>
     </header>
   )

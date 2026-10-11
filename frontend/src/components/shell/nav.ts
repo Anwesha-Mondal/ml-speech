@@ -6,6 +6,7 @@ import {
   Mic,
   Server,
   Settings,
+  ShieldCheck,
   Swords,
   Trophy,
   Workflow,
@@ -18,6 +19,8 @@ export interface NavItem {
   icon: LucideIcon
   /** Extra search words for the quick-jump box. */
   keywords?: string
+  /** Hidden from non-admins. The API enforces the same rule. */
+  adminOnly?: boolean
 }
 
 export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
@@ -46,14 +49,17 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   },
   {
     label: 'System',
-    items: [{ to: '/system', label: 'System', icon: Server, keywords: 'api health infrastructure devops' }],
+    items: [
+      { to: '/system', label: 'System', icon: Server, keywords: 'api health infrastructure devops' },
+      { to: '/admin', label: 'Users & access', icon: ShieldCheck, keywords: 'admin users roles audit', adminOnly: true },
+    ],
   },
 ]
 
 export const SETTINGS_ITEM: NavItem = { to: '/settings', label: 'Settings', icon: Settings, keywords: 'theme audio privacy' }
 
 /** Sub-pages reachable from the quick-jump box. */
-export const JUMP_TARGETS: { to: string; label: string; section: string }[] = [
+export const JUMP_TARGETS: { to: string; label: string; section: string; adminOnly?: boolean }[] = [
   { to: '/', label: 'Overview', section: 'Main' },
   { to: '/practice', label: 'Speech test', section: 'Practice' },
   { to: '/practice/progress', label: 'You vs You', section: 'Practice' },
@@ -79,4 +85,6 @@ export const JUMP_TARGETS: { to: string; label: string; section: string }[] = [
   { to: '/system/scoring', label: 'Scoring', section: 'System' },
   { to: '/system/devops', label: 'DevOps', section: 'System' },
   { to: '/settings', label: 'Settings', section: 'Settings' },
+  { to: '/admin', label: 'Users & access', section: 'Admin', adminOnly: true },
+  { to: '/admin/audit', label: 'Security audit log', section: 'Admin', adminOnly: true },
 ]

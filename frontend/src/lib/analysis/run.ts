@@ -15,6 +15,7 @@ export interface RunInput {
   mode: Mode
   title: string
   referenceLabel: string
+  promptId?: string
 }
 
 export interface RunProgress {
