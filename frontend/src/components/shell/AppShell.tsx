@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { updateSettings, useSettings } from '../../lib/settings'
+import SiteFooter from '../legal/SiteFooter'
 import CursorLight from './CursorLight'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
@@ -40,6 +41,7 @@ export default function AppShell() {
           <div key={pathname.split('/').slice(0, 3).join('/')} className="page-enter">
             <Outlet />
           </div>
+          <SiteFooter />
         </main>
       </div>
     </div>

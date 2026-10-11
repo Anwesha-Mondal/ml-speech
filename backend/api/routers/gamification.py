@@ -1,7 +1,10 @@
-from fastapi import APIRouter, UploadFile, File, Form
+from fastapi import APIRouter, UploadFile, File, Form, Depends
+
+from backend.auth import require_user
 import uuid
 
-router = APIRouter()
+# Every endpoint here requires a signed-in user.
+router = APIRouter(dependencies=[Depends(require_user)])
 
 @router.get("/progress/history")
 async def get_progress_history(user_id: str = "user_1", prompt_id: str = "T1_Gettysburg"):
@@ -65,18 +68,4 @@ async def mimic_party(
         "feedback": "Outstanding! You sounded just like the melody of the original performance, ignoring your actual voice."
     }
 
-@router.get("/leaderboard")
-async def get_leaderboard(prompt_id: str = "T1_Gettysburg", version: str = "v1.0.0"):
-    return {
-        "prompt_id": prompt_id,
-        "version": version,
-        "last_updated": "2026-10-08T00:00:00Z",
-        "rankings": [
-            {"rank": 1, "user_id": "AlexTheOrator", "score": 98, "flaw_density": 0.2, "mode": "news_anchor"},
-            {"rank": 2, "user_id": "SpeechKing", "score": 96, "flaw_density": 0.5, "mode": "sandbox"},
-            {"rank": 3, "user_id": "You", "score": 92, "flaw_density": 1.2, "mode": "sandbox"},
-            {"rank": 4, "user_id": "StoryTeller99", "score": 90, "flaw_density": 1.8, "mode": "storytelling"},
-            {"rank": 5, "user_id": "DebateChamp", "score": 88, "flaw_density": 2.1, "mode": "interviewer"},
-            {"rank": 6, "user_id": "NewbieSpeaker", "score": 75, "flaw_density": 4.5, "mode": "sandbox"}
-        ]
-    }
+# The leaderboard moved to backend/leaderboard (Redis, opt-in): GET /api/leaderboard.
