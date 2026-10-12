@@ -1,13 +1,8 @@
-"""Sign-in sessions (stored in Redis) and the FastAPI dependencies that enforce sign-in, CSRF and roles.
+"""Sign-in sessions (stored in MongoDB) and the FastAPI dependencies that enforce sign-in, CSRF and roles.
 
-Redis keys (prefix from configs/auth/auth.yaml → session.redis_prefix):
-  <prefix>:tok:<sha256(token)>  hash with the session's fields. The cookie token itself is never stored.
-  <prefix>:id:<session id>      → token hash, so a session can be ended by its ID (device list).
-  <prefix>:user:<user id>       set of the user's session IDs.
-
-Each session key expires on its own: Redis deletes it after the idle timeout, and never later
-than the absolute lifetime. Signing out deletes it at once. Accounts, consent records and the
-audit log stay in MongoDB.
+Sessions live in MongoDB in the `sessions` collection.
+Each session document expires automatically via a MongoDB TTL index on `expires_at`,
+and is also checked against the idle timeout upon access. Signing out deletes it immediately.
 """
 
 from __future__ import annotations
@@ -26,14 +21,13 @@ except ImportError:
     UTC = timezone.utc
 from typing import Any
 
-import redis
 from fastapi import Depends, HTTPException, Request, Response, status
+from pymongo.collection import Collection
 from pymongo.database import Database
-
-from backend.redis_client import client as redis_client
+from pymongo.errors import PyMongoError
 
 from .config import AuthSettings, get_settings
-from .db import AUDIT, USERS, User, get_db, utcnow
+from .db import AUDIT, SESSIONS, USERS, User, get_db, utcnow
 
 Db = Database[dict[str, Any]]
 
@@ -105,6 +99,34 @@ class AuthSession:
     user_agent: str = ""
     id: str = field(default_factory=lambda: uuid.uuid4().hex)
 
+    def to_doc(self) -> dict[str, Any]:
+        return {
+            "_id": self.id,
+            "id": self.id,
+            "token_hash": self.token_hash,
+            "csrf_token": self.csrf_token,
+            "user_id": self.user_id,
+            "created_at": self.created_at,
+            "last_seen_at": self.last_seen_at,
+            "expires_at": self.expires_at,
+            "ip": self.ip,
+            "user_agent": self.user_agent,
+        }
+
+    @classmethod
+    def from_doc(cls, d: dict[str, Any]) -> AuthSession:
+        return cls(
+            id=str(d.get("_id", d.get("id", ""))),
+            token_hash=str(d["token_hash"]),
+            csrf_token=str(d["csrf_token"]),
+            user_id=str(d["user_id"]),
+            expires_at=aware(d["expires_at"]) or utcnow(),
+            created_at=aware(d.get("created_at")) or utcnow(),
+            last_seen_at=aware(d.get("last_seen_at")) or utcnow(),
+            ip=str(d.get("ip", "")),
+            user_agent=str(d.get("user_agent", "")),
+        )
+
     def to_hash(self) -> dict[str, str]:
         return {
             "id": self.id,
@@ -132,16 +154,14 @@ class AuthSession:
         )
 
 
-def _k_tok(cfg: AuthSettings, th: str) -> str:
-    return f"{cfg.session_prefix}:tok:{th}"
-
-
-def _k_id(cfg: AuthSettings, sid: str) -> str:
-    return f"{cfg.session_prefix}:id:{sid}"
-
-
-def _k_user(cfg: AuthSettings, uid: str) -> str:
-    return f"{cfg.session_prefix}:user:{uid}"
+@contextmanager
+def _session_col(db: Db | None = None) -> Iterator[Collection[dict[str, Any]]]:
+    """MongoDB collection; an outage becomes a clear 503 instead of a crash."""
+    try:
+        database = db if db is not None else get_db()
+        yield database[SESSIONS]
+    except PyMongoError:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, STORE_DOWN) from None
 
 
 def _ttl_seconds(s: AuthSession, now: datetime, cfg: AuthSettings) -> int:
@@ -151,16 +171,9 @@ def _ttl_seconds(s: AuthSession, now: datetime, cfg: AuthSettings) -> int:
     return max(1, min(idle, left))
 
 
-@contextmanager
-def _store() -> Iterator[redis.Redis]:
-    """The Redis client; an outage becomes a clear 503 instead of a crash."""
-    try:
-        yield redis_client()
-    except redis.RedisError:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, STORE_DOWN) from None
-
-
-def create_session(user: User, request: Request, response: Response, cfg: AuthSettings) -> AuthSession:
+def create_session(
+    user: User, request: Request, response: Response, cfg: AuthSettings, db: Db | None = None
+) -> AuthSession:
     token = secrets.token_urlsafe(cfg.token_bytes)
     now = utcnow()
     sess = AuthSession(
@@ -173,15 +186,9 @@ def create_session(user: User, request: Request, response: Response, cfg: AuthSe
         ip=client_ip(request),
         user_agent=(request.headers.get("user-agent") or "")[:256],
     )
-    ttl = _ttl_seconds(sess, now, cfg)
-    with _store() as r:
-        pipe = r.pipeline(transaction=True)
-        pipe.hset(_k_tok(cfg, sess.token_hash), mapping=sess.to_hash())
-        pipe.expire(_k_tok(cfg, sess.token_hash), ttl)
-        pipe.set(_k_id(cfg, sess.id), sess.token_hash, ex=ttl)
-        pipe.sadd(_k_user(cfg, user.id), sess.id)
-        pipe.expire(_k_user(cfg, user.id), cfg.absolute_lifetime_hours * 3600)
-        pipe.execute()
+    with _session_col(db) as col:
+        col.insert_one(sess.to_doc())
+
     response.set_cookie(
         cfg.cookie_name,
         token,
@@ -200,58 +207,49 @@ def clear_cookie(response: Response, cfg: AuthSettings) -> None:
     )
 
 
-def get_session_by_id(session_id: str, cfg: AuthSettings | None = None) -> AuthSession | None:
-    cfg = cfg or get_settings()
-    with _store() as r:
-        th = r.get(_k_id(cfg, session_id))
-        if not th:
-            return None
-        h = r.hgetall(_k_tok(cfg, str(th)))
-    return AuthSession.from_hash(str(th), h) if h else None
+def get_session_by_id(
+    session_id: str, cfg: AuthSettings | None = None, db: Db | None = None
+) -> AuthSession | None:
+    with _session_col(db) as col:
+        d = col.find_one({"_id": session_id})
+        return AuthSession.from_doc(d) if d else None
 
 
-def revoke_session(session_id: str, cfg: AuthSettings | None = None) -> bool:
+def revoke_session(session_id: str, cfg: AuthSettings | None = None, db: Db | None = None) -> bool:
     """End one session now. Returns False if it had already ended."""
-    cfg = cfg or get_settings()
-    with _store() as r:
-        th = r.get(_k_id(cfg, session_id))
-        uid = r.hget(_k_tok(cfg, str(th)), "user_id") if th else None
-        pipe = r.pipeline(transaction=True)
-        if th:
-            pipe.delete(_k_tok(cfg, str(th)))
-        pipe.delete(_k_id(cfg, session_id))
-        if uid:
-            pipe.srem(_k_user(cfg, str(uid)), session_id)
-        pipe.execute()
-    return bool(th)
+    with _session_col(db) as col:
+        res = col.delete_one({"_id": session_id})
+        return bool(res.deleted_count > 0)
 
 
-def list_user_sessions(user_id: str, cfg: AuthSettings | None = None) -> list[AuthSession]:
+def list_user_sessions(
+    user_id: str, cfg: AuthSettings | None = None, db: Db | None = None
+) -> list[AuthSession]:
     """The user's live sessions, most recently used first. Drops IDs whose session already expired."""
     cfg = cfg or get_settings()
-    out: list[AuthSession] = []
-    with _store() as r:
-        stale: list[str] = []
-        for sid in r.smembers(_k_user(cfg, user_id)):
-            th = r.get(_k_id(cfg, str(sid)))
-            h = r.hgetall(_k_tok(cfg, str(th))) if th else {}
-            if h:
-                out.append(AuthSession.from_hash(str(th), h))
+    now = utcnow()
+    with _session_col(db) as col:
+        docs = col.find({"user_id": user_id, "expires_at": {"$gt": now}})
+        out: list[AuthSession] = []
+        for d in docs:
+            sess = AuthSession.from_doc(d)
+            if now - sess.last_seen_at < timedelta(hours=cfg.idle_timeout_hours):
+                out.append(sess)
             else:
-                stale.append(str(sid))
-        if stale:
-            r.srem(_k_user(cfg, user_id), *stale)
+                col.delete_one({"_id": sess.id})
     return sorted(out, key=lambda s: s.last_seen_at, reverse=True)
 
 
-def revoke_user_sessions(user_id: str, except_id: str | None = None, cfg: AuthSettings | None = None) -> int:
+def revoke_user_sessions(
+    user_id: str, except_id: str | None = None, cfg: AuthSettings | None = None, db: Db | None = None
+) -> int:
     """End every session of a user (optionally keeping one). Returns how many were ended."""
-    cfg = cfg or get_settings()
-    n = 0
-    for s in list_user_sessions(user_id, cfg):
-        if s.id != except_id and revoke_session(s.id, cfg):
-            n += 1
-    return n
+    query: dict[str, Any] = {"user_id": user_id}
+    if except_id:
+        query["_id"] = {"$ne": except_id}
+    with _session_col(db) as col:
+        res = col.delete_many(query)
+        return int(res.deleted_count)
 
 
 @dataclass
@@ -265,29 +263,23 @@ def _load_principal(request: Request, db: Db, cfg: AuthSettings) -> Principal | 
     if not token:
         return None
     th = token_hash(token)
-    with _store() as r:
-        h = r.hgetall(_k_tok(cfg, th))
-    if not h:
-        return None  # never existed, signed out, or expired (Redis removed it)
-    sess = AuthSession.from_hash(th, h)
-    now = utcnow()
-    if now >= sess.expires_at or now - sess.last_seen_at >= timedelta(hours=cfg.idle_timeout_hours):
-        revoke_session(sess.id, cfg)
-        return None
-    user = get_user(db, sess.user_id)
-    if user is None or not user.is_active:
-        return None
-    if (now - sess.last_seen_at).total_seconds() >= cfg.touch_interval_seconds:
-        # Sliding idle window: record the activity and push the expiry forward.
-        sess.last_seen_at = now
-        ttl = _ttl_seconds(sess, now, cfg)
-        with _store() as r:
-            pipe = r.pipeline(transaction=True)
-            pipe.hset(_k_tok(cfg, th), "last_seen_at", now.isoformat())
-            pipe.expire(_k_tok(cfg, th), ttl)
-            pipe.expire(_k_id(cfg, sess.id), ttl)
-            pipe.execute()
-    return Principal(user=user, session=sess)
+    with _session_col(db) as col:
+        d = col.find_one({"token_hash": th})
+        if not d:
+            return None  # never existed, signed out, or expired
+        sess = AuthSession.from_doc(d)
+        now = utcnow()
+        if now >= sess.expires_at or now - sess.last_seen_at >= timedelta(hours=cfg.idle_timeout_hours):
+            col.delete_one({"_id": sess.id})
+            return None
+        user = get_user(db, sess.user_id)
+        if user is None or not user.is_active:
+            return None
+        if (now - sess.last_seen_at).total_seconds() >= cfg.touch_interval_seconds:
+            # Sliding idle window: record the activity and push last_seen_at forward
+            sess.last_seen_at = now
+            col.update_one({"_id": sess.id}, {"$set": {"last_seen_at": now}})
+        return Principal(user=user, session=sess)
 
 
 def optional_principal(
@@ -306,7 +298,10 @@ def require_principal(
     if request.method not in SAFE_METHODS:
         sent = request.headers.get(CSRF_HEADER, "")
         if not sent or not hmac.compare_digest(sent, p.session.csrf_token):
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "Missing or invalid CSRF token. Reload the page and try again.")
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "Missing or invalid CSRF token. Reload the page and try again.",
+            )
     return p
 
 

@@ -17,7 +17,7 @@ except ImportError:
     UTC = timezone.utc
 from typing import Any
 
-from pymongo import ASCENDING, MongoClient
+from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.errors import OperationFailure
@@ -29,10 +29,11 @@ log = logging.getLogger(__name__)
 USERS = "users"
 AUDIT = "audit_events"
 CONSENTS = "consent_records"
+SESSIONS = "sessions"
+LEADERBOARD = "leaderboard_scores"
 
 
 def utcnow() -> datetime:
-    # MongoDB stores milliseconds; trimming keeps values identical after a round trip.
     now = datetime.now(UTC)
     return now.replace(microsecond=(now.microsecond // 1000) * 1000)
 

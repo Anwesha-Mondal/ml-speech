@@ -56,4 +56,4 @@ These terms are governed by the laws of India.
 
 ## Contact
 
-Contact the project team through the project's [issue tracker](https://github.com/Anwesha-Mondal/ml-speech/issues).
+Contact the project team through the project's [issue tracker](https://github.com/pushkarverse/orcter/issues).

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import fakeredis
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -97,18 +96,17 @@ def test_requires_sign_in_and_csrf(app: FastAPI) -> None:
     assert c.put("/api/leaderboard/opt-in", json={"opt_in": True}, headers=csrf_headers(s)).status_code == 200
 
 
-def _down_redis() -> fakeredis.FakeRedis:
-    server = fakeredis.FakeServer()
-    server.connected = False  # every command raises ConnectionError
-    return fakeredis.FakeRedis(server=server, decode_responses=True)
-
-
-def test_redis_down_gives_503_and_keeps_the_analysis(app: FastAPI) -> None:
-    from backend.redis_client import use_client
-
+def test_leaderboard_down_gives_503_and_keeps_the_analysis(app: FastAPI, monkeypatch: Any) -> None:
     a, sa = _user(app, "ana@example.com", "Ana")
-    use_client(_down_redis())
-    # Sessions live in the same Redis, so every signed-in request answers 503, not 500.
+
+    def _broken_top(*args: Any, **kwargs: Any) -> Any:
+        raise store.LeaderboardUnavailable("Database down")
+
+    def _broken_submit(*args: Any, **kwargs: Any) -> Any:
+        raise store.LeaderboardUnavailable("Database down")
+
+    monkeypatch.setattr(store, "top", _broken_top)
+    monkeypatch.setattr(store, "submit", _broken_submit)
     assert a.get("/api/leaderboard").status_code == 503
     # A finished analysis is still returned; only the ranking is skipped.
     assert submit_result(sa["user"]["id"], "asset-07", 90)["submitted"] is False

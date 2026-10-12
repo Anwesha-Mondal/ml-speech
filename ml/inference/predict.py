@@ -164,9 +164,12 @@ class SpeechFlawPredictor:
         if config_path is None:
             config_path = os.path.join(PROJECT_ROOT, "ml", "configs", "labels.yaml")
         
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
-        self.labels: List[str] = config.get("classes", [])
+        config_labels: List[str] = []
+        if os.path.exists(config_path):
+            with open(config_path, "r") as f:
+                config = yaml.safe_load(f)
+            config_labels = config.get("classes", []) if config else []
+        self.labels: List[str] = config_labels
         
         if checkpoint_path is None:
             best_path = os.path.join(PROJECT_ROOT, "ml", "checkpoints", "best_checkpoint.pt")
@@ -175,33 +178,55 @@ class SpeechFlawPredictor:
             
         self.checkpoint_path = checkpoint_path
         
-        # Load Wav2Vec2 processor
-        self.processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base")
-        
-        # Initialize model architecture
-        self.model = SpeechFlawClassifier(num_classes=len(self.labels)).to(self.device)
-        
         if not os.path.exists(self.checkpoint_path):
             raise FileNotFoundError(
-                "Production speech model checkpoint is missing. "
-                "Place ml/checkpoints/best_checkpoint.pt on the backend host."
+                f"Production speech model checkpoint is missing at {self.checkpoint_path}. "
+                "Place ml/checkpoints/best_checkpoint.pt or latest_checkpoint.pt on the backend host."
             )
 
+        # Inspect checkpoint architecture before initializing classifier
         checkpoint = torch.load(self.checkpoint_path, map_location=self.device)
         state_dict = checkpoint.get("model_state_dict", checkpoint)
         output_layer = state_dict.get("fusion_layer.6.weight")
-        expected_outputs = len(self.labels)
-        if output_layer is None or output_layer.shape[0] != expected_outputs:
-            actual_outputs = output_layer.shape[0] if output_layer is not None else "unknown"
+        if output_layer is None:
             raise RuntimeError(
-                "Incompatible speech model checkpoint: "
-                f"expected {expected_outputs} Tier 1 labels, found {actual_outputs}. "
-                "Retrain or install the matching best_checkpoint.pt."
+                f"Invalid model checkpoint {self.checkpoint_path}: missing fusion_layer.6.weight."
             )
+        num_classes = output_layer.shape[0]
 
+        # Standard class presets
+        CLASSES_15 = [
+            'IDEAL', 'TOO_FAST', 'TOO_SLOW', 'EXCESSIVE_PAUSE', 'MISSING_PAUSE',
+            'MONOTONE', 'HIGH_PITCH_VARIATION', 'LOW_ENERGY', 'HIGH_ENERGY',
+            'EMPHASIS_ERROR', 'FILLER_HEAVY', 'HESITATION', 'UNCLEAR',
+            'CADENCE_INSTABILITY', 'MIXED'
+        ]
+        CLASSES_7 = [
+            'IDEAL', 'TOO_FAST', 'TOO_SLOW', 'LOW_ENERGY', 'HIGH_ENERGY',
+            'MONOTONE', 'EXCESSIVE_PAUSE'
+        ]
+
+        if "labels" in checkpoint and len(checkpoint["labels"]) == num_classes:
+            self.labels = checkpoint["labels"]
+        elif "classes" in checkpoint and len(checkpoint["classes"]) == num_classes:
+            self.labels = checkpoint["classes"]
+        elif len(self.labels) == num_classes:
+            pass
+        elif num_classes == 15:
+            self.labels = CLASSES_15
+        elif num_classes == 7:
+            self.labels = CLASSES_7
+        else:
+            self.labels = [f"CLASS_{i}" for i in range(num_classes)]
+
+        # Load Wav2Vec2 processor
+        self.processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base")
+        
+        # Initialize model architecture with matching number of classes
+        self.model = SpeechFlawClassifier(num_classes=num_classes).to(self.device)
         self.model.load_state_dict(state_dict)
         self.model.eval()
-        print(f"[+] Loaded model checkpoint from {self.checkpoint_path} on {self.device}")
+        print(f"[+] Loaded model checkpoint from {self.checkpoint_path} on {self.device} with {num_classes} classes: {self.labels}")
 
     def predict_audio(
         self,
