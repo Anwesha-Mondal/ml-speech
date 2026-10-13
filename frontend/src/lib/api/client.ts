@@ -69,7 +69,7 @@ export async function request<T>(path: string, init?: RequestInit, timeoutMs = 1
 }
 
 export function getHealth(): Promise<{ status: string; services?: { mongodb?: 'up' | 'down'; redis?: 'up' | 'down' } }> {
-  return request('/api/health', undefined, 4000)
+  return request('/api/health', undefined, 6000)
 }
 
 export interface AnalyzeInput {

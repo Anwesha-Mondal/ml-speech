@@ -25,6 +25,8 @@ dependencies = [
     "transformers>=5.19.0",
     "datasets>=5.1.0",
     "tensorboard>=2.21.0",
+    "imageio-ffmpeg>=0.5.1",
+    "av>=14.0.0",
 ]
 
 [project.optional-dependencies]

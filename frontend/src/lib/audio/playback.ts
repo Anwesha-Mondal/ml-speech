@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 type TickFn = (t: number) => void
 
@@ -13,6 +13,7 @@ type TickFn = (t: number) => void
 export class PlaybackClock {
   readonly duration: number
   readonly hasAudio: boolean
+  readonly audioUrl?: string
   private audio: HTMLAudioElement | null = null
   private virtualT = 0
   private virtualStart = 0
@@ -24,21 +25,38 @@ export class PlaybackClock {
   private snapshot = { playing: false, rate: 1, volume: 1 }
 
   constructor(duration: number, audioUrl?: string) {
-    this.duration = duration
+    this.duration = Math.max(0.1, duration)
+    this.audioUrl = audioUrl
     this.hasAudio = Boolean(audioUrl)
     if (audioUrl) {
-      const a = new Audio(audioUrl)
+      this.ensureAudio()
+    }
+  }
+
+  ensureAudio(): HTMLAudioElement | null {
+    if (!this.audioUrl) return null
+    if (!this.audio) {
+      const a = new Audio(this.audioUrl)
       a.preload = 'auto'
+      a.volume = this.snapshot.volume
+      a.playbackRate = this.rate
       a.addEventListener('ended', () => this.setPlaying(false))
       a.addEventListener('pause', () => this.setPlaying(false))
       a.addEventListener('play', () => this.setPlaying(true))
       a.addEventListener('seeked', () => this.emitTick())
+      a.addEventListener('timeupdate', () => this.emitTick())
+      a.addEventListener('error', (e) => {
+        console.warn('Audio playback element error:', e)
+        this.setPlaying(false)
+      })
       this.audio = a
     }
+    return this.audio
   }
 
   get time(): number {
-    if (this.audio) return this.audio.currentTime
+    const a = this.audio
+    if (a && !isNaN(a.currentTime)) return a.currentTime
     if (!this.playing) return this.virtualT
     return Math.min(this.duration, this.virtualT + ((performance.now() - this.virtualStart) / 1000) * this.rate)
   }
@@ -59,15 +77,25 @@ export class PlaybackClock {
   }
 
   private publish() {
-    this.snapshot = { playing: this.playing, rate: this.rate, volume: this.audio?.volume ?? 1 }
+    this.snapshot = { playing: this.playing, rate: this.rate, volume: this.audio?.volume ?? this.snapshot.volume }
     this.state.forEach((f) => f())
   }
 
   private loop = () => {
     const t = this.time
     this.emitTick()
-    if (!this.audio && t >= this.duration) {
-      this.virtualT = this.duration
+    if (t >= this.duration) {
+      const a = this.ensureAudio()
+      if (a) {
+        a.pause()
+        try {
+          a.currentTime = this.duration
+        } catch {
+          /* ignore */
+        }
+      } else {
+        this.virtualT = this.duration
+      }
       this.setPlaying(false)
       return
     }
@@ -80,13 +108,20 @@ export class PlaybackClock {
   }
 
   async play() {
-    if (this.audio) {
-      if (this.audio.ended || this.audio.currentTime >= this.duration - 0.05) {
-        this.audio.currentTime = 0
+    const a = this.ensureAudio()
+    if (a) {
+      if (a.ended || a.currentTime >= this.duration - 0.05) {
+        try {
+          a.currentTime = 0
+        } catch {
+          /* ignore */
+        }
       }
       try {
-        await this.audio.play()
+        await a.play()
+        this.setPlaying(true)
       } catch (e) {
+        console.warn('Audio.play() failed:', e)
         this.setPlaying(false)
       }
       return
@@ -97,9 +132,9 @@ export class PlaybackClock {
   }
 
   pause() {
-    if (this.audio) {
-      this.audio.pause()
-      return
+    const a = this.ensureAudio()
+    if (a) {
+      a.pause()
     }
     this.virtualT = this.time
     this.setPlaying(false)
@@ -112,12 +147,16 @@ export class PlaybackClock {
 
   seek(t: number) {
     const clamped = Math.max(0, Math.min(this.duration, t))
-    if (this.audio) {
-      this.audio.currentTime = clamped
-    } else {
-      this.virtualT = clamped
-      this.virtualStart = performance.now()
+    const a = this.ensureAudio()
+    if (a) {
+      try {
+        a.currentTime = clamped
+      } catch (e) {
+        console.warn('Seek error:', e)
+      }
     }
+    this.virtualT = clamped
+    this.virtualStart = performance.now()
     this.emitTick()
   }
 
@@ -127,12 +166,15 @@ export class PlaybackClock {
       this.virtualStart = performance.now()
     }
     this.rate = r
-    if (this.audio) this.audio.playbackRate = r
+    const a = this.ensureAudio()
+    if (a) a.playbackRate = r
     this.publish()
   }
 
   setVolume(v: number) {
-    if (this.audio) this.audio.volume = v
+    this.snapshot.volume = v
+    const a = this.ensureAudio()
+    if (a) a.volume = v
     this.publish()
   }
 
@@ -153,16 +195,32 @@ export class PlaybackClock {
 
   dispose() {
     cancelAnimationFrame(this.raf)
-    this.audio?.pause()
-    this.audio = null
-    this.ticks.clear()
-    this.state.clear()
+    if (this.audio) {
+      this.audio.pause()
+      this.audio.src = ''
+      this.audio = null
+    }
   }
 }
 
 export function useClock(duration: number, audioUrl?: string): PlaybackClock {
-  const clock = useMemo(() => new PlaybackClock(duration, audioUrl), [duration, audioUrl])
-  useEffect(() => () => clock.dispose(), [clock])
+  const [clock, setClock] = useState(() => new PlaybackClock(duration, audioUrl))
+  const keyRef = useRef(`${duration}:${audioUrl}`)
+
+  useEffect(() => {
+    const key = `${duration}:${audioUrl}`
+    if (keyRef.current !== key) {
+      keyRef.current = key
+      setClock(new PlaybackClock(duration, audioUrl))
+    }
+  }, [duration, audioUrl])
+
+  useEffect(() => {
+    return () => {
+      clock.dispose()
+    }
+  }, [clock])
+
   return clock
 }
 

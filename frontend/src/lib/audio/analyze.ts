@@ -185,5 +185,5 @@ export function encodeWav(audio: DecodedAudio): Blob {
     offset += 2
   }
 
-  return new Blob([view], { type: 'audio/wav' })
+  return new Blob([buffer], { type: 'audio/wav' })
 }

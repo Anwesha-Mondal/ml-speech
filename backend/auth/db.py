@@ -100,12 +100,24 @@ def get_db() -> Database[dict[str, Any]]:
     return _db if _db is not None else init_db()
 
 
-def ping() -> bool:
+_last_ping_status: bool = False
+_last_ping_time: float = 0.0
+
+
+def ping(max_age_seconds: float = 15.0) -> bool:
+    global _last_ping_status, _last_ping_time
+    import time
+    now = time.monotonic()
+    if now - _last_ping_time < max_age_seconds:
+        return _last_ping_status
     try:
         get_db().command("ping")
-        return True
+        _last_ping_status = True
     except Exception:  # noqa: BLE001 - health check reports any failure as "down"
-        return False
+        _last_ping_status = False
+    _last_ping_time = now
+    return _last_ping_status
+
 
 
 def _ttl_index(col: Collection[dict[str, Any]], key: str, seconds: int) -> None:

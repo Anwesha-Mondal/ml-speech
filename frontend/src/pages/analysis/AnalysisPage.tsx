@@ -9,7 +9,7 @@ import EmptyState from '../../components/ui/EmptyState'
 import SourceTag from '../../components/ui/SourceTag'
 import type { FlawRegion } from '../../lib/analysis/model'
 import { modeLabel } from '../../lib/analysis/model'
-import { getAnalysis } from '../../lib/analysis/store'
+import { useAnalysis } from '../../lib/analysis/store'
 import { useClock, useClockState, type PlaybackClock } from '../../lib/audio/playback'
 import { fmtDateTime, fmtTime } from '../../lib/format'
 import { useSettings } from '../../lib/settings'
@@ -90,7 +90,7 @@ function Controls({ clock, zoom, setZoom }: { clock: PlaybackClock; zoom: number
 
 export default function AnalysisPage() {
   const { id = '' } = useParams()
-  const analysis = useMemo(() => getAnalysis(id), [id])
+  const analysis = useAnalysis(id)
   const { showConfidence } = useSettings()
   const clock = useClock(analysis?.duration ?? 1, analysis?.audio?.participantUrl)
   const [selected, setSelected] = useState<FlawRegion | null>(null)
@@ -261,6 +261,17 @@ export default function AnalysisPage() {
             zoom={zoom}
           />
           <Controls clock={clock} zoom={zoom} setZoom={setZoom} />
+          {a.audio?.participantUrl && (
+            <div style={{ marginTop: '10px' }}>
+              <audio
+                key={a.audio.participantUrl}
+                controls
+                src={a.audio.participantUrl}
+                style={{ width: '100%', height: '36px' }}
+                aria-label="Direct audio player"
+              />
+            </div>
+          )}
           <div className="ws-toggles" role="group" aria-label="Overlays">
             {overlayToggles.map((t) => (
               <label key={t.key} className={`toggle ${t.disabled ? 'is-disabled' : ''}`} title={t.disabled}>

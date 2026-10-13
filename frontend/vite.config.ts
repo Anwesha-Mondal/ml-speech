@@ -1,7 +1,10 @@
 import { execSync } from 'node:child_process'
 import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv, searchForWorkspaceRoot, type Plugin } from 'vite'
+
+const projectRoot = typeof import.meta.dirname !== 'undefined' ? import.meta.dirname : fileURLToPath(new URL('.', import.meta.url))
 
 function git(cmd: string): string {
   try {
@@ -59,7 +62,7 @@ export default defineConfig(({ mode }) => {
     server: {
       fs: {
         // The legal pages are bundled from ../docs/legal (the same files the API serves).
-        allow: [searchForWorkspaceRoot(process.cwd()), resolve(__dirname, '../docs/legal')],
+        allow: [searchForWorkspaceRoot(process.cwd()), resolve(projectRoot, '../docs/legal')],
       },
     },
   }

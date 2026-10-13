@@ -2,34 +2,42 @@ import { useSyncExternalStore } from 'react'
 import { getConsent, onConsentGranted } from '../consent'
 import type { Analysis } from './model'
 import { buildExample, EXAMPLE_ID } from './example'
+import { clearMediaDb, deleteMediaBlob, getMediaBlob } from './mediaDb'
 
 /**
  * Analyses created in this browser. Full objects (with audio URLs and computed signals)
  * live in memory; a serializable copy is kept in localStorage so the list and scores
- * survive a reload. Audio itself is never stored.
+ * survive a reload. Audio recordings are cached locally in IndexedDB.
  */
-// Saved per account (`sa.analyses.v1:<userId>`), so people sharing a browser never see
-// each other's results. Nothing is readable until a user is signed in.
 const KEY_BASE = 'sa.analyses.v1'
 const MAX_SAVED = 30
 
 const mem = new Map<string, Analysis>()
 const listeners = new Set<() => void>()
+const pendingAudioLoads = new Set<string>()
 let userKey: string | null = null
 let snapshot: Analysis[] = []
 let example: Analysis | null = null
 
-/** Switch the store to a signed-in user (or null on sign-out). Drops the previous user's data from memory. */
+/** Switch the store to a signed-in user (or null on sign-out). */
 export function setStoreUser(userId: string | null) {
   const next = userId ? `${KEY_BASE}:${userId}` : null
   if (next === userKey) return
-  mem.forEach((a) => {
-    if (a.audio?.participantUrl) URL.revokeObjectURL(a.audio.participantUrl)
-    if (a.audio?.referenceUrl) URL.revokeObjectURL(a.audio.referenceUrl)
-  })
-  mem.clear()
+  // Only clear memory if switching between different accounts or logging out
+  if (userKey !== null) {
+    mem.forEach((a) => {
+      if (a.audio?.participantUrl) URL.revokeObjectURL(a.audio.participantUrl)
+      if (a.audio?.referenceUrl) URL.revokeObjectURL(a.audio.referenceUrl)
+    })
+    mem.clear()
+  }
   userKey = next
   snapshot = readSaved()
+  mem.forEach((a) => {
+    if (!snapshot.some((s) => s.id === a.id)) {
+      snapshot = [a, ...snapshot].slice(0, MAX_SAVED)
+    }
+  })
   listeners.forEach((l) => l())
 }
 
@@ -53,7 +61,6 @@ function strip(a: Analysis): Analysis {
 }
 
 function persist(list: Analysis[]) {
-  // History is optional storage: without consent, results live only in memory for this tab.
   if (!userKey || !getConsent().history) return
   try {
     localStorage.setItem(userKey, JSON.stringify(list.slice(0, MAX_SAVED).map(strip)))
@@ -76,6 +83,7 @@ export function deleteAnalysis(id: string) {
   if (a?.audio?.participantUrl) URL.revokeObjectURL(a.audio.participantUrl)
   if (a?.audio?.referenceUrl) URL.revokeObjectURL(a.audio.referenceUrl)
   mem.delete(id)
+  void deleteMediaBlob(id)
   snapshot = snapshot.filter((x) => x.id !== id)
   persist(snapshot)
   listeners.forEach((l) => l())
@@ -83,6 +91,7 @@ export function deleteAnalysis(id: string) {
 
 export function clearAnalyses() {
   ;[...mem.keys()].forEach(deleteAnalysis)
+  void clearMediaDb()
   snapshot = []
   persist(snapshot)
   listeners.forEach((l) => l())
@@ -93,9 +102,35 @@ export function getExample(): Analysis {
   return example
 }
 
+function tryRestoreAudio(id: string) {
+  if (id === EXAMPLE_ID || pendingAudioLoads.has(id)) return
+  pendingAudioLoads.add(id)
+  void getMediaBlob(id).then((blob) => {
+    pendingAudioLoads.delete(id)
+    if (!blob) return
+    const current = mem.get(id) ?? snapshot.find((a) => a.id === id)
+    if (current && !current.audio?.participantUrl) {
+      const url = URL.createObjectURL(blob)
+      const updated: Analysis = {
+        ...current,
+        audio: {
+          ...current.audio,
+          participantUrl: url,
+        },
+      }
+      mem.set(id, updated)
+      listeners.forEach((l) => l())
+    }
+  })
+}
+
 export function getAnalysis(id: string): Analysis | null {
   if (id === EXAMPLE_ID) return getExample()
-  return mem.get(id) ?? snapshot.find((a) => a.id === id) ?? null
+  const a = mem.get(id) ?? snapshot.find((x) => x.id === id) ?? null
+  if (a && !a.audio?.participantUrl) {
+    tryRestoreAudio(id)
+  }
+  return a
 }
 
 function subscribe(cb: () => void) {
@@ -110,4 +145,27 @@ export function useAnalyses(): Analysis[] {
     () => snapshot,
     () => snapshot,
   )
+}
+
+/**
+ * Reactive single-analysis lookup. Reads from the in-memory map first so the
+ * full Analysis (including `audio.participantUrl`) is returned immediately after
+ * `saveAnalysis` and restored from IndexedDB across page reloads.
+ */
+export function useAnalysis(id: string): Analysis | null {
+  const result = useSyncExternalStore(
+    subscribe,
+    () => {
+      if (id === EXAMPLE_ID) return getExample()
+      return mem.get(id) ?? snapshot.find((a) => a.id === id) ?? null
+    },
+    () => {
+      if (id === EXAMPLE_ID) return getExample()
+      return mem.get(id) ?? snapshot.find((a) => a.id === id) ?? null
+    },
+  )
+  if (result && !result.audio?.participantUrl && id !== EXAMPLE_ID) {
+    tryRestoreAudio(id)
+  }
+  return result
 }

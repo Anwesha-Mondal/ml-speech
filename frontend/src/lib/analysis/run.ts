@@ -1,7 +1,8 @@
 import { getJob, startAnalysis } from '../api/client'
 import type { Mode } from '../api/types'
-import { computeContours, computePeaks, decodeFile, type DecodedAudio } from '../audio/analyze'
+import { computeContours, computePeaks, decodeFile, encodeWav, type DecodedAudio } from '../audio/analyze'
 import { uid } from '../format'
+import { saveMediaBlob } from './mediaDb'
 import { analysisFromApi, type Analysis } from './model'
 import { saveAnalysis } from './store'
 
@@ -120,11 +121,14 @@ export async function runAnalysis(
     duration: part?.duration ?? 0,
     participantFile: input.participant.name,
   })
+  const partBlob = part ? encodeWav(part) : input.participant
+  const refBlob = ref ? encodeWav(ref) : input.reference
   analysis.serverSeconds = serverSeconds
   analysis.audio = {
-    participantUrl: URL.createObjectURL(input.participant),
-    referenceUrl: input.reference ? URL.createObjectURL(input.reference) : undefined,
+    participantUrl: URL.createObjectURL(partBlob),
+    referenceUrl: refBlob ? URL.createObjectURL(refBlob) : undefined,
   }
+  void saveMediaBlob(analysis.id, partBlob)
   if (part) {
     analysis.peaks = { participant: computePeaks(part) }
     try {

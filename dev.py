@@ -89,6 +89,16 @@ def main():
     py_exe = get_python_exe()
     npm_cmd = get_npm_cmd()
 
+    # Ensure frontend/.env exists if .env.example is present
+    fe_env = FRONTEND_DIR / ".env"
+    fe_example = FRONTEND_DIR / ".env.example"
+    if not fe_env.exists() and fe_example.exists():
+        try:
+            shutil.copyfile(fe_example, fe_env)
+            print("  * Auto-initialized frontend/.env from frontend/.env.example")
+        except Exception:
+            pass
+
     print("\n" + "=" * 60)
     print("  [*] Starting Speech Arena (Full Stack Dev Environment)")
     print("=" * 60)

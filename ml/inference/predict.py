@@ -259,62 +259,76 @@ class SpeechFlawPredictor:
             import tempfile
             import subprocess
 
-            # Resolve ffmpeg executable (system PATH or imageio_ffmpeg bundle)
-            ffmpeg_bin = "ffmpeg"
+            # Fast path: in-memory decode for standard uncompressed formats (WAV/FLAC)
+            y = None
             try:
-                import imageio_ffmpeg
-                ffmpeg_bin = imageio_ffmpeg.get_ffmpeg_exe()
+                y, sr = sf.read(io.BytesIO(audio_input))
+                if y.ndim > 1:
+                    y = np.mean(y, axis=1)
+                if sr != 16000:
+                    y = librosa.resample(y, orig_sr=sr, target_sr=16000)
+                    sr = 16000
             except Exception:
-                pass
+                y = None
 
-            with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp_in:
-                tmp_in.write(audio_input)
-                tmp_in_path = tmp_in.name
-                
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_out:
-                tmp_out_path = tmp_out.name
-
-            try:
-                subprocess.run([
-                    ffmpeg_bin, "-y", "-i", tmp_in_path,
-                    "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le",
-                    tmp_out_path
-                ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                y, sr = sf.read(tmp_out_path)
-            except Exception as e:
-                # Secondary fallback: decode via PyAV
+            # Streaming or browser-recorded formats (WebM/Opus, OGG, MP4/AAC)
+            if y is None:
+                # Primary decoder: ffmpeg binary (imageio_ffmpeg bundle or system PATH)
+                ffmpeg_bin = None
                 try:
-                    import av
-                    container = av.open(io.BytesIO(audio_input))
-                    resampler = av.AudioResampler(format='s16', layout='mono', rate=16000)
-                    frames = []
-                    for frame in container.decode(audio=0):
-                        for r_frame in resampler.resample(frame):
-                            frames.append(r_frame.to_ndarray())
-                    if frames:
-                        audio_data = np.concatenate(frames, axis=1).squeeze()
-                        y = (audio_data / 32768.0).astype(np.float32)
-                        sr = 16000
-                    else:
-                        raise ValueError("No audio frames decoded by PyAV")
+                    import imageio_ffmpeg
+                    ffmpeg_bin = imageio_ffmpeg.get_ffmpeg_exe()
                 except Exception:
-                    # Final fallback: soundfile or librosa
+                    import shutil
+                    ffmpeg_bin = shutil.which("ffmpeg")
+
+                tmp_in_path = None
+                tmp_out_path = None
+                if ffmpeg_bin:
                     try:
-                        y, sr = sf.read(io.BytesIO(audio_input))
-                        if y.ndim > 1:
-                            y = np.mean(y, axis=1)
-                        if sr != 16000:
-                            y = librosa.resample(y, orig_sr=sr, target_sr=16000)
+                        with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp_in:
+                            tmp_in.write(audio_input)
+                            tmp_in_path = tmp_in.name
+
+                        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_out:
+                            tmp_out_path = tmp_out.name
+
+                        subprocess.run([
+                            ffmpeg_bin, "-y", "-i", tmp_in_path,
+                            "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le",
+                            tmp_out_path
+                        ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        y, sr = sf.read(tmp_out_path)
+                    except Exception:
+                        y = None
+                    finally:
+                        if tmp_in_path and os.path.exists(tmp_in_path):
+                            try: os.remove(tmp_in_path)
+                            except Exception: pass
+                        if tmp_out_path and os.path.exists(tmp_out_path):
+                            try: os.remove(tmp_out_path)
+                            except Exception: pass
+
+                # Secondary decoder: PyAV in-memory decode
+                if y is None:
+                    try:
+                        import av
+                        container = av.open(io.BytesIO(audio_input))
+                        resampler = av.AudioResampler(format='s16', layout='mono', rate=16000)
+                        frames = []
+                        for frame in container.decode(audio=0):
+                            for r_frame in resampler.resample(frame):
+                                frames.append(r_frame.to_ndarray())
+                        if frames:
+                            audio_data = np.concatenate(frames, axis=1).squeeze()
+                            y = (audio_data / 32768.0).astype(np.float32)
                             sr = 16000
                     except Exception:
-                        y, sr = librosa.load(io.BytesIO(audio_input), sr=sr)
-            finally:
-                if os.path.exists(tmp_in_path):
-                    try: os.remove(tmp_in_path)
-                    except: pass
-                if os.path.exists(tmp_out_path):
-                    try: os.remove(tmp_out_path)
-                    except: pass
+                        y = None
+
+                # Final fallback via librosa
+                if y is None:
+                    y, sr = librosa.load(io.BytesIO(audio_input), sr=sr)
         elif isinstance(audio_input, np.ndarray):
             y = audio_input.astype(np.float32)
             if y.ndim > 1:

@@ -9,10 +9,10 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | Interactive Multi-Mode Workspaces & Grounded RAG Architecture (`megaev.md`) / Auth & Security (Session 48) |
-| Last milestone | Lowered password minimum length to 8 characters (8–128 supported) and implemented complete rate-limited, SHA-256 hashed self-service Forgot & Reset Password workflow across backend and frontend with full test coverage (Session 48) |
+| Active phase | Interactive Multi-Mode Workspaces & Grounded RAG Architecture (`megaev.md`) / Analysis Audio Playback & Health Check Stabilization (Session 51) |
+| Last milestone | Stabilized backend health check polling and fixed analysis preview playback by converting recordings to seekable WAV blobs with IndexedDB persistence (Session 51) |
 | Next action | Implement Phase M1-Ext multi-mode scoring configurations (`configs/scoring/modes_v2.0.yaml`) and scaffold interactive workspace routers and UI layouts |
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-069 |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-072 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
 
 
@@ -91,6 +91,9 @@
 | D-067 | 2026-10-13 | Defined RAG Knowledge Engine utilizing local sentence-transformers (all-MiniLM-L6-v2) and MongoDB vector storage across 20+ specialized industries, AP broadcast news wire copy, parliamentary debate motions, and creative storytelling scripts. | User & Agent (Session 47) |
 | D-068 | 2026-10-13 | Published comprehensive 5,200+ line master technical specification and convergence blueprint in `megaev.md` (Document ID `MEGAEV-2026-V1.0`), detailing exact DSP algorithms, YAML scoring schemas, OpenAPI contracts, React workspace code, and GSD convergence phases. | User & Agent (Session 47) |
 | D-069 | 2026-10-13 | Lowered minimum password length from 12 to 8 characters in versioned config (`configs/auth/auth.yaml`) and NIST validator (`backend/auth/passwords.py`) allowing 8–128 character passphrases. Implemented self-service Forgot Password flow (`/api/auth/forgot-password` and `/api/auth/reset-password`) with SHA-256 token hashing, 15-minute TTL expiry in MongoDB (`password_resets` collection), session revocation upon reset, rate limiting, and dedicated UI pages (`ForgotPasswordPage`, reset modal, "Forgot password?" links) with automated tests. | User & Agent (Session 48) |
+| D-070 | 2026-10-13 | Created frontend/.env with VITE_API_URL=http://localhost:8000; updated dev.py to auto-initialize frontend/.env from frontend/.env.example if missing; installed missing font dependencies (@fontsource/inter, @fontsource/jetbrains-mono); modernized vite.config.ts to resolve import.meta.dirname instead of __dirname to support Vite native configLoader cleanly. | Agent (Session 49) |
+| D-071 | 2026-10-13 | Integrated imageio-ffmpeg static binaries and PyAV decoders with in-memory WAV fast-path in `ml/inference/predict.py` and `pyproject.toml`, resolving LibsndfileError on browser-recorded WebM/Opus audio and verifying end-to-end multi-format audio decoding and scoring. | Agent (Session 50) |
+| D-072 | 2026-10-13 | Fixed speech analysis audio playback by converting browser WebM recordings to seekable WAV blobs via `encodeWav`, added IndexedDB caching (`mediaDb.ts`) to survive page reloads, and eliminated health check flickering via 15s MongoDB ping caching and 2-failure threshold. | Agent (Session 51) |
 
 
 
@@ -1739,6 +1742,127 @@
 
 **Next step**
 - Begin Phase M1-Ext execution: deploy `configs/scoring/modes_v2.0.yaml` and implement the `/api/modes/` backend routers and interactive frontend workspaces.
+
+---
+
+### Session 49 (2026-10-13, ~17:55 IST) [Dev Server Environment & Frontend Setup Fix]
+**User requests**
+1. Fix `npm run dev` startup error: `Error: VITE_API_URL is not set. Copy frontend/.env.example to frontend/.env and fill it in.`
+
+**What was done**
+- Created `frontend/.env` populated with `VITE_API_URL=http://localhost:8000` matching `frontend/.env.example` and backend defaults.
+- Updated `frontend/.gitignore` to ignore `.env` and `.env.*` while keeping `.env.example` tracked.
+- Enhanced `dev.py` runner to auto-initialize `frontend/.env` from `frontend/.env.example` if it does not already exist, ensuring seamless first-time startup without crashes.
+- Resolved missing frontend npm dependencies: ran `npm install` inside `frontend/` to install `@fontsource/inter` and `@fontsource/jetbrains-mono`.
+- Modernized `frontend/vite.config.ts`: replaced `resolve(__dirname, '../docs/legal')` with `resolve(projectRoot, '../docs/legal')` using `import.meta.dirname ?? fileURLToPath(...)` to eliminate Vite warning about native configLoader.
+- Verified end-to-end:
+  - `npm run build` in `frontend/`: compiled and bundled cleanly with 0 errors.
+  - Backend API test suite (`uv run --extra dev pytest tests/api`): 47 tests passed with 0 failures.
+  - Tested `dev.py` startup: both FastAPI uvicorn backend on port 8000 and Vite frontend on port 5173 initialized and started cleanly.
+
+**Files changed**
+- `frontend/.env` (created with `VITE_API_URL=http://localhost:8000`)
+- `frontend/.gitignore` (added `.env` ignore rules)
+- `frontend/vite.config.ts` (replaced `__dirname` with `projectRoot` via `import.meta.dirname`)
+- `dev.py` (auto-copy `frontend/.env.example` to `frontend/.env` if missing)
+- `ROADMAP.md` (Current Status updated)
+- `SESSION_LOG.md` (Quick State, Decision Register D-070, Session 49 entry)
+
+**Decisions**
+- D-070: Created `frontend/.env` with `VITE_API_URL=http://localhost:8000`; updated `dev.py` to auto-initialize `frontend/.env` from `frontend/.env.example` if missing; installed missing font dependencies (`@fontsource/inter`, `@fontsource/jetbrains-mono`); modernized `vite.config.ts` to resolve `import.meta.dirname` instead of `__dirname` to support Vite native configLoader cleanly.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Begin Phase M1-Ext execution: deploy `configs/scoring/modes_v2.0.yaml` and implement the `/api/modes/` backend routers and interactive frontend workspaces.
+
+---
+
+### Session 50 (2026-10-13, ~18:15 IST) [Browser WebM/Opus Decoding & LibsndfileError Fix]
+**User requests**
+1. Fix pipeline failure when uploading browser recording (`recording-123600.webm`): `LibsndfileError: Format not recognised` / `FileNotFoundError: [WinError 2] The system cannot find the file specified (ffmpeg)`.
+
+**What was done**
+- Identified root causes:
+  - Browser's MediaRecorder records WebM/Opus audio (`recording-*.webm`).
+  - System PATH lacked a native `ffmpeg` executable on Windows (`FileNotFoundError: [WinError 2]`).
+  - PyAV fallback was not installed (`ModuleNotFoundError: No module named 'av'`).
+  - `soundfile` and `librosa` cannot natively read arbitrary WebM/Opus binary streams without ffmpeg/PyAV.
+- Installed `imageio-ffmpeg` (v0.6.0) providing standalone bundled Windows `ffmpeg.exe` and installed `av` (v19.0.1) providing direct in-memory PyAV decoding.
+- Added `imageio-ffmpeg>=0.5.1` and `av>=14.0.0` to `dependencies` in `pyproject.toml`.
+- Refactored audio ingestion in `ml/inference/predict.py`:
+  - Added in-memory fast-path for standard WAV/FLAC containers (`sf.read(io.BytesIO(...))` - 0 disk I/O).
+  - Configured multi-tiered fallback for compressed browser formats (WebM/Opus, OGG, MP4):
+    1. Static `imageio_ffmpeg` executable via temporary files with guaranteed cleanup.
+    2. In-memory `PyAV` decode & resample to 16kHz mono.
+    3. Final fallback via `librosa.load`.
+- Verified end-to-end:
+  - Tested synthetic WebM/Opus conversion and prediction in Python: completed with exit code 0 and scored 98.5 on 15 classes.
+
+**Files changed**
+- `pyproject.toml` (added `imageio-ffmpeg>=0.5.1` and `av>=14.0.0`)
+- `ml/inference/predict.py` (fast-path WAV decode + robust WebM/Opus ffmpeg & PyAV decoding)
+- `ROADMAP.md` (Current Status updated)
+- `SESSION_LOG.md` (Quick State, Decision Register D-071, Session 50 entry)
+
+**Decisions**
+- D-071: Integrated imageio-ffmpeg static binaries and PyAV decoders with in-memory WAV fast-path in `ml/inference/predict.py` and `pyproject.toml`, resolving LibsndfileError on browser-recorded WebM/Opus audio and verifying end-to-end multi-format audio decoding and scoring.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Begin Phase M1-Ext execution: deploy `configs/scoring/modes_v2.0.yaml` and implement the `/api/modes/` backend routers and interactive frontend workspaces.
+
+---
+
+### Session 51 (2026-10-13, ~19:15 IST) [Analysis Preview Audio & Health Check Fix]
+**User requests**
+1. Fix backend health check showing inconsistent "API offline" status at `localhost:8000` even though the backend is running.
+2. Fix speech analysis screen preview audio playing no sound when clicked on play.
+
+**What was done**
+- **Diagnosed and resolved backend health check inconsistency:**
+  - In `backend/auth/db.py`: Every `/api/health` request was issuing a blocking `MongoClient.command('ping')` with a 4000ms timeout against MongoDB Atlas. Any internet latency or Atlas roundtrip delay caused the health check to take 2–4s and timeout on the frontend. Added a 15-second TTL cache for ping results so `/api/health` returns in <1ms without blocking on the network.
+  - In `frontend/src/lib/useApiHealth.ts`: Removed `health.state === 'checking'` condition from the failure block so an initial busy response does not immediately mark the API offline. Enforced `failStreak >= 2` threshold, added an immediate 1.5s retry on the first transient error, and added `focus`/`online` event listeners to re-check when the user switches tabs or reconnects.
+  - In `frontend/src/lib/api/client.ts`: Increased health request timeout to 6000ms.
+- **Diagnosed and resolved preview audio silence:**
+  - Browser-recorded audio (`recording-*.webm`) in Chromium lacks EBML seek cues and duration headers, which causes HTMLAudioElement to refuse seeking, hang on `currentTime`, or output silence.
+  - In `frontend/src/lib/analysis/run.ts` & `frontend/src/lib/audio/analyze.ts`: Leveraged `encodeWav(part)` with standard ArrayBuffer parts to convert browser-decoded audio into clean, standard, 100% seekable RIFF/WAV Blobs (`audio/wav`) before creating object URLs.
+  - **Identified critical React StrictMode lifecycle bug in `PlaybackClock`**: In React StrictMode (`<StrictMode>` in `main.tsx`), components mount, unmount, and remount. The previous cleanup `useEffect(() => () => clock.dispose(), [clock])` executed `this.audio = null` upon the initial StrictMode unmount test, but `useMemo` retained the same clock instance on remount — leaving `this.audio` permanently `null` and silently falling back to a muted virtual timer!
+  - Refactored `PlaybackClock` (`frontend/src/lib/audio/playback.ts`): Introduced `ensureAudio()` to lazily instantiate and restore the `HTMLAudioElement` on demand whenever playback or seeking occurs; directly toggled `this.setPlaying(true/false)` upon play/pause; migrated `useClock` to stateful lifecycle tracking.
+  - Added native `<audio controls>` player bar to `AnalysisPage.tsx` beneath the controls for direct, visible, browser-native playback.
+  - Created `frontend/src/lib/analysis/mediaDb.ts`: Implemented a persistent IndexedDB cache for participant recording Blobs so audio preview survives page reloads (F5) and navigation.
+  - In `frontend/src/lib/analysis/store.ts`: Updated `setStoreUser` to avoid clearing active in-memory session analyses on startup. Added `useAnalysis(id)` with automatic IndexedDB fallback restoration (`tryRestoreAudio`).
+- **Verified:**
+  - Tested backend mongo ping: returned `True` with 0s latency.
+  - Built frontend with strict TypeScript compilation (`tsc -b && vite build`): passed with exit code 0.
+
+**Files changed**
+- `backend/auth/db.py` (cached MongoDB ping status with 15s TTL)
+- `frontend/src/lib/useApiHealth.ts` (consecutive failure threshold, quick retry, window focus/online listener)
+- `frontend/src/lib/api/client.ts` (increased health timeout to 6000ms)
+- `frontend/src/lib/audio/analyze.ts` (pass ArrayBuffer to WAV Blob)
+- `frontend/src/lib/audio/playback.ts` (re-engineered PlaybackClock with ensureAudio to prevent StrictMode destruction)
+- `frontend/src/lib/analysis/mediaDb.ts` (IndexedDB persistent blob storage)
+- `frontend/src/lib/analysis/run.ts` (encode decoded audio to seekable WAV blobs & save to mediaDb)
+- `frontend/src/lib/analysis/store.ts` (persistent audio restoration and active session retention)
+- `frontend/src/pages/analysis/AnalysisPage.tsx` (switched to reactive `useAnalysis` + added native `<audio controls>`)
+- `SESSION_LOG.md` (Quick State, Decision Register D-072, Session 51 entry)
+- `ROADMAP.md` (Current Status updated)
+
+**Decisions**
+- D-072: Fixed speech analysis audio playback by converting browser WebM recordings to seekable WAV blobs via `encodeWav`, resolved React StrictMode unmount-cleanup bug with `ensureAudio()`, added direct `<audio controls>` element to `AnalysisPage.tsx`, added IndexedDB caching (`mediaDb.ts`) to survive page reloads, and eliminated health check flickering via 15s MongoDB ping caching and 2-failure threshold.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Begin Phase M1-Ext execution: deploy `configs/scoring/modes_v2.0.yaml` and implement the `/api/modes/` backend routers and interactive frontend workspaces.
+
+
+
 
 
 

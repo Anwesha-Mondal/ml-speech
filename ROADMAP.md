@@ -181,7 +181,8 @@ graph LR
 
 ---
 ## Current Status
-- **Active phase:** Interactive Multi-Mode Workspaces & Grounded RAG Architecture (`megaev.md`) / Auth & Security (Session 48).
-- **Last completed:** Lowered minimum password length to 8 characters (8–128 supported) and implemented complete rate-limited, SHA-256 hashed self-service Forgot & Reset Password workflow across backend and frontend with full test coverage (Session 48).
+- **Active phase:** Interactive Multi-Mode Workspaces & Grounded RAG Architecture (`megaev.md`) / Analysis Audio Playback & Health Check Stabilization (Session 51).
+- **Last completed:** Stabilized backend health check polling and fixed analysis preview playback by converting recordings to seekable WAV blobs with IndexedDB persistence (Session 51).
 - **Next action:** Implement Phase M1-Ext multi-mode scoring configurations (`configs/scoring/modes_v2.0.yaml`) and scaffold interactive workspace routers and UI layouts.
+
 
