@@ -116,7 +116,7 @@ export function ChangePasswordForm() {
         password={next}
         email={user?.email}
         name={user?.display_name}
-        min={policy?.min_length ?? 12}
+        min={policy?.min_length ?? 8}
         max={policy?.max_length ?? 128}
         onValidity={setNextOk}
       />

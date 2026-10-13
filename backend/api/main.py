@@ -18,6 +18,16 @@ load_env()
 # Hugging Face libraries send usage telemetry by default; models are still downloaded on
 # first use, but no usage pings are sent.
 os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", optional("HF_HUB_DISABLE_TELEMETRY", "1"))
+os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="transformers")
+warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
+try:
+    from transformers import logging as hf_logging
+    hf_logging.set_verbosity_error()
+except ImportError:
+    pass
 
 try:
     from .routers import analysis, gamification

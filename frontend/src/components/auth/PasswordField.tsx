@@ -12,6 +12,7 @@ export function PasswordField({
   describedBy,
   invalid = false,
   autoFocus = false,
+  headerRight,
 }: {
   id: string
   label: string
@@ -21,11 +22,15 @@ export function PasswordField({
   describedBy?: string
   invalid?: boolean
   autoFocus?: boolean
+  headerRight?: React.ReactNode
 }) {
   const [show, setShow] = useState(false)
   return (
     <div className="field">
-      <label htmlFor={id}>{label}</label>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <label htmlFor={id}>{label}</label>
+        {headerRight}
+      </div>
       <div className="pw-wrap">
         <input
           id={id}
