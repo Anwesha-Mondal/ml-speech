@@ -9,16 +9,10 @@
 
 | Key | Value |
 | --- | --- |
-<<<<<<< HEAD
-| Active phase | Interactive multi-mode workspaces built (megaev M1-Ext to M6); M7 convergence open (Session 56) |
-| Last milestone | Rebranded website title, navigation, legal docs, and app UI to Speech Guru (Session 57) |
+| Active phase | P13 convergence: megaev M1-Ext to M6 built, 24x pipeline acceleration done, M7 live verification open (Session 56) |
+| Last milestone | Fixed dev proxy / auth-session startup race so sign-in reaches the API (Sessions 58-59); rebranded to Speech Guru (Session 57) |
 | Next action | Run live end-to-end verification of every workspace with the model checkpoint (P13 M7 items) |
-=======
-| Active phase | Interactive multi-mode workspaces built (megaev M1-Ext to M6); M7 convergence open / 24x Pipeline Acceleration & Error Recovery (Session 56) |
-| Last milestone | Accelerated speech flaw analysis from 365s to 11.9s on 120s audio via vectorized frame features, batched PyTorch inference, in-memory chunked ASR, and added UI error recovery in multi-mode workspaces (Session 56); merged PR #10 (Session 57) |
-| Next action | Validate news anchor, debate, and mimic modes with live audio |
->>>>>>> 1c29566594d4e1ca4fc06a6671bde160b4b81552
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-075 |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-078 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
 
 
@@ -102,11 +96,10 @@
 | D-072 | 2026-10-13 | Created frontend/.env with VITE_API_URL=http://localhost:8000; updated dev.py to auto-initialize frontend/.env from frontend/.env.example if missing; installed missing font dependencies (@fontsource/inter, @fontsource/jetbrains-mono); modernized vite.config.ts to resolve import.meta.dirname instead of __dirname to support Vite native configLoader cleanly. | Agent (Session 52) |
 | D-073 | 2026-10-13 | Integrated imageio-ffmpeg static binaries and PyAV decoders with in-memory WAV fast-path in `ml/inference/predict.py` and `pyproject.toml`, resolving LibsndfileError on browser-recorded WebM/Opus audio and verifying end-to-end multi-format audio decoding and scoring. | Agent (Session 53) |
 | D-074 | 2026-10-13 | Fixed speech analysis audio playback by converting browser WebM recordings to seekable WAV blobs via `encodeWav`, resolved React StrictMode unmount-cleanup bug with `ensureAudio()`, added direct `<audio controls>` element to `AnalysisPage.tsx`, added IndexedDB caching (`mediaDb.ts`) to survive page reloads, and eliminated health check flickering via 15s MongoDB ping caching and 2-failure threshold. | Agent (Session 54) |
-<<<<<<< HEAD
-| D-075 | 2026-10-13 | Rebranded website title, brand markers, legal texts, and user-facing notifications from Speech Arena to Speech Guru. | User (Session 57) |
-=======
 | D-075 | 2026-10-13 | Accelerated ML inference pipeline 24x for long speech recordings (120s response: 365s -> 11.9s) via single-pass vectorized frame feature caching (`_extract_contours_and_features`), batched PyTorch inference (`batch_size=16`, `hop_s=2.0` for >45s), pure deterministic word alignment on long audio, in-memory chunked Whisper transcription bypassing disk subprocesses, and added interactive error recovery & reset actions to `InterviewWorkspace` and `StorytellerWorkspace`. | Agent (Session 56) |
->>>>>>> 1c29566594d4e1ca4fc06a6671bde160b4b81552
+| D-076 | 2026-10-13 | Rebranded website title, brand markers, legal texts, and user-facing notifications from Speech Arena to Speech Guru. (Renumbered from D-075 during merge-conflict resolution; D-075 was already taken by Session 56.) | User (Session 57) |
+| D-077 | 2026-10-13 | Keep the browser's same-origin dev proxy for session-cookie correctness but normalize its target host from `localhost` to `127.0.0.1` (IPv4 loopback), and retry the initial auth session check up to four 1.5 s intervals so the one-command launcher can start Vite before Uvicorn finishes importing. | Agent (Sessions 58-59) |
+| D-078 | 2026-10-13 | Resolve the merge-conflict markers that PR #10/#11 had committed into `SESSION_LOG.md` and `ROADMAP.md` by keeping both branches' session entries (Session 57 rebrand, Session 57B PR merge) and both decisions, rather than dropping either side. | Agent (Session 59) |
 
 
 
@@ -2032,8 +2025,7 @@
 - None.
 
 **Next step**
-<<<<<<< HEAD
-- Confirm the restored working tree, then remove the temporary recovery stash and continue P13 M7 workspace verification.
+- Confirm the restored working tree, then remove the temporary recovery stash and continue P13 M7 workspace verification (test practice workspaces and speech analysis end-to-end with live recordings).
 
 ---
 
@@ -2082,13 +2074,17 @@
 - `ROADMAP.md`
 
 **Decisions**
-- D-075: Rebranded website title, brand markers, legal texts, and user-facing notifications from Speech Arena to Speech Guru.
-=======
-- Test practice workspaces and speech analysis end-to-end with live recordings.
+- D-076: Rebranded website title, brand markers, legal texts, and user-facing notifications from Speech Arena to Speech Guru. (Renumbered from D-075; see Decision Register.)
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Continue with P13 M7 live workspace verification.
 
 ---
 
-### Session 57 (2026-10-13, ~21:10 IST) [Merge PR #10: Dev Relative API Proxy & Conflict Resolution]
+### Session 57B (2026-10-13, ~21:10 IST) [Merge PR #10: Dev Relative API Proxy & Conflict Resolution]
 **User requests**
 1. Resolve merge conflict on PR #10 from `farhan-debugs:main` and approve/merge changes without deleting any files.
 
@@ -2107,16 +2103,66 @@
 - `SESSION_LOG.md`
 
 **Decisions**
-- Maintained D-075 and preserved all repository files, test suites, and documentation.
->>>>>>> 1c29566594d4e1ca4fc06a6671bde160b4b81552
+- Maintained the dev relative API proxy and preserved all repository files, test suites, and documentation.
 
 **Problems / bugs found**
-- None.
+- The merge committed `<<<<<<<` conflict markers into `SESSION_LOG.md` and `ROADMAP.md`; both branches' entries were kept and the markers removed in Session 59 (D-078).
 
 **Next step**
-<<<<<<< HEAD
-- Continue with P13 M7 live workspace verification.
-=======
 - Push merged `main` to `origin/main` to complete PR #10 merge on GitHub.
->>>>>>> 1c29566594d4e1ca4fc06a6671bde160b4b81552
 
+---
+
+### Session 58 (2026-10-13, ~21:25 IST) [API startup refusal recovery]
+
+**User request**
+- Fix the sign-in screen reporting that the Speech Guru API is unreachable even though the backend is running.
+
+**What was done**
+- Confirmed the backend was listening and `/api/health` returned `200` with MongoDB up.
+- Updated the Vite development proxy to rewrite `localhost` to `127.0.0.1`, avoiding Node resolving the proxy target to IPv6 `::1` while Uvicorn listens on IPv4.
+- Updated the initial auth session check to retry for up to four 1.5-second intervals when the one-command launcher starts Vite before Uvicorn finishes importing.
+- Verified the frontend proxy health request, TypeScript production build, and lint.
+
+**Files changed**
+- `frontend/vite.config.ts`
+- `frontend/src/components/auth/AuthProvider.tsx`
+- `ROADMAP.md`
+- `SESSION_LOG.md`
+
+**Decisions**
+- D-077: Keep the browser's same-origin dev proxy for session-cookie correctness; make only the proxy target IPv4-normalized.
+
+**Problems / bugs found**
+- The existing lint run reports one unrelated pre-existing `react(set-state-in-effect)` warning in `frontend/src/components/recording/AudioInput.tsx`.
+- This entry was initially written into the middle of the Quick State table; moved to the Session Entries section in Session 59.
+
+**Next step**
+- Restart the frontend dev server so Vite reloads the proxy configuration, then retry sign-in.
+
+---
+
+### Session 59 (2026-10-13, ~21:35 IST) [Proxy ECONNREFUSED verification + merge-conflict cleanup]
+
+**User request**
+- The sign-in screen still reported "Can't reach the Speech Arena API at http://localhost:8000, or its database (MongoDB) isn't running" and Vite logged `http proxy error: /api/auth/me` and `/api/auth/policy` with `ECONNREFUSED`, even though the backend was running.
+
+**What was done**
+- Reproduced the timeline: `python dev.py` started at 21:24:11, Vite at 21:24:16, and the proxy errors were logged at 21:24:27 while Uvicorn was still importing (ML stack), i.e. the startup race plus the pre-fix IPv6 proxy target.
+- Verified the live stack end to end after Session 58's fix: `GET :8000/api/health` = 200 (`mongodb: up`) on both `127.0.0.1` and `localhost`; through the Vite dev proxy on :5173 - `/api/health` = 200, `/api/auth/policy` = 200, `/api/auth/me` = 401 (correct for a signed-out session, not a connection failure).
+- Ran `npm run lint` (1 pre-existing warning, 0 errors) and `npm run build` (`tsc -b && vite build`, 0 errors).
+- Found and resolved the merge-conflict markers that PR #10/#11 had committed into `SESSION_LOG.md` (4 blocks) and `ROADMAP.md` (1 block), keeping both branches' Session 57 entries (rebrand + PR merge, the latter renumbered `Session 57B`) and disambiguating the duplicate D-075 as D-076.
+- Moved the Session 58 entry out of the broken Quick State table into the Session Entries section; updated Quick State and ROADMAP Current Status.
+
+**Files changed**
+- `SESSION_LOG.md`
+- `ROADMAP.md`
+
+**Decisions**
+- D-078: Resolve committed conflict markers by keeping both branches' entries instead of dropping either side.
+
+**Problems / bugs found**
+- Committed `<<<<<<<` markers remain impossible to grep away silently: the merge in `794102a`/`1c29566` shipped them into `main`; only `SESSION_LOG.md` and `ROADMAP.md` were affected (verified by repo-wide search).
+
+**Next step**
+- Run live end-to-end verification of every workspace with the model checkpoint (P13 M7 items).
