@@ -6,6 +6,8 @@ FROM python:3.11-slim-bookworm
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
+    PIP_ROOT_USER_ACTION=ignore \
+    HF_HUB_DISABLE_SYMLINKS_WARNING=1 \
     PYTHONPATH=/app \
     DEBIAN_FRONTEND=noninteractive
 
@@ -20,6 +22,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+# Upgrade pip to latest version
+RUN pip install --no-cache-dir --upgrade pip
+
 # 1. Install PyTorch (default: CPU-optimized for fast, lightweight cloud Docker builds; override with CUDA if needed)
 ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir torch torchaudio --index-url ${TORCH_INDEX_URL}
@@ -30,7 +35,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # 3. Pre-download & cache facebook/wav2vec2-base weights so container runs fully offline
 RUN python -c "from transformers import Wav2Vec2Model, Wav2Vec2Processor; \
-    print('[*] Caching facebook/wav2vec2-base encoder and processor...'); \
+    print('[*] Pre-caching facebook/wav2vec2-base...'); \
     Wav2Vec2Model.from_pretrained('facebook/wav2vec2-base'); \
     Wav2Vec2Processor.from_pretrained('facebook/wav2vec2-base'); \
     print('[+] Pre-caching complete!')"
@@ -38,18 +43,8 @@ RUN python -c "from transformers import Wav2Vec2Model, Wav2Vec2Processor; \
 # 4. Copy codebase
 COPY . /app/
 
-# 5. Ensure required output directories exist and reassemble heavy model checkpoint if chunked
-RUN mkdir -p /app/ml/checkpoints /app/ml/runs /app/ml/data/audio /app/ml/data/manifests && \
-    python -c "import os, glob; \
-    bp = '/app/ml/checkpoints/best_checkpoint.pt'; \
-    parts = sorted(glob.glob(bp + '.part*')); \
-    if parts and not os.path.exists(bp): \
-        print('[*] Reassembling heavy model checkpoint from ' + str(len(parts)) + ' parts...'); \
-        with open(bp, 'wb') as out: \
-            for p in parts: \
-                with open(p, 'rb') as inp: \
-                    out.write(inp.read()); \
-        print('[+] Reassembled heavy model checkpoint complete!')"
+# 5. Ensure required runtime output directories exist
+RUN mkdir -p /app/ml/checkpoints /app/ml/runs /app/ml/data/audio /app/ml/data/manifests
 
 # Default action: run the FastAPI web service with dynamic PORT support (Render compatibility)
 EXPOSE 8000
