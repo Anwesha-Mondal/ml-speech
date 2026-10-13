@@ -21,6 +21,7 @@ os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", optional("HF_HUB_DISABLE_TELEM
 os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
 
 import warnings
+
 warnings.filterwarnings("ignore", category=UserWarning, module="transformers")
 warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
 try:
@@ -38,8 +39,10 @@ from backend.auth import SecurityMiddleware, admin_router, auth_router, init_db
 from backend.auth.config import get_settings
 from backend.auth.db import ping as mongo_ping
 from backend.leaderboard import leaderboard_router
+from backend.modes import modes_router
 from backend.privacy import privacy_router
 from backend.privacy.retention import maybe_purge
+from backend.rag import rag_router
 
 _docs = flag("ENABLE_DOCS")
 app = FastAPI(
@@ -66,6 +69,8 @@ app.include_router(privacy_router, prefix="/api")
 app.include_router(analysis.router, prefix="/api")
 app.include_router(gamification.router, prefix="/api")
 app.include_router(leaderboard_router, prefix="/api")
+app.include_router(rag_router, prefix="/api")
+app.include_router(modes_router, prefix="/api")
 
 @app.get("/api/health")
 def health_check() -> dict[str, object]:

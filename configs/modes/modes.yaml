@@ -1,0 +1,70 @@
+# Interactive practice-mode settings (megaev.md §4-§7, §19.99, §37; Phases M3-M6, decision D-071).
+# Pillar A only: these drive questions, scripts, timers and structure checks. Speech scoring
+# stays in configs/scoring/modes_v2.0.yaml (Pillar B) and never reads this file.
+version: "modes-1.0"
+
+interview:
+  max_turns: 5
+  interviewer_name: "Interviewer"
+  seniorities: [junior, mid, senior, executive]
+  # §4.6: answers shorter than min_sec or longer than max_sec get a length note.
+  answer_bounds_sec: {min: 30, max: 120}
+  # Rubric hints shown with each question: this many critical keywords.
+  hint_keywords: 4
+  # STAR structure check (§4.4): a part counts as present when any cue phrase appears in the
+  # transcript. Reports structure only, never a judgement about the person.
+  star_cues:
+    situation: ["at my", "when i was", "we were", "the situation", "the context", "last year", "at the time", "our team", "the company", "the project"]
+    task: ["my goal", "my role", "i was responsible", "i needed to", "we needed to", "the task", "the objective", "my job", "the challenge was", "i was asked"]
+    action: ["i built", "i led", "i decided", "i designed", "i wrote", "i proposed", "i implemented", "i organized", "i analyzed", "i created", "i negotiated", "i changed", "so i", "i then"]
+    result: ["as a result", "the result", "in the end", "which led to", "increased", "reduced", "improved", "saved", "percent", "%", "we shipped", "we launched", "outcome"]
+  # A number in the answer also counts as a Result cue (measurable outcome).
+  numbers_count_as_result: true
+
+news:
+  default_wpm: 140
+  wpm_range: [110, 180]
+  # §5.5 broadcast cadence band.
+  target_wpm_band: [130, 150]
+  font_size_px: {default: 34, min: 22, max: 56}
+
+public_speaking:
+  # §6.6: projection target over the room noise floor.
+  projection_target_db: 15.0
+  # §37.1: 4-7-8 breathing, two cycles before the microphone unlocks.
+  breathing: {inhale_sec: 4, hold_sec: 7, exhale_sec: 8, cycles: 2}
+  # §19.99 environment tiers. Sound is synthesised in the browser (no recorded assets).
+  stage_tiers:
+    - {tier: 1, name: "Soundproof vocal booth", rt60_sec: 0.20, crowd_level: 0.0, distractions: []}
+    - {tier: 2, name: "Corporate boardroom panel", rt60_sec: 0.65, crowd_level: 0.15, distractions: [{at_sec: 30, kind: murmur}]}
+    - {tier: 3, name: "500-seat convention hall", rt60_sec: 1.40, crowd_level: 0.30, distractions: [{at_sec: 20, kind: phone}, {at_sec: 45, kind: mic_pop}]}
+    - {tier: 4, name: "Hostile parliamentary chamber", rt60_sec: 2.10, crowd_level: 0.45, distractions: [{at_sec: 15, kind: poi_shout}]}
+  # §6.5 / §37.2 debate clocks (seconds).
+  debate_formats:
+    lincoln_douglas:
+      label: "Lincoln-Douglas"
+      stages:
+        - {id: aff_constructive, label: "Affirmative constructive", seconds: 360}
+        - {id: neg_cross_ex, label: "Cross-examination (negative asks)", seconds: 180}
+        - {id: neg_rebuttal, label: "First rebuttal", seconds: 420}
+        - {id: aff_cross_ex, label: "Cross-examination (affirmative asks)", seconds: 180}
+        - {id: closing, label: "Final rebuttal", seconds: 240}
+    practice_round:
+      label: "Practice round (short)"
+      stages:
+        - {id: constructive, label: "Constructive", seconds: 240}
+        - {id: cross_ex, label: "Cross-examination", seconds: 120}
+        - {id: rebuttal, label: "Rebuttal", seconds: 180}
+
+storytelling:
+  # §7.3 Freytag phases as fractions of the recording (start, end).
+  arc_phases:
+    - {id: exposition, label: "Exposition", span: [0.00, 0.25]}
+    - {id: rising_action, label: "Rising action", span: [0.25, 0.55]}
+    - {id: climax, label: "Climax", span: [0.55, 0.70]}
+    - {id: falling_action, label: "Falling action", span: [0.70, 0.85]}
+    - {id: resolution, label: "Resolution", span: [0.85, 1.00]}
+  # Climax counts as the peak when its mean energy is at least this far above the exposition.
+  climax_over_exposition_db: 3.0
+  # Resolution counts as settled when it is at least this much quieter than the climax.
+  resolution_below_climax_db: 2.0

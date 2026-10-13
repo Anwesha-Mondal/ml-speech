@@ -1,0 +1,132 @@
+[
+  {
+    "content": "The iron gates groaned against the midnight wind. Evelyn stepped into the grand foyer, her lantern casting elongated shadows against the tarnished mirrors. From the top of the marble staircase, a gravelly voice cut through the dark. 'Did you truly believe you could leave Blackwood Manor with the journal?' Evelyn gripped the parchment tightly against her chest, her heart hammering against her ribs. 'The truth belongs to the world now, Uncle. Not to the shadows!' A deafening thunderclap rattled the stained glass windows, plunging the manor into total darkness.",
+    "document_id": "story_audiobook_01",
+    "domain": "storytelling",
+    "metadata": {
+      "characters": [
+        {
+          "description": "Deep, measured, atmospheric baseline.",
+          "name": "Narrator",
+          "semitone_shift": 0.0
+        },
+        {
+          "description": "Raspy, commanding, lowered pitch register.",
+          "name": "Lord Blackwood",
+          "semitone_shift": -4.2
+        },
+        {
+          "description": "Breathless, sharp, elevated pitch register.",
+          "name": "Evelyn",
+          "semitone_shift": 3.8
+        }
+      ],
+      "format": "Audiobook Dramatic Reading",
+      "genre": "Gothic Mystery",
+      "script_text": "The iron gates groaned against the midnight wind. [PAUSE 0.6s] Evelyn stepped into the grand foyer, her lantern casting elongated shadows against the tarnished mirrors. From the top of the marble staircase, a gravelly voice cut through the dark. [PAUSE 0.5s] [VOICE: Lord Blackwood] 'Did you truly believe you could leave Blackwood Manor with the journal?' [PAUSE 0.7s] Evelyn gripped the parchment tightly against her chest, her heart hammering against her ribs. [VOICE: Evelyn] 'The truth belongs to the world now, Uncle. Not to the shadows!' [PAUSE 0.8s] A deafening thunderclap rattled the stained glass windows, plunging the manor into total darkness.",
+      "target_climax_sec": 32.0,
+      "target_pitch_range_st": 9.5
+    },
+    "title": "The Whispering Fog of Blackwood Manor"
+  },
+  {
+    "content": "Imagine *Inception* meets *The Bourne Identity*. A disgraced memory architect discovers that the memories he erased from a captured political assassin... are actually his own. He has seventy-two hours before his cognitive implant permanently resets. His only ally? The rogue agent sent to silence him. But here is the ultimate twist: when he finally breaches the subterranean mainframe to reclaim his past, he realizes the assassination was never an accident. He was the target all along.",
+    "document_id": "story_pitch_02",
+    "domain": "storytelling",
+    "metadata": {
+      "characters": [
+        {
+          "description": "Punchy, dynamic, accelerating pace with sudden dramatic pauses.",
+          "name": "Director / Pitcher",
+          "semitone_shift": 0.0
+        }
+      ],
+      "format": "90-Second Screenplay Elevator Pitch",
+      "genre": "Sci-Fi Action",
+      "script_text": "Imagine *Inception* meets *The Bourne Identity*. [PAUSE 0.5s] A disgraced memory architect discovers that the memories he erased from a captured political assassin... are actually his own. [PAUSE 0.4s] He has seventy-two hours before his cognitive implant permanently resets. His only ally? The rogue agent sent to silence him. [PAUSE 0.6s] But here is the ultimate twist: when he finally breaches the subterranean mainframe to reclaim his past, he realizes the assassination was never an accident. [PAUSE 0.8s] [CLIMAX] He was the target all along.",
+      "target_climax_sec": 28.0,
+      "target_pitch_range_st": 10.2
+    },
+    "title": "Apex Protocol: A High-Concept Sci-Fi Thriller"
+  },
+  {
+    "content": "Stop scrolling right now. If you make this one subtle body language mistake in the first three seconds of a presentation, your audience has already tuned you out. In 1967, Harvard researchers proved that listeners evaluate your confidence before you even finish your opening sentence! Here is the secret: never start with 'um, hi everyone.' Stand still. Take one breath. And deliver your first line like it's the absolute truth.",
+    "document_id": "story_hook_03",
+    "domain": "storytelling",
+    "metadata": {
+      "characters": [
+        {
+          "description": "High energy, zero dead air, explosive opening, urgent emphasis.",
+          "name": "Creator",
+          "semitone_shift": 0.0
+        }
+      ],
+      "format": "60-Second Viral Social Media Hook (Shorts / Reels)",
+      "genre": "Educational Viral Storytelling",
+      "script_text": "Stop scrolling right now. [PAUSE 0.2s] If you make this one subtle body language mistake in the first three seconds of a presentation, your audience has already tuned you out. [PAUSE 0.3s] In 1967, Harvard researchers proved that listeners evaluate your confidence before you even finish your opening sentence! [PAUSE 0.3s] Here is the secret: never start with 'um, hi everyone.' Stand still. Take one breath. And deliver your first line like it's the absolute truth.",
+      "target_climax_sec": 18.0,
+      "target_pitch_range_st": 11.5
+    },
+    "title": "The 3-Second Rule That Broke the Internet"
+  },
+  {
+    "content": "Deep in the Whispering Woods, underneath the great mossy oak tree, lived a big furry bear named Barnaby. But Barnaby had a very strange problem. Whenever he opened his great big mouth to roar... 'Squeak!' Little Pippin the squirrel scurried down the tree trunk, twitching his bushy tail. 'Don't worry Barnaby! You don't need a loud roar to be the bravest bear in the forest!' And from that day on, Barnaby knew that kindness was louder than any roar in the world.",
+    "document_id": "story_bedtime_04",
+    "domain": "storytelling",
+    "metadata": {
+      "characters": [
+        {
+          "description": "Warm, melodic, comforting bedtime cadence.",
+          "name": "Narrator",
+          "semitone_shift": 0.0
+        },
+        {
+          "description": "Gentle, sorrowful, soft-spoken bear voice.",
+          "name": "Barnaby",
+          "semitone_shift": -2.5
+        },
+        {
+          "description": "High-pitched, enthusiastic squirrel squeak.",
+          "name": "Pippin",
+          "semitone_shift": 5.0
+        }
+      ],
+      "format": "Children's Bedtime & Folktale",
+      "genre": "Children's Literature",
+      "script_text": "Deep in the Whispering Woods, underneath the great mossy oak tree, lived a big furry bear named Barnaby. [PAUSE 0.5s] But Barnaby had a very strange problem. Whenever he opened his great big mouth to roar... [PAUSE 0.4s] [VOICE: Barnaby] 'Squeak!' [PAUSE 0.6s] Little Pippin the squirrel scurried down the tree trunk, twitching his bushy tail. [VOICE: Pippin] 'Don't worry Barnaby! You don't need a loud roar to be the bravest bear in the forest!' [PAUSE 0.8s] And from that day on, Barnaby knew that kindness was louder than any roar in the world.",
+      "target_climax_sec": 26.0,
+      "target_pitch_range_st": 12.0
+    },
+    "title": "Barnaby the Bear Who Lost His Roar"
+  },
+  {
+    "content": "The neon sign outside my office window flickered like a dying heartbeat. Rain drummed against the glass, washing away the city's sins, or at least trying to. She walked in smelling of expensive perfume and cheap gunpowder. 'They told me you were the only private eye in this rotten town who couldn't be bought, Mr. Vance.' I tipped my fedora back, leaned over the mahogany desk, and flicked my lighter open. 'You were misinformed, sweetheart. Everyone in this town has a price. Yours just happens to be double.' That was when I noticed the silver revolver slipping from her silk evening coat.",
+    "document_id": "story_noir_05",
+    "domain": "storytelling",
+    "metadata": {
+      "characters": [
+        {
+          "description": "Low, steady narration.",
+          "name": "Narrator",
+          "semitone_shift": 0.0
+        },
+        {
+          "description": "Higher register.",
+          "name": "Femme Fatale",
+          "semitone_shift": 8.2
+        },
+        {
+          "description": "Lower register.",
+          "name": "Detective Vance",
+          "semitone_shift": -8.5
+        }
+      ],
+      "format": "Audiobook Dramatic Reading",
+      "genre": "Hardboiled 1940s Noir",
+      "script_text": "The neon sign outside my office window flickered like a dying heartbeat. [PAUSE 0.7s] Rain drummed against the glass, washing away the city's sins, or at least trying to. [PAUSE 0.5s] She walked in smelling of expensive perfume and cheap gunpowder. [PAUSE 0.6s] [VOICE: Femme Fatale] 'They told me you were the only private eye in this rotten town who couldn't be bought, Mr. Vance.' [PAUSE 0.8s] I tipped my fedora back, leaned over the mahogany desk, and flicked my lighter open. [PAUSE 0.6s] [VOICE: Detective Vance] 'You were misinformed, sweetheart. Everyone in this town has a price. Yours just happens to be double.' [PAUSE 1.0s] [CLIMAX] That was when I noticed the silver revolver slipping from her silk evening coat.",
+      "target_climax_sec": 28.0,
+      "target_pitch_range_st": 9.0
+    },
+    "title": "Noir Detective Monologue"
+  }
+]

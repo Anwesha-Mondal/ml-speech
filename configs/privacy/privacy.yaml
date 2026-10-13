@@ -13,8 +13,8 @@ legal:
   minimum_age: 16
 
 retention:
-  # Sign-in sessions (with IP and browser) live in Redis and are deleted the moment they end:
-  # on sign-out, after 24 h idle, or after 7 days (configs/auth/auth.yaml → session).
+  # Sign-in sessions (with IP and browser) are deleted the moment they end: on sign-out,
+  # after 24 h idle, or after 7 days (configs/auth/auth.yaml → session; MongoDB TTL index).
   # Security audit events (sign-ins, failures, admin actions, with IP).
   audit_days: 90
   # Analysis results held in server memory. Recordings themselves are never stored.

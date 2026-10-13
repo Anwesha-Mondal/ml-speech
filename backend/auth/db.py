@@ -1,8 +1,9 @@
-"""MongoDB storage for accounts, the security audit log and consent records.
+"""MongoDB storage: accounts, sign-in sessions, consent records, the security audit log and
+leaderboard scores (one database since D-063).
 
-Sign-in sessions live in Redis (see sessions.py). Connection settings come from .env
-(MONGODB_URI, MONGODB_DB). Audit retention is enforced by MongoDB itself through a TTL
-index, so old events disappear even while the API is down.
+Connection settings come from .env (MONGODB_URI, MONGODB_DB). Retention is enforced by MongoDB
+itself through TTL indexes, so ended sessions and old audit events disappear even while the API
+is down.
 """
 
 from __future__ import annotations
@@ -10,11 +11,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import asdict, dataclass, field, fields
-try:
-    from datetime import UTC, datetime
-except ImportError:
-    from datetime import datetime, timezone
-    UTC = timezone.utc
+from datetime import UTC, datetime
 from typing import Any
 
 from pymongo import ASCENDING, DESCENDING, MongoClient
@@ -136,9 +133,17 @@ def ensure_indexes(db: Database[dict[str, Any]]) -> None:
     db[AUDIT].create_index([("user_id", ASCENDING)], name="by_user")
     _ttl_index(db[AUDIT], "at", p.audit_days * 86400)
     db[CONSENTS].create_index([("user_id", ASCENDING), ("document", ASCENDING)], name="by_user_doc")
-    try:
-        db[PASSWORD_RESETS].create_index([("token_hash", ASCENDING)], unique=True, name="reset_token_unique")
-        db[PASSWORD_RESETS].create_index([("email", ASCENDING)], name="reset_email")
-        _ttl_index(db[PASSWORD_RESETS], "expires_at", 0)
-    except Exception:
-        pass
+    # Sessions: looked up by token hash on every request; listed and revoked per user;
+    # deleted by MongoDB at `purge_at` (the earlier of the idle and the absolute expiry).
+    db[SESSIONS].create_index([("token_hash", ASCENDING)], unique=True, name="token_hash_unique")
+    db[SESSIONS].create_index([("user_id", ASCENDING)], name="by_user")
+    _ttl_index(db[SESSIONS], "purge_at", 0)
+    # Leaderboard: one board = (scoring_version, prompt_id), read best first.
+    db[LEADERBOARD].create_index(
+        [("scoring_version", ASCENDING), ("prompt_id", ASCENDING), ("best_score", DESCENDING)], name="by_board"
+    )
+    db[LEADERBOARD].create_index([("user_id", ASCENDING)], name="by_user")
+    # Password resets: single-use tokens, deleted by MongoDB once they expire.
+    db[PASSWORD_RESETS].create_index([("token_hash", ASCENDING)], unique=True, name="reset_token_unique")
+    db[PASSWORD_RESETS].create_index([("email", ASCENDING)], name="reset_email")
+    _ttl_index(db[PASSWORD_RESETS], "expires_at", 0)

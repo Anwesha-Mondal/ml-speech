@@ -326,7 +326,8 @@ export function analysisFromApi(args: {
     duration,
     score: { total: result.score.total, buckets: normalizeBuckets(result.score.buckets) },
     flaws,
-    scoringVersion: SCORING_VERSION,
+    // Server results carry the version of the rules that scored them (modes_v2.0.yaml → s2.0).
+    scoringVersion: result.score.scoring_version ?? SCORING_VERSION,
     jobId: args.jobId,
     participantFile: args.participantFile,
     raw: result,

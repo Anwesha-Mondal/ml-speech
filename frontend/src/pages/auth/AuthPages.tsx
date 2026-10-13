@@ -69,8 +69,8 @@ function OfflineNotice({ onRetry }: { onRetry: () => void }) {
     <p className="notice notice-warn" role="alert">
       <CircleAlert size={15} />
       <span>
-        Can't reach the Speech Arena API at <span className="mono">{API_BASE}</span>, or its databases (MongoDB,
-        Redis) aren't running. Start them, then{' '}
+        Can't reach the Speech Arena API at <span className="mono">{API_BASE}</span>, or its database (MongoDB)
+        isn't running. Start them, then{' '}
         <button type="button" className="link-btn" onClick={onRetry}>
           try again
         </button>
@@ -325,6 +325,10 @@ export function ForgotPasswordPage() {
   const initialToken = searchParams.get('token') || ''
 
   const [step, setStep] = useState<'request' | 'reset'>(initialToken ? 'reset' : 'request')
+  // The token arrives in the reset link; drop it from the address bar so it doesn't stay in history.
+  useEffect(() => {
+    if (initialToken) window.history.replaceState(null, '', loc.pathname)
+  }, [initialToken, loc.pathname])
   const [email, setEmail] = useState('')
   const [token, setToken] = useState(initialToken)
   const [newPassword, setNewPassword] = useState('')
@@ -342,14 +346,9 @@ export function ForgotPasswordPage() {
     setError(null)
     setSuccess(null)
     try {
+      // The API never returns the token: the link goes only to the account's owner.
       const res = await authApi.forgotPassword(email)
-      if (res.reset_token) {
-        setToken(res.reset_token)
-        setStep('reset')
-        setSuccess('Reset token generated. Enter your new password below.')
-      } else {
-        setSuccess(res.message || 'If an account exists with that email, instructions have been generated.')
-      }
+      setSuccess(res.message)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to request password reset.')
     } finally {
@@ -378,7 +377,7 @@ export function ForgotPasswordPage() {
       title={step === 'request' ? 'Reset password' : 'Set new password'}
       subtitle={
         step === 'request'
-          ? 'Enter your account email to receive a password reset token.'
+          ? 'Enter your account email. If it has an account, a reset link is sent to its owner.'
           : `Choose a new password with at least ${policy.min_length} characters.`
       }
     >
@@ -421,7 +420,7 @@ export function ForgotPasswordPage() {
             />
           </div>
           <button type="submit" className="btn btn-primary btn-lg" disabled={busy || !email}>
-            {busy ? 'Generating token…' : 'Request Password Reset'}
+            {busy ? 'Sending…' : 'Send reset link'}
           </button>
           <p className="t-small auth-switch">
             Remember your password? <Link to="/login">Sign in</Link>
@@ -439,7 +438,7 @@ export function ForgotPasswordPage() {
               value={token}
               onChange={(e) => setToken(e.target.value)}
               required
-              placeholder="Paste your reset token"
+              placeholder="Paste the token from your reset link"
             />
           </div>
           <PasswordField
@@ -493,7 +492,7 @@ export function ForgotPasswordPage() {
                 setSuccess(null)
               }}
             >
-              ← Back to request token
+              ← Request a new link
             </button>
             <Link to="/login" className="t-small">
               Back to Sign in

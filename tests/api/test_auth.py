@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
 from datetime import timedelta
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -202,7 +205,9 @@ def test_sign_out_deletes_the_session(client: TestClient, rds: Any) -> None:
 
 def test_session_store_down_gives_503(app: FastAPI, monkeypatch: Any) -> None:
     from contextlib import contextmanager
+
     from fastapi import HTTPException, status
+
     from backend.auth import sessions
 
     c = TestClient(app, base_url="http://testserver")
@@ -311,7 +316,52 @@ def test_admin_unlock_is_audited_and_restores_sign_in(app: FastAPI) -> None:
     assert user.post("/api/auth/login", json={"email": "user@example.com", "password": STRONG}, headers=HDR).status_code == 200
 
 
-def test_forgot_and_reset_password_flow(app: FastAPI, db: Any) -> None:
+def _link_token(caplog: pytest.LogCaptureFixture) -> str:
+    """The reset token, read from the delivered link (the 'log' channel), as its owner would."""
+    links = [r.getMessage().rsplit(" ", 1)[1] for r in caplog.records if r.name == "speech_arena.password_reset"]
+    assert links, "no reset link was delivered"
+    url = urlparse(links[-1])
+    assert url.scheme == "http" and url.netloc == "app.invalid" and url.path == "/reset-password"
+    return parse_qs(url.query)["token"][0]
+
+
+def test_forgot_password_never_returns_the_token(client: TestClient, caplog: pytest.LogCaptureFixture) -> None:
+    """Regression: the token used to be in the response, so anyone could take over any account."""
+    register(client)
+    caplog.set_level(logging.WARNING, logger="speech_arena.password_reset")
+    real = client.post("/api/auth/forgot-password", json={"email": "ana@example.com"}, headers=HDR)
+    fake = client.post("/api/auth/forgot-password", json={"email": "ghost@example.com"}, headers=HDR)
+    assert real.status_code == fake.status_code == 200
+    assert real.json() == fake.json()  # no hint whether the email has an account
+    token = _link_token(caplog)
+    assert token not in real.text and "token" not in real.json()
+
+
+def test_reset_delivery_none_sends_nothing(client: TestClient, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, db: Any) -> None:
+    monkeypatch.setenv("PASSWORD_RESET_DELIVERY", "none")
+    register(client)
+    caplog.set_level(logging.DEBUG, logger="speech_arena.password_reset")
+    r = client.post("/api/auth/forgot-password", json={"email": "ana@example.com"}, headers=HDR)
+    assert r.status_code == 200 and "token" not in r.json()
+    assert not [rec for rec in caplog.records if rec.name == "speech_arena.password_reset"]
+    assert db[PASSWORD_RESETS].count_documents({"email": "ana@example.com"}) == 1  # an admin can still issue one
+
+
+def test_cli_reset_link(app: FastAPI, capsys: pytest.CaptureFixture[str]) -> None:
+    from backend.auth.cli import main
+
+    c = TestClient(app, base_url="http://testserver")
+    register(c)
+    assert main(["reset-link", "--email", "ana@example.com"]) == 0
+    link = capsys.readouterr().out.strip().splitlines()[-1]
+    token = parse_qs(urlparse(link).query)["token"][0]
+    r = c.post("/api/auth/reset-password", json={"token": token, "new_password": "quartz-meadow-31"}, headers=HDR)
+    assert r.status_code == 200
+    assert main(["reset-link", "--email", "ghost@example.com"]) == 1
+
+
+def test_forgot_and_reset_password_flow(app: FastAPI, db: Any, caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.WARNING, logger="speech_arena.password_reset")
     client = TestClient(app, base_url="http://testserver")
     register(client, email="ana@example.com", name="Ana")
 
@@ -322,10 +372,8 @@ def test_forgot_and_reset_password_flow(app: FastAPI, db: Any) -> None:
     # Request password reset
     r = client.post("/api/auth/forgot-password", json={"email": "Ana@example.com"}, headers=HDR)
     assert r.status_code == 200
-    data = r.json()
-    assert "Password reset token generated" in data["message"]
-    token = data.get("reset_token")
-    assert token is not None
+    assert "reset link has been sent" in r.json()["message"]
+    token = _link_token(caplog)
 
     # Check DB has hashed token, not plain token
     entry = db[PASSWORD_RESETS].find_one({"email": "ana@example.com"})
@@ -359,14 +407,15 @@ def test_forgot_and_reset_password_flow(app: FastAPI, db: Any) -> None:
     assert client.post("/api/auth/login", json={"email": "ana@example.com", "password": NEW_PW}, headers=HDR).status_code == 200
 
 
-def test_reset_password_errors_and_expiry(app: FastAPI, db: Any) -> None:
+def test_reset_password_errors_and_expiry(app: FastAPI, db: Any, caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.WARNING, logger="speech_arena.password_reset")
     client = TestClient(app, base_url="http://testserver")
     register(client, email="bob@example.com", name="Bob")
 
     # Unknown email returns 200 to prevent enumeration, but creates no DB entry
     r = client.post("/api/auth/forgot-password", json={"email": "nonexistent@example.com"}, headers=HDR)
     assert r.status_code == 200
-    assert "If an account with this email exists" in r.json()["message"]
+    assert "If an account with this email exists" in r.json()["message"] and "token" not in r.json()
     assert db[PASSWORD_RESETS].find_one({"email": "nonexistent@example.com"}) is None
 
     # Invalid token format (< 16 chars) -> 422
@@ -377,8 +426,8 @@ def test_reset_password_errors_and_expiry(app: FastAPI, db: Any) -> None:
     assert res.status_code == 400
 
     # Generate token for Bob
-    r2 = client.post("/api/auth/forgot-password", json={"email": "bob@example.com"}, headers=HDR)
-    token = r2.json()["reset_token"]
+    client.post("/api/auth/forgot-password", json={"email": "bob@example.com"}, headers=HDR)
+    token = _link_token(caplog)
 
     # New password fails policy (< 8 chars)
     short_pw = client.post("/api/auth/reset-password", json={"token": token, "new_password": "tidal-8"}, headers=HDR)

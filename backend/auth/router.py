@@ -15,6 +15,8 @@ from .config import AuthSettings, get_settings
 from .db import PASSWORD_RESETS, USERS, User, get_db, utcnow
 from .passwords import check_policy, dummy_verify, hash_password, needs_rehash, verify_password
 from .ratelimit import limiter
+from .reset_delivery import channel as reset_channel
+from .reset_delivery import issue_reset_link, send_reset_link
 from .sessions import (
     AuthSession,
     Db,
@@ -375,6 +377,9 @@ def logout_others(
     return {"ok": True, "revoked_sessions": n}
 
 
+RESET_REQUESTED = "If an account with this email exists, a password reset link has been sent to its owner."
+
+
 @router.post("/forgot-password")
 def forgot_password(
     body: ForgotPasswordIn,
@@ -382,42 +387,19 @@ def forgot_password(
     db: Db = Depends(get_db),
     cfg: AuthSettings = Depends(get_settings),
 ) -> dict[str, object]:
+    """Start a reset. The answer is the same whether or not the email has an account, and the
+    link goes only to the account's owner (see reset_delivery.py), never into this response."""
     email = normalize_email(body.email)
     ip = client_ip(request)
     _rate_limit(f"forgot-pw:{ip}", cfg.reset_request_per_hour, 3600)
     _rate_limit(f"forgot-pw-email:{email}", cfg.reset_request_per_hour, 3600)
 
     user = get_user_by_email(db, email)
-    if user is None or not user.is_active:
-        return {
-            "ok": True,
-            "message": "If an account with this email exists, password reset instructions have been generated.",
-        }
-
-    import hashlib
-    import secrets
-
-    raw_token = secrets.token_urlsafe(32)
-    token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
-    now = utcnow()
-    expires_at = now + timedelta(minutes=cfg.reset_lifetime_minutes)
-
-    db[PASSWORD_RESETS].delete_many({"email": email})
-    db[PASSWORD_RESETS].insert_one({
-        "token_hash": token_hash,
-        "email": email,
-        "created_at": now,
-        "expires_at": expires_at,
-        "used": False,
-    })
-
-    audit(db, "password_reset_requested", request=request, user=user)
-
-    return {
-        "ok": True,
-        "message": "Password reset token generated. Use it to set a new password.",
-        "reset_token": raw_token,
-    }
+    if user is not None and user.is_active:
+        link = issue_reset_link(db, email, cfg)
+        send_reset_link(email, link)
+        audit(db, "password_reset_requested", request=request, user=user, detail=f"delivery {reset_channel()}")
+    return {"ok": True, "message": RESET_REQUESTED}
 
 
 @router.post("/reset-password")

@@ -12,7 +12,7 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-The API also needs MongoDB and Redis running and the root `.env` filled in (see [docs/SECURITY.md](../docs/SECURITY.md)). Start it from the repo root:
+The API also needs MongoDB (local or Atlas) and the root `.env` filled in (see [docs/SECURITY.md](../docs/SECURITY.md)). Start it from the repo root:
 
 ```bash
 python -m uvicorn backend.api.main:app --port 8000

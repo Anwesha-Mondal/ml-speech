@@ -1,0 +1,149 @@
+[
+  {
+    "content": "Good evening. Congress is moving closer tonight to a historic vote on a sweeping one-point-two trillion dollar infrastructure package. Senate leaders emerged from closed-door negotiations just moments ago, declaring broad bipartisan consensus. The measure targets immediate federal funding for roads, bridges, public transit, and high-speed broadband expansion across rural communities. Debate on the Senate floor is expected to stretch through the night, with a final roll call anticipated before dawn.",
+    "document_id": "wire_pol_01",
+    "domain": "newsroom",
+    "metadata": {
+      "breaking_alert": {
+        "flash_text": "FLASH: House Speaker announces immediate emergency press briefing in the Capitol Rotunda.",
+        "trigger_at_second": 21.0
+      },
+      "category": "Domestic Politics & Legislation",
+      "estimated_duration_sec": 42.0,
+      "phonetics": [
+        {
+          "say": "SHOO-mur",
+          "word": "Schumer"
+        },
+        {
+          "say": "muh-KAHN-uhl",
+          "word": "McConnell"
+        }
+      ],
+      "target_wpm": 140,
+      "teleprompter_text": "Good evening. Congress is moving closer tonight to a historic vote on a sweeping one-point-two trillion dollar infrastructure package. [PAUSE 0.4s] Senate leaders emerged from closed-door negotiations just moments ago, declaring broad bipartisan consensus. The measure targets immediate federal funding for roads, bridges, public transit, and high-speed broadband expansion across rural communities. [PAUSE 0.5s] Debate on the Senate floor is expected to stretch through the night, with a final roll call anticipated before dawn."
+    },
+    "title": "Bipartisan Infrastructure Bill Reaches Capitol Hill Floor"
+  },
+  {
+    "content": "From lower Manhattan, stocks are surging in heavy afternoon trading. The Federal Reserve has decided to hold benchmark interest rates steady, signaling growing confidence that headline inflation is cooling toward its two percent target. The Dow Jones Industrial Average is up over four hundred points, while the tech-heavy Nasdaq touched its highest level in six months. Treasury yields fell across the curve, giving a sharp boost to credit markets and home mortgage refinancing.",
+    "document_id": "wire_fin_02",
+    "domain": "newsroom",
+    "metadata": {
+      "breaking_alert": {
+        "flash_text": "FLASH: Oil prices spike three percent following unexpected output freeze from OPEC producers.",
+        "trigger_at_second": 19.0
+      },
+      "category": "Financial Markets & Federal Reserve",
+      "estimated_duration_sec": 38.0,
+      "phonetics": [
+        {
+          "say": "POW-uhl",
+          "word": "Powell"
+        },
+        {
+          "say": "NAZ-dak",
+          "word": "Nasdaq"
+        }
+      ],
+      "target_wpm": 145,
+      "teleprompter_text": "From lower Manhattan, stocks are surging in heavy afternoon trading. [PAUSE 0.3s] The Federal Reserve has decided to hold benchmark interest rates steady, signaling growing confidence that headline inflation is cooling toward its two percent target. The Dow Jones Industrial Average is up over four hundred points, while the tech-heavy Nasdaq touched its highest level in six months. [PAUSE 0.5s] Treasury yields fell across the curve, giving a sharp boost to credit markets and home mortgage refinancing."
+    },
+    "title": "Wall Street Rallies as Central Bank Pauses Rate Hikes"
+  },
+  {
+    "content": "World leaders and technology executives have signed a landmark agreement on artificial intelligence governance today at Bletchley Park. More than twenty-five nations, including the United States, China, and members of the European Union, pledged to cooperate on shared safety testing for next-generation frontier models. The declaration warns of significant potential risks from advanced synthetic intelligence, while creating an international research network to audit model weights before commercial deployment.",
+    "document_id": "wire_tech_03",
+    "domain": "newsroom",
+    "metadata": {
+      "breaking_alert": {
+        "flash_text": "FLASH: Frontier AI research lab open-sources sixty-billion parameter reasoning model.",
+        "trigger_at_second": 22.0
+      },
+      "category": "Technology & Artificial Intelligence",
+      "estimated_duration_sec": 44.0,
+      "phonetics": [
+        {
+          "say": "BLETCH-lee",
+          "word": "Bletchley"
+        },
+        {
+          "say": "kun-SOR-shum",
+          "word": "Consortium"
+        }
+      ],
+      "target_wpm": 138,
+      "teleprompter_text": "World leaders and technology executives have signed a landmark agreement on artificial intelligence governance today at Bletchley Park. [PAUSE 0.4s] More than twenty-five nations, including the United States, China, and members of the European Union, pledged to cooperate on shared safety testing for next-generation frontier models. [PAUSE 0.5s] The declaration warns of significant potential risks from advanced synthetic intelligence, while creating an international research network to audit model weights before commercial deployment."
+    },
+    "title": "Global AI Safety Summit Yields First International Accord"
+  },
+  {
+    "content": "Urgent evacuation orders are in effect across low-lying coastal parishes tonight as Hurricane Helene barrels toward the northern Gulf Coast. The National Hurricane Center reports sustained winds exceeding one hundred and forty miles per hour. Forecasters warn of catastrophic storm surge reaching up to fifteen feet above ground level, accompanied by life-threatening flash floods across coastal highways. State emergency shelters are open, and national guard units are mobilized along the coast.",
+    "document_id": "wire_weather_04",
+    "domain": "newsroom",
+    "metadata": {
+      "breaking_alert": {
+        "flash_text": "FLASH: National Weather Service issues immediate Flash Flood Emergency for metro coastal zones.",
+        "trigger_at_second": 23.0
+      },
+      "category": "Severe Weather & Emergency Management",
+      "estimated_duration_sec": 46.0,
+      "phonetics": [
+        {
+          "say": "BY-yoo",
+          "word": "Bayou"
+        },
+        {
+          "say": "TAIR-uh-bahn",
+          "word": "Terrebonne"
+        }
+      ],
+      "target_wpm": 135,
+      "teleprompter_text": "Urgent evacuation orders are in effect across low-lying coastal parishes tonight as Hurricane Helene barrels toward the northern Gulf Coast. [PAUSE 0.5s] The National Hurricane Center reports sustained winds exceeding one hundred and forty miles per hour. Forecasters warn of catastrophic storm surge reaching up to fifteen feet above ground level, accompanied by life-threatening flash floods across coastal highways. [PAUSE 0.6s] State emergency shelters are open, and national guard units are mobilized along the coast."
+    },
+    "title": "Category Four Hurricane Accelerates Toward Gulf Coast"
+  },
+  {
+    "content": "Diplomatic delegations have convened in Geneva this morning for direct peace negotiations following yesterday's fragile border armistice. United Nations mediators say both sides have agreed to establish an eight-kilometer demilitarized buffer zone monitored by international peacekeepers. While major territorial disputes remain unresolved, the resumption of humanitarian aid corridors has brought immediate relief to hundreds of thousands of displaced civilians.",
+    "document_id": "wire_global_05",
+    "domain": "newsroom",
+    "metadata": {
+      "breaking_alert": {
+        "flash_text": "FLASH: International Red Cross confirms first relief convoy crosses border into designated safe haven.",
+        "trigger_at_second": 20.0
+      },
+      "category": "International Diplomacy & Treaties",
+      "estimated_duration_sec": 40.0,
+      "phonetics": [
+        {
+          "say": "juh-NEE-vuh",
+          "word": "Geneva"
+        },
+        {
+          "say": "AR-mih-stiss",
+          "word": "Armistice"
+        }
+      ],
+      "target_wpm": 142,
+      "teleprompter_text": "Diplomatic delegations have convened in Geneva this morning for direct peace negotiations following yesterday's fragile border armistice. [PAUSE 0.4s] United Nations mediators say both sides have agreed to establish an eight-kilometer demilitarized buffer zone monitored by international peacekeepers. [PAUSE 0.5s] While major territorial disputes remain unresolved, the resumption of humanitarian aid corridors has brought immediate relief to hundreds of thousands of displaced civilians."
+    },
+    "title": "Geneva Peace Accord Talks Open Following Border Armistice"
+  },
+  {
+    "content": "Good evening. We begin with urgent coastal evacuations. Hurricane Elena has officially intensified into a catastrophic Category Four hurricane, packing sustained winds of one hundred and forty-five miles per hour. Emergency management officials have ordered mandatory evacuations for all residents residing south of Interstate Ten. Life-threatening storm surge of twelve to sixteen feet is forecast to inundate coastal bayous beginning at midnight. If you are in the designated evacuation zone, you must leave immediately. Shelters are open inland, and emergency services will not be able to dispatch rescue vehicles once sustained tropical storm-force winds arrive.",
+    "document_id": "wire_weather_rehearsal",
+    "domain": "newsroom",
+    "metadata": {
+      "breaking_alert": {
+        "flash_text": "FLASH: National Weather Service confirms tornado warning issued for eastern coastal counties until four AM.",
+        "trigger_at_second": 24.0
+      },
+      "category": "Severe Weather & Emergency Broadcasting",
+      "estimated_duration_sec": 60.0,
+      "phonetics": [],
+      "target_wpm": 135,
+      "teleprompter_text": "Good evening. We begin with urgent coastal evacuations. [PAUSE 0.5s] Hurricane Elena has officially intensified into a catastrophic Category Four hurricane, packing sustained winds of one hundred and forty-five miles per hour. [PAUSE 0.4s] Emergency management officials have ordered mandatory evacuations for all residents residing south of Interstate Ten. [PAUSE 0.6s] Life-threatening storm surge of twelve to sixteen feet is forecast to inundate coastal bayous beginning at midnight. [PAUSE 0.5s] If you are in the designated evacuation zone, you must leave immediately. Shelters are open inland, and emergency services will not be able to dispatch rescue vehicles once sustained tropical storm-force winds arrive."
+    },
+    "title": "Emergency Hurricane Tracking (Rehearsal)"
+  }
+]

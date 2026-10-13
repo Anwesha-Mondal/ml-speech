@@ -1,0 +1,24 @@
+# RAG retrieval settings (megaev.md §8, Phase M2; decision D-071).
+# Retrieval is lexical BM25 over the versioned corpus in backend/rag/corpus/ (built from
+# megaev.md by scripts/build_rag_corpus.py). It is deterministic: no random fallbacks, ties
+# broken by document_id. Dense embeddings (all-MiniLM-L6-v2 + reciprocal rank fusion, §8.4)
+# are not enabled: the model is not installed here and is not needed for the corpus size.
+version: "rag-1.0"
+corpus_dir: "backend/rag/corpus"
+domains: [interviewer, newsroom, debate, storytelling]
+
+bm25:
+  k1: 1.5
+  b: 0.75
+  # Title words count this many times (titles name the topic, e.g. "Software Engineering").
+  title_weight: 2
+
+query:
+  default_top_k: 3
+  max_top_k: 10
+  max_chars: 2000
+
+# Common English words ignored by the tokenizer.
+stopwords: [a, an, and, are, as, at, be, but, by, did, do, does, for, from, had, has, have, how, i,
+  if, in, into, is, it, its, me, my, of, on, or, our, so, that, the, their, them, then, there,
+  these, they, this, to, was, we, were, what, when, where, which, who, why, will, with, you, your]

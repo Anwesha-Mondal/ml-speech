@@ -1,7 +1,7 @@
 ---
 title: Privacy Policy
-version: 1.1
-effective: 2026-10-11
+version: 1.2
+effective: 2026-10-13
 ---
 Speech Arena helps you practise speaking by comparing how you deliver a passage with a reference recording. This policy explains what we collect to do that, why, how long we keep it, and what you can do about it. Speech Arena is a hackathon prototype run by the Speech Arena project team, who decide how your data is used.
 
@@ -20,6 +20,7 @@ Speech Arena helps you practise speaking by comparing how you deliver a passage 
 | Password | To verify it's you. Stored only as a salted scrypt hash; we can't read it | Until you change it or delete your account |
 | Sign-in sessions: IP address, browser name, times | To keep you signed in, and so you can see and end sessions on other devices | Deleted as soon as the session ends: when you sign out, after 24 hours without activity, or after 7 days at most |
 | Security events: sign-ins, failed attempts, lockouts, password changes, with IP address | To detect and stop attacks on your account | 90 days |
+| Password reset requests: your email and a scrambled copy of a one-time code | To let you set a new password | 15 minutes, or until used |
 | Agreement records: which version of these terms you accepted, and your storage choices | To show what you agreed to | Until you delete your account |
 | Recordings you upload or record | To measure your pacing, pauses, pitch and energy | Not stored. Processed in memory, then discarded |
 | Analysis results (scores, flaws, word timings) | To show you your results | 60 minutes in server memory |
@@ -27,7 +28,7 @@ Speech Arena helps you practise speaking by comparing how you deliver a passage 
 
 We don't ask for your date of birth, phone number, location, or anything else not listed here.
 
-Account, agreement and security records are kept in a MongoDB database. Sign-in sessions and leaderboard scores are kept in a Redis database; leaderboard entries are linked to a random account number rather than your name or email. Both run on the Speech Arena server.
+Account, sign-in session, agreement, security and leaderboard records are kept in one MongoDB database run for Speech Arena. Leaderboard entries are linked to a random account number rather than your name or email.
 
 ## Leaderboards
 
