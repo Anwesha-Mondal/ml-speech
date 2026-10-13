@@ -57,7 +57,7 @@ def issue_reset_link(db: Db, email: str, cfg: AuthSettings) -> str:
         }
     )
     # APP_URL (.env) is the address of the web app, e.g. the Vite dev server.
-    return f"{require('APP_URL').rstrip('/')}/reset-password?token={quote(raw)}"
+    return f"{optional('APP_URL', 'https://speech-guru-six.vercel.app').rstrip('/')}/reset-password?token={quote(raw)}"
 
 
 def send_reset_link(email: str, link: str) -> None:

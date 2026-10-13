@@ -3,7 +3,7 @@ import type { ApiBattle, ApiHistory, ApiJob, ApiLeaderboard, ApiLeaderboardPromp
 // Strip trailing slashes to prevent double-slash paths (e.g. https://api.render.com//api/health).
 export const API_BASE: string = import.meta.env.DEV
   ? ''
-  : (import.meta.env.VITE_API_URL || 'https://speech-guru-api.onrender.com').replace(/\/+$/, '')
+  : (import.meta.env.VITE_API_URL || 'https://speech-api-t8sr.onrender.com').replace(/\/+$/, '')
 
 export class ApiError extends Error {
   readonly status: number

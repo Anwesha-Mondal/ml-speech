@@ -27,7 +27,7 @@ function contentSecurityPolicy(apiOrigin: string): Plugin {
     "img-src 'self' data: blob:",
     "media-src 'self' blob:", // playback of your own recording
     "font-src 'self'",
-    `connect-src 'self' ${apiOrigin} https://*.onrender.com https://speech-guru-api.onrender.com`,
+    `connect-src 'self' ${apiOrigin} https://*.onrender.com https://speech-api-t8sr.onrender.com`,
     "object-src 'none'",
     "frame-src 'none'",
     "base-uri 'self'",
@@ -45,7 +45,7 @@ function contentSecurityPolicy(apiOrigin: string): Plugin {
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const defaultApiUrl = mode === 'development' ? 'http://localhost:8000' : 'https://speech-guru-api.onrender.com'
+  const defaultApiUrl = mode === 'development' ? 'http://localhost:8000' : 'https://speech-api-t8sr.onrender.com'
   const rawApiUrl = (env.VITE_API_URL || process.env.VITE_API_URL || '').trim() || defaultApiUrl
   let api = defaultApiUrl
   let proxyTarget: URL

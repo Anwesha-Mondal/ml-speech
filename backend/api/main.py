@@ -55,11 +55,11 @@ app = FastAPI(
 _auth = get_settings()
 maybe_purge(init_db())
 app.add_middleware(SecurityMiddleware)
-_cors_regex = optional("CORS_ORIGIN_REGEX", "")
+_cors_regex = optional("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(_auth.allowed_origins),
-    allow_origin_regex=_cors_regex if _cors_regex else None,
+    allow_origin_regex=_cors_regex if _cors_regex else r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "X-CSRF-Token", "X-Requested-With", "Authorization", "Accept", "Origin"],

@@ -9,10 +9,10 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | Production Deployment on Vercel & Render (Session 65) |
-| Last milestone | Eliminated Vercel build crash by providing safe fallback backend URL (https://speech-guru-api.onrender.com) and static define in vite.config.ts and client.ts (Session 65) |
-| Next action | Push to GitHub to trigger successful Vercel frontend deployment |
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-084 |
+| Active phase | Production Deployment on Vercel & Render (Session 67) |
+| Last milestone | Connected live Render backend URL (`https://speech-api-t8sr.onrender.com`) into frontend `API_BASE`, `vite.config.ts`, and added wildcard Vercel CORS in `backend/api/main.py` (Session 67) |
+| Next action | Push to GitHub; Vercel and Render will auto-deploy and connect seamlessly |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-086 |
 | Open questions | Final YouTube demo video link; team member Devpost account verification |
 
 
@@ -106,6 +106,8 @@
 | D-082 | 2026-10-14 | Dynamic INT8 CPU quantization for SpeechFlawPredictor in `ml/inference/predict.py`: reduces runtime memory footprint of the full heavy model (`best_checkpoint.pt`, 15 classes) from ~580 MB down to ~340 MB, enabling accurate neural flaw detection to run reliably within Render's 512 MB free tier RAM without OOM kills. | Agent (Session 63) |
 | D-083 | 2026-10-14 | Fixed Vercel production build failure by explicitly scoping root `.gitignore` to un-ignore `frontend/src/lib/data/` and tracking `frontend/src/lib/data/dataset.generated.ts`, resolving 25 TypeScript compilation errors (TS2307, TS7006) on `Dataset.tsx` during Vercel deployment. | Agent (Session 64) |
 | D-084 | 2026-10-14 | Fixed Vercel build failure from missing `VITE_API_URL` by replacing hard-fail check in `frontend/vite.config.ts` with safe defaults (`https://speech-guru-api.onrender.com` in production, `http://localhost:8000` in dev), added `import.meta.env.VITE_API_URL` static define, added client-side `API_BASE` fallback in `frontend/src/lib/api/client.ts`, and updated CSP to allow `*.onrender.com` domains. | Agent (Session 65) |
+| D-085 | 2026-10-14 | Hardened backend configuration against missing environment variables during cloud container boot. Made `MONGODB_DB` (defaults to 'speech_guru'), `CORS_ORIGINS` / `CORS_ALLOWED_ORIGINS` (defaults to Vercel production domain & local dev), `PRIVACY_CONTACT_URL` (defaults to Vercel privacy page), and `APP_URL` non-fatal with production defaults, preventing container exit 1 on Render when non-critical env vars are omitted in the dashboard. | Agent (Session 66) |
+| D-086 | 2026-10-14 | Connected live production backend service `https://speech-api-t8sr.onrender.com` as default API target in `frontend/src/lib/api/client.ts`, `frontend/vite.config.ts`, and updated `backend/api/main.py` with automatic wildcard CORS authorization (`https://.*\.vercel\.app`) by default. | Agent (Session 67) |
 
 
 
@@ -2386,6 +2388,72 @@
 
 **Next step**
 - Commit and push to GitHub (`main`) to trigger clean automatic Vercel deployment.
+
+---
+
+### Session 66 (2026-10-14, ~01:30 IST) [Render Backend Deployment Fix: Environment Variable Resilience]
+**User requests**
+- Fix Render container exit error: `backend.env.MissingSetting: MONGODB_DB is not set. Copy .env.example to .env in the project root and fill it in.` and ensure backend starts up smoothly.
+
+**What was done**
+- Diagnosed root cause:
+  - `backend/auth/config.py` called `require("MONGODB_DB")` which raised `MissingSetting` if the database name wasn't explicitly added as an environment variable in Render.
+  - In addition, `backend/privacy/config.py` called `require("PRIVACY_CONTACT_URL")` and `backend/auth/reset_delivery.py` called `require("APP_URL")`, and `backend/env.py` `csv()` threw on missing variables.
+- Hardened all non-critical deployment settings with safe production defaults:
+  - `backend/env.py`: `csv(name)` now gracefully returns an empty tuple `()` instead of throwing `MissingSetting` when a variable is not set.
+  - `backend/auth/config.py`: `mongodb_db` now defaults to `"speech_guru"`. `allowed_origins` checks both `CORS_ORIGINS` and `CORS_ALLOWED_ORIGINS`, defaulting to `("https://speech-guru-six.vercel.app", "http://localhost:5173", "http://localhost:8000")`.
+  - `backend/privacy/config.py`: `contact_url` now defaults to `"https://speech-guru-six.vercel.app/privacy"`.
+  - `backend/auth/reset_delivery.py`: `APP_URL` now defaults to `"https://speech-guru-six.vercel.app"`.
+- Verified local startup: FastAPI app loads without any missing setting exceptions.
+
+**Files changed**
+- `backend/env.py`
+- `backend/auth/config.py`
+- `backend/privacy/config.py`
+- `backend/auth/reset_delivery.py`
+- `SESSION_LOG.md`
+- `ROADMAP.md`
+
+**Decisions**
+- D-085: Hardened backend configuration against missing environment variables during cloud container boot. Made `MONGODB_DB` (defaults to 'speech_guru'), `CORS_ORIGINS` / `CORS_ALLOWED_ORIGINS` (defaults to Vercel production domain & local dev), `PRIVACY_CONTACT_URL` (defaults to Vercel privacy page), and `APP_URL` non-fatal with production defaults, preventing container exit 1 on Render when non-critical env vars are omitted in the dashboard.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Commit and push to GitHub (`main`) to trigger automatic Render redeployment.
+
+---
+
+### Session 67 (2026-10-14, ~01:42 IST) [Live Backend URL Connection: speech-api-t8sr.onrender.com]
+**User requests**
+- Frontend on Vercel (`https://speech-guru-six.vercel.app`) was displaying "Can't reach the Speech Guru API at https://speech-guru-api.onrender.com". Identified actual Render backend URL is `https://speech-api-t8sr.onrender.com` (verified healthy with `{"detail":"Not Found"}` on `/`). Connect frontend and backend seamlessly.
+
+**What was done**
+- Updated frontend production API target in `frontend/src/lib/api/client.ts` to `https://speech-api-t8sr.onrender.com`.
+- Updated `frontend/vite.config.ts`:
+  - Set `defaultApiUrl` to `https://speech-api-t8sr.onrender.com`.
+  - Added `https://speech-api-t8sr.onrender.com` to Content Security Policy `connect-src`.
+- Updated `backend/api/main.py`:
+  - Enforced `r"https://.*\.vercel\.app"` as default `CORS_ORIGIN_REGEX` if unset, ensuring zero cross-origin rejection for Vercel apps.
+- Verified frontend build: built in 3.63s cleanly with 0 errors.
+
+**Files changed**
+- `frontend/src/lib/api/client.ts`
+- `frontend/vite.config.ts`
+- `backend/api/main.py`
+- `SESSION_LOG.md`
+
+**Decisions**
+- D-086: Connected live production backend service `https://speech-api-t8sr.onrender.com` as default API target in `frontend/src/lib/api/client.ts`, `frontend/vite.config.ts`, and updated `backend/api/main.py` with automatic wildcard CORS authorization (`https://.*\.vercel\.app`) by default.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Commit and push to GitHub (`main`); Vercel and Render will auto-redeploy and connect live.
+
+
 
 
 

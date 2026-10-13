@@ -72,7 +72,7 @@ def load_settings(config_path: Path | None = None) -> AuthSettings:
     return AuthSettings(
         version=str(raw["version"]),
         mongodb_uri=require("MONGODB_URI"),
-        mongodb_db=require("MONGODB_DB"),
+        mongodb_db=optional("MONGODB_DB", "speech_guru"),
         pw_min_length=int(pw["min_length"]),
         pw_max_length=int(pw["max_length"]),
         pw_min_personal_token=int(pw["min_personal_token"]),
@@ -99,7 +99,14 @@ def load_settings(config_path: Path | None = None) -> AuthSettings:
         reset_lifetime_minutes=int(reset_cfg.get("token_lifetime_minutes", 15)),
         reset_request_per_hour=int(reset_cfg.get("request_per_hour", 10)),
         reset_token_bytes=int(reset_cfg.get("token_bytes", 32)),
-        allowed_origins=tuple(origin.rstrip("/") for origin in csv("CORS_ORIGINS")),
+        allowed_origins=tuple(
+            origin.rstrip("/")
+            for origin in (
+                csv("CORS_ORIGINS")
+                or csv("CORS_ALLOWED_ORIGINS")
+                or ("https://speech-guru-six.vercel.app", "http://localhost:5173", "http://localhost:8000")
+            )
+        ),
     )
 
 
