@@ -50,6 +50,11 @@ export default defineConfig(({ mode }) => {
     throw new Error('VITE_API_URL is not set. Copy frontend/.env.example to frontend/.env and fill it in.')
   }
   const api = new URL(env.VITE_API_URL).origin
+  const proxyTarget = new URL(env.VITE_API_URL)
+  // Uvicorn is configured for IPv4 loopback by default. Node may resolve
+  // "localhost" to ::1 first, which makes the dev proxy report ECONNREFUSED
+  // even though the API is listening on 127.0.0.1.
+  if (proxyTarget.hostname === 'localhost') proxyTarget.hostname = '127.0.0.1'
   return {
     plugins: [react(), contentSecurityPolicy(api)],
     define: {
@@ -62,7 +67,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: env.VITE_API_URL || 'http://127.0.0.1:8000',
+          target: proxyTarget.toString(),
           changeOrigin: true,
         },
       },

@@ -52,16 +52,34 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   // Initial session check on page load.
   useEffect(() => {
     let alive = true
-    authApi
-      .me()
-      .then((p) => alive && apply(p))
-      .catch((e) => {
-        if (!alive) return
-        if (unreachable(e)) setStatus('offline')
-        else apply(null)
-      })
+    let retryTimer: ReturnType<typeof setTimeout> | undefined
+    let attempt = 0
+
+    const checkSession = () => {
+      authApi
+        .me()
+        .then((p) => alive && apply(p))
+        .catch((e) => {
+          if (!alive) return
+          if (!unreachable(e)) {
+            apply(null)
+            return
+          }
+          // The one-command launcher starts Vite and Uvicorn together. Allow
+          // the backend time to finish importing before showing a hard error.
+          attempt += 1
+          if (attempt < 5) {
+            retryTimer = setTimeout(checkSession, 1500)
+          } else {
+            setStatus('offline')
+          }
+        })
+    }
+
+    checkSession()
     return () => {
       alive = false
+      if (retryTimer) clearTimeout(retryTimer)
     }
   }, [apply])
 
