@@ -1,5 +1,5 @@
-"""Fixtures: a minimal FastAPI app around the real auth code, in-memory MongoDB (mongomock)
-and Redis (fakeredis), test-only .env values and fast scrypt."""
+"""Fixtures: a minimal FastAPI app around the real auth code, in-memory MongoDB (mongomock),
+test-only .env values and fast scrypt."""
 
 from __future__ import annotations
 
@@ -7,7 +7,6 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-import fakeredis
 import mongomock
 import pytest
 import yaml
@@ -16,20 +15,15 @@ from fastapi.testclient import TestClient
 
 from backend.auth import SecurityMiddleware, admin_router, auth_router, require_admin, require_user
 from backend.auth.config import DEFAULT_CONFIG, get_settings
-from backend.auth.db import User, use_database
+from backend.auth.db import SESSIONS, User, use_database
 from backend.auth.ratelimit import limiter
 from backend.leaderboard import leaderboard_router
 from backend.leaderboard.config import get_leaderboard_settings
 from backend.privacy import privacy_router
-from backend.privacy.config import get_privacy_settings
-from backend.redis_client import use_client as use_redis
-
-# Placeholder values for the keys .env provides. Tests never touch a real server:
-# MongoDB and Redis are replaced in memory below.
+from backend.privacy.config import get_privacy_settings                                                                                                                                                                                 
 TEST_ENV = {
     "MONGODB_URI": "mongodb://test.invalid:27017",
     "MONGODB_DB": "speech_arena_test",
-    "REDIS_URL": "redis://test.invalid:6379/0",
     "CORS_ORIGINS": "http://testserver",
     "COOKIE_SECURE": "0",
     "PRIVACY_CONTACT_URL": "https://example.invalid/contact",
@@ -64,7 +58,6 @@ def app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[FastAPI]:
     limiter.reset()
     db: Any = mongomock.MongoClient(tz_aware=True)["speech_arena_test"]
     use_database(db)
-    use_redis(fakeredis.FakeRedis(decode_responses=True))  # sessions + leaderboards
 
     app = FastAPI()
     app.add_middleware(SecurityMiddleware)
@@ -87,7 +80,6 @@ def app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[FastAPI]:
 
     yield app
     use_database(None)
-    use_redis(None)
     _clear_caches()
     limiter.reset()
 
@@ -99,18 +91,6 @@ def _clear_caches() -> None:
 
 
 @pytest.fixture()
-def rds(app: FastAPI) -> Any:
-    """The in-memory Redis behind `app` (sessions and leaderboards)."""
-    from backend.redis_client import client
-
-    return client()
-
-
-def session_keys(rds: Any) -> list[str]:
-    return sorted(rds.scan_iter(match="sa:sess:tok:*"))
-
-
-@pytest.fixture()
 def db(app: FastAPI) -> Any:
     """The in-memory database behind `app`."""
     from backend.auth.db import get_db
@@ -119,8 +99,20 @@ def db(app: FastAPI) -> Any:
 
 
 @pytest.fixture()
+def rds(db: Any) -> Any:
+    """Fixture alias for compatibility with tests inspecting session store."""
+    return db
+
+
+def session_keys(db_or_rds: Any) -> list[str]:
+    from backend.auth.db import SESSIONS, get_db
+
+    database = db_or_rds if hasattr(db_or_rds, "__getitem__") else get_db()
+    return sorted(f"sa:sess:tok:{doc['token_hash']}" for doc in database[SESSIONS].find())
+
+
+@pytest.fixture()
 def client(app: FastAPI) -> TestClient:
-    # The session cookie has Path=/api, so requests use the testserver host over http.
     return TestClient(app, base_url="http://testserver")
 
 

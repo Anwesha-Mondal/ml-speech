@@ -1,0 +1,12 @@
+{
+  "name": "orcter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Speech Arena - Contrastive Speech Analytics & Temporal Flaw Grounding",
+  "scripts": {
+    "dev": "python dev.py",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "python dev.py --backend-only",
+    "test": "pytest tests/ -q"
+  }
+}
