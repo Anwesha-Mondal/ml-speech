@@ -40,5 +40,6 @@ COPY . /app/
 # 5. Ensure required output directories exist
 RUN mkdir -p /app/ml/checkpoints /app/ml/runs /app/ml/data/audio /app/ml/data/manifests
 
-# Default action: run the classifier training pipeline
-CMD ["python", "ml/training/train_classifier.py"]
+# Default action: run the FastAPI web service with dynamic PORT support (Render compatibility)
+EXPOSE 8000
+CMD ["sh", "-c", "uvicorn backend.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

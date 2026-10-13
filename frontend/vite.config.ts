@@ -45,12 +45,18 @@ function contentSecurityPolicy(apiOrigin: string): Plugin {
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  // The API address lives in frontend/.env (gitignored); see frontend/.env.example.
-  if (!env.VITE_API_URL) {
-    throw new Error('VITE_API_URL is not set. Copy frontend/.env.example to frontend/.env and fill it in.')
+  const rawApiUrl = (env.VITE_API_URL || '').trim()
+  if (!rawApiUrl) {
+    throw new Error('VITE_API_URL is not set. Please set VITE_API_URL in frontend/.env or Vercel Environment Variables (e.g. https://<your-backend>.onrender.com).')
   }
-  const api = new URL(env.VITE_API_URL).origin
-  const proxyTarget = new URL(env.VITE_API_URL)
+  let api = ''
+  let proxyTarget: URL
+  try {
+    proxyTarget = new URL(rawApiUrl)
+    api = proxyTarget.origin
+  } catch {
+    throw new Error(`VITE_API_URL "${rawApiUrl}" is not a valid absolute URL (e.g. https://<your-backend>.onrender.com).`)
+  }
   // Uvicorn is configured for IPv4 loopback by default. Node may resolve
   // "localhost" to ::1 first, which makes the dev proxy report ECONNREFUSED
   // even though the API is listening on 127.0.0.1.
