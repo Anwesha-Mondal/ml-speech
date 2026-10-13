@@ -2,11 +2,18 @@ import os
 import sys
 import uuid
 import yaml
+import warnings
 import numpy as np
 import torch
 import librosa
-from transformers import Wav2Vec2Processor
+from transformers import Wav2Vec2Processor, logging as hf_logging
 from typing import Dict, List, Any, Optional
+
+# Suppress noisy framework deprecation notices
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+hf_logging.set_verbosity_error()
+
 
 # Ensure project root is in sys.path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -566,8 +573,12 @@ class SpeechFlawPredictor:
             from transformers import pipeline
             if not hasattr(self, "asr_pipeline"):
                 self.asr_pipeline = pipeline("automatic-speech-recognition", model="openai/whisper-tiny.en")
-            
-            res = self.asr_pipeline({"raw": y, "sampling_rate": sr}, return_timestamps="word")
+                if hasattr(self.asr_pipeline, "tokenizer") and self.asr_pipeline.tokenizer is not None:
+                    self.asr_pipeline.tokenizer.clean_up_tokenization_spaces = False
+
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                res = self.asr_pipeline({"raw": y, "sampling_rate": sr}, return_timestamps="word")
             chunks = res.get("chunks", [])
             if chunks:
                 words = []

@@ -31,6 +31,7 @@ AUDIT = "audit_events"
 CONSENTS = "consent_records"
 SESSIONS = "sessions"
 LEADERBOARD = "leaderboard_scores"
+PASSWORD_RESETS = "password_resets"
 
 
 def utcnow() -> datetime:
@@ -123,3 +124,9 @@ def ensure_indexes(db: Database[dict[str, Any]]) -> None:
     db[AUDIT].create_index([("user_id", ASCENDING)], name="by_user")
     _ttl_index(db[AUDIT], "at", p.audit_days * 86400)
     db[CONSENTS].create_index([("user_id", ASCENDING), ("document", ASCENDING)], name="by_user_doc")
+    try:
+        db[PASSWORD_RESETS].create_index([("token_hash", ASCENDING)], unique=True, name="reset_token_unique")
+        db[PASSWORD_RESETS].create_index([("email", ASCENDING)], name="reset_email")
+        _ttl_index(db[PASSWORD_RESETS], "expires_at", 0)
+    except Exception:
+        pass
