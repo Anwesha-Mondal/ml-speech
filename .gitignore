@@ -1,4 +1,6 @@
 data/
+!frontend/src/lib/data/
+!frontend/src/lib/data/**
 /models/
 .venv/
 node_modules/

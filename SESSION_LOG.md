@@ -9,10 +9,10 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | Production Deployment & Cloud Free-Tier Optimization (Session 63) |
-| Last milestone | Applied dynamic INT8 CPU quantization to heavy model (`best_checkpoint.pt`), cutting RAM footprint to ~340MB for safe Render 512MB execution; verified end-to-end inference and all 95 tests pass |
-| Next action | Git push chunked checkpoints and deployment config; launch backend on Render Docker and frontend on Vercel |
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-082 |
+| Active phase | Production Deployment on Vercel & Render (Session 64) |
+| Last milestone | Un-ignored and tracked `frontend/src/lib/data/dataset.generated.ts` in git, resolving 25 TypeScript build errors in `Dataset.tsx` and verifying clean Vercel compilation (Session 64) |
+| Next action | Push to GitHub to trigger successful Vercel frontend deployment |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-083 |
 | Open questions | Final YouTube demo video link; team member Devpost account verification |
 
 
@@ -104,6 +104,7 @@
 | D-080 | 2026-10-13 | Configured production deployment architecture for Vercel (frontend) + Render (backend): cross-origin session persistence via `COOKIE_SAMESITE=none` and `COOKIE_SECURE=1`, wildcard Vercel branch preview CORS via `CORS_ORIGIN_REGEX`, SPA fallback routing via `vercel.json`, lightweight CPU PyTorch build script `render_build.sh`, Render Blueprint `render.yaml`, client cold-start tolerances (30s timeout + retries), and complete DEPLOYMENT.md guide. | Agent (Session 62) |
 | D-081 | 2026-10-14 | Enabled full 380 MB heavy model checkpoint (`best_checkpoint.pt`) deployment by chunking into 5 parts under 90 MB (`best_checkpoint.pt.part00`..`04`) to comply with GitHub's 100 MB per-file limit without Git LFS. Dockerfile build step and `SpeechFlawPredictor` automatically reassemble the chunks with verified 100% SHA-256 hash match on boot. | User & Agent (Session 62) |
 | D-082 | 2026-10-14 | Dynamic INT8 CPU quantization for SpeechFlawPredictor in `ml/inference/predict.py`: reduces runtime memory footprint of the full heavy model (`best_checkpoint.pt`, 15 classes) from ~580 MB down to ~340 MB, enabling accurate neural flaw detection to run reliably within Render's 512 MB free tier RAM without OOM kills. | Agent (Session 63) |
+| D-083 | 2026-10-14 | Fixed Vercel production build failure by explicitly scoping root `.gitignore` to un-ignore `frontend/src/lib/data/` and tracking `frontend/src/lib/data/dataset.generated.ts`, resolving 25 TypeScript compilation errors (TS2307, TS7006) on `Dataset.tsx` during Vercel deployment. | Agent (Session 64) |
 
 
 
@@ -2316,5 +2317,39 @@
 **Next step**
 - Stage, commit, and push repository to GitHub (`git add .`, `git commit -m "...", `git push origin main`).
 - Proceed with deploying on Render Docker and Vercel per `DEPLOYMENT.md`.
+
+---
+
+### Session 64 (2026-10-14, ~00:40 IST) [Vercel Deployment Build Fix: dataset.generated.ts]
+**User requests**
+- Fix Vercel frontend deployment build error: `Cannot find module '../../lib/data/dataset.generated' or its corresponding type declarations` causing 25 TypeScript compilation errors in `src/pages/dataset/Dataset.tsx`.
+
+**What was done**
+- Diagnosed root cause:
+  - Root `.gitignore` previously contained an unscoped `data/` rule, which accidentally matched and ignored all directories named `data` across the repository, including `frontend/src/lib/data/dataset.generated.ts`.
+  - When Vercel cloned the repository from GitHub, `frontend/src/lib/data/dataset.generated.ts` was missing, causing TypeScript in `Dataset.tsx` to fail with `TS2307` and cascade into 24 `TS7006` implicit `any` errors under strict compilation.
+- Fixed root `.gitignore`:
+  - Retained `data/` for data caches and raw speech data while explicitly un-ignoring `!frontend/src/lib/data/` and `!frontend/src/lib/data/**`.
+  - Tracked `frontend/src/lib/data/dataset.generated.ts` in git.
+- Tested and verified:
+  - `npx tsc -b`: 0 errors.
+  - `npm run build`: built production client bundle cleanly in <900ms.
+  - Root `npm run build`: succeeded with exit code 0.
+
+**Files changed**
+- `.gitignore` (un-ignored `frontend/src/lib/data/`)
+- `frontend/src/lib/data/dataset.generated.ts` (tracked in git)
+- `SESSION_LOG.md` (updated)
+- `ROADMAP.md` (updated)
+
+**Decisions**
+- D-083: Fixed Vercel production build failure by explicitly scoping root `.gitignore` to un-ignore `frontend/src/lib/data/` and tracking `frontend/src/lib/data/dataset.generated.ts`, resolving 25 TypeScript compilation errors (TS2307, TS7006) on `Dataset.tsx` during Vercel deployment.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Commit and push changes to GitHub; Vercel will automatically re-deploy cleanly.
+
 
 

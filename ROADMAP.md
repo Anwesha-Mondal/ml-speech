@@ -192,6 +192,6 @@ graph LR
 
 ---
 ## Current Status
-- **Active phase:** Production Deployment & Cloud Optimization (Session 63).
-- **Last completed:** Configured production deployment for Vercel + Render Docker. Integrated the full 380 MB heavy model (`best_checkpoint.pt`, 15 flaw classes, epoch 34, val_loss 0.1614) chunked into 5 sub-90MB git-compliant parts, auto-reassembled on boot, and compressed via dynamic INT8 CPU quantization to ~340 MB RAM to fit safely within Render's 512 MB free tier. Full end-to-end inference and all 95 tests pass cleanly (Session 63).
-- **Next action:** Push commits to GitHub and deploy backend on Render Docker + frontend on Vercel per `DEPLOYMENT.md`.
+- **Active phase:** Production Deployment & Cloud Optimization (Session 64).
+- **Last completed:** Fixed Vercel production build failure (D-083) by un-ignoring `frontend/src/lib/data/` in `.gitignore` and tracking `dataset.generated.ts`. Both strict TypeScript check (`tsc -b`) and Vite production bundle (`npm run build`) pass cleanly with 0 errors.
+- **Next action:** Verify live Vercel frontend and Render backend deployments.
