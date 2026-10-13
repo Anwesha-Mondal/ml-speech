@@ -1,13 +1,13 @@
-from fastapi import APIRouter, UploadFile, File, Form, BackgroundTasks, Depends, HTTPException
-from pydantic import BaseModel
-import uuid
 import os
 import re
-import traceback
 import sys
 import time
-import pandas as pd
-from typing import Dict, Any, Optional
+import traceback
+import uuid
+from typing import Any
+
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
+from pydantic import BaseModel
 
 try:
     from transformers import pipeline
@@ -21,14 +21,11 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+from backend.api.uploads import per_user_limit, read_audio
 from backend.auth import require_user
 from backend.auth.db import User
-from backend.api.uploads import per_user_limit, read_audio
 from backend.privacy.config import get_privacy_settings
-from packages.speech_arena.scoring.contrastive import compute_word_deltas
-from packages.speech_arena.scoring.detectors import run_detectors
-from packages.speech_arena.scoring.engine import compute_score
-from packages.speech_arena.scoring.explain import render_explanation
+from packages.speech_arena.scoring.modes import known_modes
 
 router = APIRouter()
 
@@ -38,10 +35,11 @@ class JobResponse(BaseModel):
 
 # In-memory job store for analysis runs. Results expire after
 # retention.job_results_minutes (configs/privacy/privacy.yaml); recordings are never stored.
-job_store: Dict[str, Any] = {}
+job_store: dict[str, Any] = {}
 
 PROMPT_ID_RE = re.compile(r"^[a-z0-9-]{1,64}$")
-ALLOWED_MODES = {"sandbox", "interviewer", "news_anchor", "storytelling", "public_speaking"}
+# Modes come from configs/scoring/modes_v2.0.yaml, so a new mode needs no code change here.
+ALLOWED_MODES = set(known_modes())
 MAX_TRANSCRIPT_CHARS = 5000
 
 
@@ -60,7 +58,7 @@ def forget_user_jobs(user_id: str) -> None:
 def process_audio_pipeline(
     job_id: str,
     part_bytes: bytes,
-    ref_bytes: Optional[bytes],
+    ref_bytes: bytes | None,
     mode: str,
     transcript: str = "",
     prompt_id: str = "",
@@ -94,10 +92,9 @@ def process_audio_pipeline(
             "status": "completed",
             "result": {
                 "mode": ml_result["mode"],
-                "score": {
-                    "total": ml_result["score"]["total"],
-                    "buckets": ml_result["score"]["buckets"]
-                },
+                # total, buckets, bonuses, bonus_rules, scoring_version, config_hash
+                "score": ml_result["score"],
+                "metrics": ml_result.get("metrics", {}),
                 "flaws": ml_result["flaws"],
                 "words": ml_result.get("words", []),
                 "duration": ml_result.get("duration", 0.0),
@@ -115,8 +112,7 @@ def process_audio_pipeline(
                 traceback.print_exc()
                 board = {"eligible": True, "submitted": False, "reason": "The leaderboard is unavailable right now."}
             job_store[job_id]["result"]["leaderboard"] = board
-    except Exception as e:
-        import traceback
+    except Exception as e:  # noqa: BLE001 - any pipeline failure becomes a job error, not a crash
         traceback.print_exc()
         print(f"Exception in process_audio_pipeline: {e}")
         
@@ -194,6 +190,7 @@ async def generate_script(user: User = Depends(require_user)):
 
     try:
         import warnings
+
         from transformers import logging as hf_logging
         warnings.filterwarnings("ignore", category=UserWarning)
         warnings.filterwarnings("ignore", category=FutureWarning)
@@ -220,7 +217,7 @@ async def generate_script(user: User = Depends(require_user)):
                 generated_text = generated_text[:last_punc+1]
                 
         return {"transcript": generated_text}
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - generation is best effort; return a message instead
         print(f"Generation error: {e}")
         return {"transcript": "Error generating practice script."}
 
@@ -240,6 +237,7 @@ async def transcribe_audio(file: UploadFile = File(...), user: User = Depends(re
     temp_path = None
     try:
         import warnings
+
         from transformers import logging as hf_logging
         warnings.filterwarnings("ignore", category=UserWarning)
         warnings.filterwarnings("ignore", category=FutureWarning)
@@ -258,8 +256,7 @@ async def transcribe_audio(file: UploadFile = File(...), user: User = Depends(re
             warnings.simplefilter("ignore")
             result = _asr_pipeline(temp_path)
         return {"transcript": result["text"].strip()}
-    except Exception:
-        import traceback
+    except Exception:  # noqa: BLE001 - report a failed transcription; the temp file is still deleted
         traceback.print_exc()
         return {"transcript": "", "error": "Transcription failed on the server."}
     finally:

@@ -8,6 +8,10 @@ Promote an existing account, or unlock one:
 
     python -m backend.auth.cli promote --email teammate@example.com
     python -m backend.auth.cli unlock --email teammate@example.com
+
+Give a user a password reset link (prints it; pass it to them privately):
+
+    python -m backend.auth.cli reset-link --email teammate@example.com
 """
 
 from __future__ import annotations
@@ -73,19 +77,37 @@ def _update(email: str, *, promote: bool = False, unlock: bool = False) -> int:
     return 0
 
 
+def _reset_link(email: str) -> int:
+    from .reset_delivery import issue_reset_link
+
+    email = normalize_email(email)
+    db = init_db()
+    user = get_user_by_email(db, email)
+    if user is None or not user.is_active:
+        print(f"No active account for {email}.", file=sys.stderr)
+        return 1
+    link = issue_reset_link(db, email, get_settings())
+    audit(db, "password_reset_link_cli", user=user)
+    print(f"Reset link for {email} (valid {get_settings().reset_lifetime_minutes} minutes, single use):")
+    print(link)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m backend.auth.cli")
     sub = parser.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("create-admin", help="Create an administrator account")
     c.add_argument("--email", required=True)
     c.add_argument("--name", required=True)
-    for name in ("promote", "unlock"):
+    for name in ("promote", "unlock", "reset-link"):
         s = sub.add_parser(name)
         s.add_argument("--email", required=True)
     args = parser.parse_args(argv)
 
     if args.cmd == "create-admin":
         return _create_admin(args.email, args.name)
+    if args.cmd == "reset-link":
+        return _reset_link(args.email)
     return _update(args.email, promote=args.cmd == "promote", unlock=args.cmd == "unlock")
 
 

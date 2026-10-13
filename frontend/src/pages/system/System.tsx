@@ -38,7 +38,7 @@ const ENDPOINTS: { method: string; path: string; returns: string; kind: 'live' |
   { method: 'POST', path: '/api/analyze', returns: 'Job ID; runs scoring in a background task', kind: 'live' },
   { method: 'GET', path: '/api/jobs/{job_id}', returns: 'Job status and result (owner only)', kind: 'live' },
   { method: 'GET', path: '/api/progress/history', returns: 'Fixed sample history', kind: 'fixed' },
-  { method: 'GET', path: '/api/leaderboard', returns: 'Opt-in rankings per passage, or all passages (Redis)', kind: 'live' },
+  { method: 'GET', path: '/api/leaderboard', returns: 'Opt-in rankings per passage, or all passages (MongoDB)', kind: 'live' },
   { method: 'PUT', path: '/api/leaderboard/opt-in', returns: 'Join or leave the leaderboards', kind: 'live' },
   { method: 'POST', path: '/api/battle/1v1', returns: 'Fixed sample battle (UI scores battles via /analyze)', kind: 'unused' },
   { method: 'POST', path: '/api/mimic-party', returns: 'Fixed score of 94 (UI computes Mimic in the browser)', kind: 'unused' },
@@ -65,18 +65,12 @@ export function SystemApi() {
     },
     { name: 'Job store', state: 'warn', label: 'In memory', detail: 'Cleared when the API restarts' },
     {
-      name: 'MongoDB (accounts)',
+      name: 'MongoDB',
       state: dbState(h.services.mongodb),
       label: dbLabel(h.services.mongodb),
-      detail: 'Accounts, sessions, consent records, audit log',
+      detail: 'Accounts, sessions, consent records, audit log, leaderboard',
     },
     { name: 'Alignment / features', state: 'ok', label: 'Connected', detail: 'ml/inference/predict.py (Wav2Vec2 + librosa)' },
-    {
-      name: 'Redis (leaderboard)',
-      state: dbState(h.services.redis),
-      label: dbLabel(h.services.redis),
-      detail: 'Best score per passage; opt-in only',
-    },
     { name: 'Object storage (S3)', state: 'off', label: 'Not deployed', detail: 'Recordings are not stored' },
   ]
   return (
@@ -190,7 +184,7 @@ export function SystemArchitecture() {
           <Node x={630} y={170} w={200} title="Gamification router" sub="routers/gamification.py" />
           <Node x={50} y={244} w={200} title="Object storage" sub="S3 · recordings" planned />
           <Node x={340} y={244} w={200} title="Scoring engine" sub="packages/speech_arena/scoring" />
-          <Node x={630} y={244} w={200} title="MongoDB + Redis" sub="accounts · leaderboard" />
+          <Node x={630} y={244} w={200} title="MongoDB" sub="accounts · sessions · leaderboard" />
           <text x={340} y={312} className="arch-sub">
             Jobs run as FastAPI background tasks; results are held in memory.
           </text>

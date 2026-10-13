@@ -7,10 +7,10 @@ Scope: the web app (`frontend/`), the API (`backend/`) and the data they handle.
 | Data | Kept where | Retention | Needed for |
 | --- | --- | --- | --- |
 | Email, display name, scrypt password hash, role, leaderboard opt-in | `users` (MongoDB) | Until account deletion | Sign-in |
-| Sessions: token hash, IP, user agent, times | Redis (`sa:sess:*`) | Deleted when the session ends (sign-out, 24 h idle, 7 days max) | Staying signed in, device list |
+| Sessions: token hash, IP, user agent, times | `sessions` (MongoDB, TTL on `purge_at`) | Deleted when the session ends (sign-out, 24 h idle, 7 days max) | Staying signed in, device list |
 | Security events with IP | `audit_events` | 90 days; anonymised on account deletion | Detecting attacks |
 | Agreement records (document, version, time) | `consent_records` | Until account deletion | Proof of consent |
-| Leaderboard: user ID and best score per passage (no name, no email) | Redis sorted sets | Until opt-out or account deletion | Rankings, only for users who opt in |
+| Leaderboard: user ID and best score per passage (no name, no email) | `leaderboard_scores` (MongoDB) | Until opt-out or account deletion | Rankings, only for users who opt in |
 | Recordings | Server memory only; Whisper temp file deleted in `finally` | Not stored | Analysis |
 | Analysis results | Server memory | 60 minutes | Showing results |
 | Preferences, history | Browser local storage, per account | Only with consent; deleted when consent is withdrawn | Convenience |
@@ -37,7 +37,9 @@ All limits live in [`configs/privacy/privacy.yaml`](../configs/privacy/privacy.y
 | `python backend/api/main.py` listened on all network interfaces | Host and port come from `API_HOST`/`API_PORT` in `.env`; the template uses `127.0.0.1` |
 | Hugging Face telemetry | `HF_HUB_DISABLE_TELEMETRY=1` set by default |
 | Retention purge crashed inside sign-in (aware vs naive datetimes) | Fixed, with a regression test |
-| Retention depended on the API running (2026-10-11) | Sessions expire in Redis and old audit events via a MongoDB TTL index, both without the API; the explicit audit purge stays as a backstop. Ended sessions are no longer kept for 30 days |
+| Retention depended on the API running (2026-10-11) | TTL indexes delete ended sessions (`purge_at`) and old audit events without the API; the explicit purge stays as a backstop. Ended sessions are no longer kept for 30 days |
+| `/api/auth/forgot-password` returned the reset token to whoever asked, allowing takeover of any account, and answered differently for unknown emails (2026-10-13) | Token never returned; identical answer for every email; link delivered via `PASSWORD_RESET_DELIVERY` (`none`/`log`) or an admin CLI command; regression test |
+| After Redis was removed (D-063) MongoDB sessions had no indexes, so ended sessions and their IPs were never deleted (2026-10-13) | Unique token-hash index, per-user index and TTL on `purge_at`; purge removes older documents too |
 | Server addresses and settings hardcoded in code and YAML (2026-10-11) | Moved to gitignored `.env` files with tracked `.env.example` templates; the API and the frontend build refuse to start without them |
 | Deleted accounts' IP addresses stayed in audit events (2026-10-11) | IPs are cleared along with name and email on deletion |
 
@@ -45,7 +47,7 @@ All limits live in [`configs/privacy/privacy.yaml`](../configs/privacy/privacy.y
 
 1. **The legal text is a starting draft, not legal advice.** It was written to match what the code does, referencing India's DPDP Act 2023 and the GDPR. Have someone qualified review it.
 2. **There's no private privacy contact.** The policies point to the public GitHub issue tracker. Add a dedicated email address before launch.
-3. **No email verification and no password reset.** Anyone can register with someone else's email, and a user who forgets their password can't get back in. Both need an email service.
+3. **No email verification, and password reset has no email channel yet.** Anyone can register with someone else's email. Reset links go only to the API console (`PASSWORD_RESET_DELIVERY=log`, development) or are issued by an admin (`cli reset-link`); production needs a mail service plugged into `backend/auth/reset_delivery.py`.
 4. **Lockout can be abused.** Anyone who knows an email can lock that account for 15 minutes. Consider progressive delays or a CAPTCHA later.
 5. **Registration reveals existing emails** (409 "already exists"), limited by the 20-per-hour rate limit. Closing registration (`registration.open: false`) removes it.
 6. **Model downloads at runtime.** The server fetches Whisper, Wav2Vec2 and distilgpt2 from Hugging Face on first use. No user data is sent, but for production, pre-download the models and set `HF_HUB_OFFLINE=1`.
@@ -53,7 +55,7 @@ All limits live in [`configs/privacy/privacy.yaml`](../configs/privacy/privacy.y
 8. **HTTPS is required in production.** Recordings and session cookies travel in plain HTTP on localhost. Set `COOKIE_SECURE=1` (which also turns on HSTS) behind HTTPS.
 9. **Clickjacking protection for the frontend** needs a `frame-ancestors 'none'` or `X-Frame-Options: DENY` header from whatever hosts the built site. A CSP `<meta>` tag can't set it. The API already sends both.
 10. **Single-process state.** Rate limits and analysis results are in memory, so they reset on restart and don't work across several workers.
-11. **The databases aren't encrypted at rest, and local installs run without authentication.** MongoDB holds emails and IPs. Bind MongoDB and Redis to localhost (the default installs do), turn on authentication before any shared deployment, and protect backups.
+11. **The databases aren't encrypted at rest, and local installs run without authentication.** MongoDB holds emails and IPs. Bind a local MongoDB to localhost (the default install does), use authentication and an IP allow-list for Atlas, and protect backups.
 12. **Raw audio is committed to the repository** (`test.wav` at the root), against AGENTS.md. Remove it, and check its rights.
 13. **The classifier source is missing.** `ml/models/flaw_classifier.py` was never committed, so analysis fails on a clean clone.
 14. **The age check is self-declared.** That's normal for this kind of service; note it if the audience includes schools.

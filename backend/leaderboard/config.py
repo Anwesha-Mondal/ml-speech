@@ -1,4 +1,4 @@
-"""Leaderboard settings from configs/leaderboard/leaderboard.yaml (the Redis address is REDIS_URL in .env)."""
+"""Leaderboard settings from configs/leaderboard/leaderboard.yaml (scores are stored in MongoDB)."""
 
 from __future__ import annotations
 
@@ -20,7 +20,6 @@ class LeaderboardSettings:
     scoring_version: str
     prompts: dict[str, str]
     top_n: int
-    key_prefix: str
     fetch_factor: int
 
 
@@ -32,7 +31,6 @@ def load_leaderboard_settings(path: Path | None = None) -> LeaderboardSettings:
         scoring_version=str(raw["scoring_version"]),
         prompts={str(k): str(v) for k, v in raw["prompts"].items()},
         top_n=int(raw["top_n"]),
-        key_prefix=str(raw["key_prefix"]),
         fetch_factor=int(raw["fetch_factor"]),
     )
 

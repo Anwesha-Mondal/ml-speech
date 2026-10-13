@@ -1,7 +1,7 @@
-# Authentication and authorization settings (version auth-1.1: sessions moved to Redis).
-# Deployment values (MONGODB_URI, REDIS_URL, CORS_ORIGINS, COOKIE_SECURE, ...) live in .env, not here.
+# Authentication and authorization settings (version auth-1.2: sessions in MongoDB, D-063).
+# Deployment values (MONGODB_URI, CORS_ORIGINS, COOKIE_SECURE, ...) live in .env, not here.
 
-version: "auth-1.1"
+version: "auth-1.2"
 
 password:
   # NIST SP 800-63B: length over composition rules, plus a blocklist.
@@ -17,6 +17,8 @@ password:
   sequence_run: 5
 
 password_reset:
+  # Delivery channel and app address are deployment settings in .env
+  # (PASSWORD_RESET_DELIVERY, APP_URL). The token is never returned by the API.
   token_lifetime_minutes: 15
   request_per_hour: 10
   token_bytes: 32
@@ -33,8 +35,6 @@ hashing:
   key_bytes: 32
 
 session:
-  # Sessions live in Redis (REDIS_URL in .env) under this key prefix.
-  redis_prefix: "sa:sess"
   cookie_name: "sa_session"
   same_site: "strict"
   token_bytes: 32
@@ -56,4 +56,4 @@ registration:
   # When false, only admins can create accounts.
   open: true
 
-# Database, Redis, CORS origins and cookie security are deployment settings: see .env.example.
+# Database, CORS origins and cookie security are deployment settings: see .env.example.

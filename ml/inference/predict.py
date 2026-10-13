@@ -21,6 +21,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from ml.models.flaw_classifier import SpeechFlawClassifier
+from packages.speech_arena.scoring.modes import apply_mode_weights, compute_score, get_mode_config, score_analysis
 from ml.features.extraction import extract_acoustic_features
 
 # Flaw mapping: Translates ML model output classes to frontend & scoring schemas
@@ -343,18 +344,21 @@ class SpeechFlawPredictor:
         aligned_words = self._align_words(y, sr, transcript, duration)
         raw_flaws = self._tag_flaws_with_words(raw_flaws, aligned_words)
 
-        # 6. Apply mode weighting and calculate bucket scores
-        mode_flaws = self._apply_mode_weights(raw_flaws, mode)
-        score_breakdown = self._compute_scores(mode_flaws)
-
-        # 7. Extract contours for visualization
+        # 6. Contours (visualization and the rule-based up-talk detector)
         contours = self._extract_contours(y, sr)
+
+        # 7. Mode scoring from configs/scoring/modes_v2.0.yaml: up-talk and filled-pause
+        #    detectors, mode multipliers, bucket caps and bonus rules (megaev §10, M1-Ext).
+        mode_flaws, score_breakdown, delivery_metrics = score_analysis(
+            raw_flaws, aligned_words, contours, duration, mode
+        )
 
         return {
             "mode": mode,
             "duration": round(duration, 2),
             "score": score_breakdown,
             "flaws": mode_flaws,
+            "metrics": delivery_metrics,
             "words": aligned_words,
             "contours": contours,
             "raw_probabilities": {lbl: round(float(global_probs[i]), 4) for i, lbl in enumerate(self.labels)}
@@ -636,50 +640,12 @@ class SpeechFlawPredictor:
         return flaws
 
     def _apply_mode_weights(self, flaws: List[Dict[str, Any]], mode: str) -> List[Dict[str, Any]]:
-        # Mode multipliers per bucket
-        mode_multipliers = {
-            'sandbox': {'pacing': 1.0, 'pitch': 1.0, 'pauses': 1.0, 'energy_clarity': 1.0},
-            'interviewer': {'pacing': 1.0, 'pitch': 0.8, 'pauses': 1.4, 'energy_clarity': 1.2},
-            'news_anchor': {'pacing': 1.3, 'pitch': 1.3, 'pauses': 1.1, 'energy_clarity': 1.0},
-            'storytelling': {'pacing': 1.0, 'pitch': 1.4, 'pauses': 0.9, 'energy_clarity': 1.3},
-            'public_speaking': {'pacing': 1.2, 'pitch': 1.2, 'pauses': 1.2, 'energy_clarity': 1.2},
-        }
-        mults = mode_multipliers.get(mode, mode_multipliers['sandbox'])
-        
-        adjusted = []
-        for f in flaws:
-            bucket = f.get('bucket', 'pacing')
-            factor = mults.get(bucket, 1.0)
-            f_copy = dict(f)
-            f_copy['penalty'] = round(f['penalty'] * factor, 2)
-            adjusted.append(f_copy)
-        return adjusted
+        """Mode multipliers from configs/scoring/modes_v2.0.yaml (kept for callers and tests)."""
+        return apply_mode_weights(flaws, mode)
 
-    def _compute_scores(self, flaws: List[Dict[str, Any]]) -> Dict[str, Any]:
-        caps = {
-            'pacing': -15.0,
-            'pitch': -15.0,
-            'pauses': -10.0,
-            'energy_clarity': -10.0
-        }
-        bucket_sums = {k: 0.0 for k in caps}
-        for f in flaws:
-            b = f.get('bucket', 'pacing')
-            if b in bucket_sums:
-                bucket_sums[b] += f['penalty']
-                
-        final_buckets = {}
-        total_deduction = 0.0
-        for b, s in bucket_sums.items():
-            capped = max(s, caps[b])
-            final_buckets[b] = round(capped, 1)
-            total_deduction += capped
-            
-        total_score = round(max(0.0, 100.0 + total_deduction), 1)
-        return {
-            "total": total_score,
-            "buckets": final_buckets
-        }
+    def _compute_scores(self, flaws: List[Dict[str, Any]], mode: str = "sandbox") -> Dict[str, Any]:
+        """Capped bucket deductions from configs/scoring/modes_v2.0.yaml (kept for callers and tests)."""
+        return compute_score(flaws, mode)
 
     def _extract_contours(self, y: np.ndarray, sr: int) -> Dict[str, Any]:
         # Compute pitch and RMS contour downsampled to ~20 points/sec (every 50ms)
@@ -718,12 +684,17 @@ class SpeechFlawPredictor:
         }
 
     def _empty_result(self, mode: str) -> Dict[str, Any]:
+        cfg = get_mode_config()
         return {
             "mode": mode,
             "duration": 0.0,
             "score": {
-                "total": 100.0,
-                "buckets": {"pacing": 0.0, "pitch": 0.0, "pauses": 0.0, "energy_clarity": 0.0}
+                "total": cfg["start_score"],
+                "buckets": {"pacing": 0.0, "pitch": 0.0, "pauses": 0.0, "energy_clarity": 0.0},
+                "bonuses": 0.0,
+                "bonus_rules": [],
+                "scoring_version": cfg["scoring_version"],
+                "config_hash": cfg["config_hash"],
             },
             "flaws": [],
             "words": [],

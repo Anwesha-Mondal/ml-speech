@@ -9,7 +9,7 @@ import { fmtDateTime, fmtSigned } from '../../lib/format'
 
 const QUICK = [
   { to: '/practice', label: 'Start speech test', icon: Upload, sub: 'Read a passage against a reference' },
-  { to: '/assessment/interviewer', label: 'Record practice', icon: Mic, sub: 'Answer an interview question' },
+  { to: '/practice/interviewer', label: 'Record practice', icon: Mic, sub: 'Answer an interview question' },
   { to: '/arena/battle', label: 'Enter battle', icon: Swords, sub: 'Same passage, two speakers' },
   { to: '/arena/mimic', label: 'Mimic Party', icon: PartyPopper, sub: 'Match the melody of a phrase' },
 ]
@@ -101,14 +101,14 @@ export default function Overview() {
   )[0]
   const recommend =
     worst.share === 0
-      ? { text: 'No deductions last time. Try a longer passage in Public speaking.', to: '/assessment/public-speaking' }
+      ? { text: 'No deductions last time. Try a longer passage in Public speaking.', to: '/practice/public-speaking' }
       : worst.key === 'pacing'
-        ? { text: 'Pacing cost the most. The News anchor teleprompter holds a steady rate.', to: '/assessment/news-anchor' }
+        ? { text: 'Pacing cost the most. The News anchor teleprompter holds a steady rate.', to: '/practice/news-anchor' }
         : worst.key === 'pauses'
-          ? { text: 'Pauses cost the most. Interviewer mode trains answers without long gaps.', to: '/assessment/interviewer' }
+          ? { text: 'Pauses cost the most. Interviewer mode trains answers without long gaps.', to: '/practice/interviewer' }
           : worst.key === 'pitch'
-            ? { text: 'Pitch range cost the most. Storytelling rewards wider pitch movement.', to: '/assessment/storytelling' }
-            : { text: 'Energy cost the most. Public speaking keeps volume up through sentence ends.', to: '/assessment/public-speaking' }
+            ? { text: 'Pitch range cost the most. Storytelling rewards wider pitch movement.', to: '/practice/storytelling' }
+            : { text: 'Energy cost the most. Public speaking keeps volume up through sentence ends.', to: '/practice/public-speaking' }
 
   return (
     <div className="stack gap-24">

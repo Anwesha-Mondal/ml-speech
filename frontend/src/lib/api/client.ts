@@ -68,7 +68,7 @@ export async function request<T>(path: string, init?: RequestInit, timeoutMs = 1
   return (await res.json()) as T
 }
 
-export function getHealth(): Promise<{ status: string; services?: { mongodb?: 'up' | 'down'; redis?: 'up' | 'down' } }> {
+export function getHealth(): Promise<{ status: string; services?: { mongodb?: 'up' | 'down' } }> {
   return request('/api/health', undefined, 4000)
 }
 

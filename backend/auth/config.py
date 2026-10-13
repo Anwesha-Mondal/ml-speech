@@ -1,5 +1,5 @@
 """Auth settings: policy thresholds from configs/auth/auth.yaml (versioned, per AGENTS.md);
-deployment values (MongoDB, Redis, origins, cookie security) from .env via backend.env."""
+deployment values (MongoDB, origins, cookie security) from .env via backend.env."""
 
 from __future__ import annotations
 
@@ -33,7 +33,6 @@ class AuthSettings:
     scrypt_p: int
     salt_bytes: int
     key_bytes: int
-    session_prefix: str
     cookie_name: str
     cookie_secure: bool
     same_site: str
@@ -48,6 +47,7 @@ class AuthSettings:
     registration_open: bool
     reset_lifetime_minutes: int = 15
     reset_request_per_hour: int = 10
+    reset_token_bytes: int = 32
     allowed_origins: tuple[str, ...] = field(default_factory=tuple)
 
 
@@ -84,7 +84,6 @@ def load_settings(config_path: Path | None = None) -> AuthSettings:
         scrypt_p=int(h["p"]),
         salt_bytes=int(h["salt_bytes"]),
         key_bytes=int(h["key_bytes"]),
-        session_prefix=str(s["redis_prefix"]),
         cookie_name=str(s["cookie_name"]),
         cookie_secure=flag("COOKIE_SECURE"),
         same_site=str(s["same_site"]),
@@ -99,6 +98,7 @@ def load_settings(config_path: Path | None = None) -> AuthSettings:
         registration_open=bool(raw["registration"]["open"]),
         reset_lifetime_minutes=int(reset_cfg.get("token_lifetime_minutes", 15)),
         reset_request_per_hour=int(reset_cfg.get("request_per_hour", 10)),
+        reset_token_bytes=int(reset_cfg.get("token_bytes", 32)),
         allowed_origins=csv("CORS_ORIGINS"),
     )
 

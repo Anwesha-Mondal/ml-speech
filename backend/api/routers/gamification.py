@@ -1,7 +1,8 @@
-from fastapi import APIRouter, UploadFile, File, Form, Depends
+import uuid
+
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from backend.auth import require_user
-import uuid
 
 # Every endpoint here requires a signed-in user.
 router = APIRouter(dependencies=[Depends(require_user)])
@@ -68,4 +69,4 @@ async def mimic_party(
         "feedback": "Outstanding! You sounded just like the melody of the original performance, ignoring your actual voice."
     }
 
-# The leaderboard moved to backend/leaderboard (Redis, opt-in): GET /api/leaderboard.
+# The leaderboard moved to backend/leaderboard (MongoDB, opt-in): GET /api/leaderboard.

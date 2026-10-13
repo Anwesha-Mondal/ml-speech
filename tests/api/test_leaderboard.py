@@ -71,7 +71,7 @@ def test_opt_out_removes_name_and_scores(app: FastAPI) -> None:
     assert store.user_entries(sa["user"]["id"]) == []
 
 
-def test_names_hidden_even_if_redis_still_has_the_id(app: FastAPI, db: Any) -> None:
+def test_names_hidden_even_if_a_score_row_remains(app: FastAPI, db: Any) -> None:
     a, sa = _user(app, "ana@example.com", "Ana")
     submit_result(sa["user"]["id"], "asset-07", 90)
     db[USERS].update_one({"_id": sa["user"]["id"]}, {"$set": {"leaderboard_opt_in": False}})

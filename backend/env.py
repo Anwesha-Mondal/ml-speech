@@ -1,7 +1,7 @@
 """Deployment settings come from the environment, loaded from the project's .env file.
 
 .env is gitignored; .env.example lists every key with placeholder values. Nothing that
-identifies a server (database, Redis, origins) is hardcoded in the code: if a required key
+identifies a server (database, origins) is hardcoded in the code: if a required key
 is missing the API refuses to start and says which one.
 """
 
