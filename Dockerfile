@@ -20,8 +20,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# 1. Install PyTorch with CUDA 12.1 support (seamless CPU fallback on non-GPU systems)
-RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cu121
+# 1. Install PyTorch (default: CPU-optimized for fast, lightweight cloud Docker builds; override with CUDA if needed)
+ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir torch torchaudio --index-url ${TORCH_INDEX_URL}
 
 # 2. Copy dependency manifest and install remaining ML & audio packages
 COPY requirements.txt /app/
@@ -37,8 +38,19 @@ RUN python -c "from transformers import Wav2Vec2Model, Wav2Vec2Processor; \
 # 4. Copy codebase
 COPY . /app/
 
-# 5. Ensure required output directories exist
-RUN mkdir -p /app/ml/checkpoints /app/ml/runs /app/ml/data/audio /app/ml/data/manifests
+# 5. Ensure required output directories exist and reassemble heavy model checkpoint if chunked
+RUN mkdir -p /app/ml/checkpoints /app/ml/runs /app/ml/data/audio /app/ml/data/manifests && \
+    python -c "import os, glob; \
+    bp = '/app/ml/checkpoints/best_checkpoint.pt'; \
+    parts = sorted(glob.glob(bp + '.part*')); \
+    if parts and not os.path.exists(bp): \
+        print('[*] Reassembling heavy model checkpoint from ' + str(len(parts)) + ' parts...'); \
+        with open(bp, 'wb') as out: \
+            for p in parts: \
+                with open(p, 'rb') as inp: \
+                    out.write(inp.read()); \
+        print('[+] Reassembled heavy model checkpoint complete!')"
 
-# Default action: run the classifier training pipeline
-CMD ["python", "ml/training/train_classifier.py"]
+# Default action: run the FastAPI web service with dynamic PORT support (Render compatibility)
+EXPOSE 8000
+CMD ["sh", "-c", "uvicorn backend.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

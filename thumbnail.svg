@@ -1,0 +1,654 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800" fill="none">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap');
+      text {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      .mono {
+        font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+    </style>
+
+    <!-- Subtle cursor-reactive ambient light from uiux.md §8 -->
+    <radialGradient id="ambient-light" cx="50%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.025" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Flaw Region Background Tints (exact color-mix from analysis.css) -->
+    <!-- .wave-region.sev-bad: color-mix(in srgb, #b2443a 12%, transparent) -->
+    <linearGradient id="bad-region" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#b2443a" stop-opacity="0.14" />
+      <stop offset="100%" stop-color="#b2443a" stop-opacity="0.06" />
+    </linearGradient>
+
+    <!-- .wave-region.sev-warn: color-mix(in srgb, #9a6514 13%, transparent) -->
+    <linearGradient id="warn-region" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9a6514" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#9a6514" stop-opacity="0.06" />
+    </linearGradient>
+
+    <!-- .wave-pause: repeating linear gradient (analysis.css line 242) -->
+    <pattern id="pause-stripe" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="0" y2="8" stroke="#e5e5e5" stroke-width="1.5" />
+    </pattern>
+  </defs>
+
+  <!-- ========================================================================= -->
+  <!-- 1. BASE CANVAS & AMBIENT PAPER SURFACE (-bg: #ffffff, -surface-2: #fafafa) -->
+  <!-- ========================================================================= -->
+  <rect width="1200" height="800" fill="#ffffff" />
+  <rect width="1200" height="800" fill="url(#ambient-light)" />
+
+  <!-- Outer frame border (-line: #e5e5e5) -->
+  <rect x="0.5" y="0.5" width="1199" height="799" stroke="#e5e5e5" fill="none" />
+
+  <!-- ========================================================================= -->
+  <!-- 2. APPLICATION TOPBAR (-topbar-h: 56px, border-bottom: 1px solid #e5e5e5) -->
+  <!-- ========================================================================= -->
+  <g transform="translate(0, 0)">
+    <!-- Topbar background -->
+    <rect x="0" y="0" width="1200" height="54" fill="#ffffff" />
+    <line x1="0" y1="54" x2="1200" y2="54" stroke="#e5e5e5" stroke-width="1" />
+
+    <!-- Left Brand (Sidebar.tsx lines 39-47) -->
+    <g transform="translate(32, 16)">
+      <!-- Exact 5-bar brand icon from Sidebar.tsx -->
+      <g fill="#111111">
+        <rect x="0" y="6" width="2.5" height="8" rx="1" />
+        <rect x="5" y="2" width="2.5" height="16" rx="1" />
+        <rect x="10" y="5" width="2.5" height="10" rx="1" />
+        <rect x="15" y="0" width="2.5" height="20" rx="1" />
+        <rect x="20" y="7" width="2.5" height="6" rx="1" />
+      </g>
+      <text x="32" y="16" font-size="15" font-weight="600" fill="#111111" letter-spacing="-0.01em">Speech Guru</text>
+
+      <!-- Breadcrumbs -->
+      <line x1="140" y1="4" x2="140" y2="18" stroke="#e5e5e5" stroke-width="1" />
+      <text x="154" y="15" font-size="13" font-weight="500" fill="#707070">Practice</text>
+      <text x="210" y="15" font-size="13" fill="#a3a3a3">/</text>
+      <text x="224" y="15" font-size="13" font-weight="500" fill="#111111">Analysis: Gettysburg Address Delivery</text>
+    </g>
+
+    <!-- Topbar Right Meta / Actions -->
+    <g transform="translate(850, 13)">
+      <!-- Engine Status Pill (.badge from globals.css) -->
+      <rect x="0" y="0" width="108" height="28" rx="5" fill="#ebf4ee" stroke="transparent" />
+      <circle cx="12" cy="14" r="3.5" fill="#3c7a52" />
+      <text x="22" y="18" font-size="11.5" font-weight="500" fill="#3c7a52">Engine Live</text>
+
+      <!-- Scoring Model Version Badge -->
+      <rect x="116" y="0" width="102" height="28" rx="5" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+      <text x="126" y="18" class="mono" font-size="11" font-weight="500" fill="#707070">SCORING v2.0</text>
+
+      <!-- Primary Action Button (.btn .btn-primary from globals.css) -->
+      <rect x="226" y="0" width="92" height="28" rx="6" fill="#111111" stroke="#111111" />
+      <text x="272" y="18" text-anchor="middle" font-size="12" font-weight="500" fill="#ffffff">New attempt</text>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- 3. ANALYSIS PAGE HEADER (.an-header from AnalysisPage.tsx line 167)       -->
+  <!-- ========================================================================= -->
+  <g transform="translate(32, 74)">
+    <!-- SourceTag & Mode badge -->
+    <rect x="0" y="0" width="58" height="22" rx="4" fill="#ebf4ee" />
+    <circle cx="9" cy="11" r="3" fill="#3c7a52" />
+    <text x="17" y="15" font-size="11" font-weight="600" fill="#3c7a52">LIVE</text>
+
+    <rect x="66" y="0" width="84" height="22" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+    <text x="74" y="15" font-size="11" font-weight="500" fill="#222222">Speech Test</text>
+
+    <text x="160" y="15" font-size="12" fill="#a3a3a3">Oct 13, 2026 · 21:30 IST</text>
+
+    <!-- Display Title (.t-display: 30px 600 weight) -->
+    <text x="0" y="48" font-size="24" font-weight="600" fill="#111111" letter-spacing="-0.02em">
+      Gettysburg Address (Temporal Contrastive Delivery)
+    </text>
+
+    <!-- Subtitle metadata -->
+    <text x="0" y="68" font-size="12.5" fill="#707070">
+      Reference: <tspan fill="#111111">LibriSpeech Clean #1089</tspan> <tspan fill="#a3a3a3">·</tspan> Duration: <tspan class="mono" fill="#111111">0:08.5</tspan> <tspan fill="#a3a3a3">·</tspan> Alignment: <tspan class="mono" fill="#111111">torchaudio.MMS_FA</tspan> <tspan fill="#a3a3a3">·</tspan> Two-Channel Normalization: <tspan fill="#111111">ADR-001</tspan>
+    </text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- 4. MAIN THREE-COLUMN WORKSTATION GRID (.an-grid from analysis.css)        -->
+  <!-- Left: 260px (Score), Middle: 590px (Waveform + Transcript), Right: 256px (Flaws) -->
+  <!-- ========================================================================= -->
+
+  <!-- ========================================================================= -->
+  <!-- 4A. LEFT COLUMN: SCORE PANEL (.an-score / ScoreBlock.tsx)                 -->
+  <!-- ========================================================================= -->
+  <g transform="translate(32, 160)">
+    <!-- Container Card (.panel .panel-pad) -->
+    <rect x="0" y="0" width="260" height="486" rx="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1" />
+
+    <g transform="translate(20, 20)">
+      <!-- Header -->
+      <text x="0" y="11" class="mono" font-size="11" font-weight="500" fill="#707070" letter-spacing="0.06em">DELIVERY SCORE</text>
+      <rect x="156" y="0" width="64" height="18" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+      <text x="188" y="12" text-anchor="middle" class="mono" font-size="9.5" font-weight="500" fill="#707070">v2.0 YAML</text>
+
+      <!-- Giant Score Readout (.score-num .num: 64px 600 weight, ScoreBlock.tsx) -->
+      <g transform="translate(0, 56)">
+        <text x="0" y="44" font-size="58" font-weight="600" fill="#111111" letter-spacing="-0.04em">94.2</text>
+        <text x="140" y="44" font-size="17" font-weight="500" fill="#707070">/ 100</text>
+      </g>
+
+      <!-- Score Summary text (.score-summary) -->
+      <text x="0" y="124" font-size="13" font-weight="500" fill="#222222">
+        Strong delivery with minor pacing
+      </text>
+      <text x="0" y="142" font-size="13" font-weight="500" fill="#222222">
+        and intonation deviations.
+      </text>
+
+      <!-- Horizontal Divider (.rule) -->
+      <line x1="0" y1="160" x2="220" y2="160" stroke="#e5e5e5" stroke-width="1" />
+
+      <!-- Deductions Header (.t-label) -->
+      <text x="0" y="182" class="mono" font-size="10.5" font-weight="500" fill="#707070" letter-spacing="0.06em">DEDUCTIONS</text>
+
+      <!-- Deduction 1: Pacing Cadence (Deduction: -3.2 / 25) -->
+      <g transform="translate(0, 198)">
+        <text x="0" y="10" font-size="12.5" fill="#111111">Pacing cadence</text>
+        <text x="220" y="10" text-anchor="end" class="mono" font-size="12" fill="#111111">−3.2 <tspan fill="#a3a3a3">/ 25</tspan></text>
+        <!-- .hbar (.h: 4px, bg: #eeeeee, fill: -warn #9a6514) -->
+        <rect x="0" y="16" width="220" height="4" rx="2" fill="#eeeeee" />
+        <rect x="0" y="16" width="34" height="4" rx="2" fill="#9a6514" />
+      </g>
+
+      <!-- Deduction 2: Pitch & Intonation (Deduction: -1.8 / 25) -->
+      <g transform="translate(0, 238)">
+        <text x="0" y="10" font-size="12.5" fill="#111111">Pitch &amp; melody</text>
+        <text x="220" y="10" text-anchor="end" class="mono" font-size="12" fill="#111111">−1.8 <tspan fill="#a3a3a3">/ 25</tspan></text>
+        <rect x="0" y="16" width="220" height="4" rx="2" fill="#eeeeee" />
+        <rect x="0" y="16" width="20" height="4" rx="2" fill="#3c7a52" />
+      </g>
+
+      <!-- Deduction 3: Pause Dynamics (Deduction: -0.8 / 25) -->
+      <g transform="translate(0, 278)">
+        <text x="0" y="10" font-size="12.5" fill="#111111">Pauses &amp; gaps</text>
+        <text x="220" y="10" text-anchor="end" class="mono" font-size="12" fill="#111111">−0.8 <tspan fill="#a3a3a3">/ 25</tspan></text>
+        <rect x="0" y="16" width="220" height="4" rx="2" fill="#eeeeee" />
+        <rect x="0" y="16" width="12" height="4" rx="2" fill="#3c7a52" />
+      </g>
+
+      <!-- Deduction 4: Energy Projection (Deduction: 0.0 / 25) -->
+      <g transform="translate(0, 318)">
+        <text x="0" y="10" font-size="12.5" fill="#111111">Energy &amp; volume</text>
+        <text x="220" y="10" text-anchor="end" class="mono" font-size="12" fill="#111111">0.0 <tspan fill="#a3a3a3">/ 25</tspan></text>
+        <rect x="0" y="16" width="220" height="4" rx="2" fill="#eeeeee" />
+        <rect x="0" y="16" width="3" height="4" rx="1.5" fill="#3c7a52" />
+      </g>
+
+      <!-- Subtext note -->
+      <text x="0" y="356" font-size="11" fill="#a3a3a3">Capped at 25 pts per bucket.</text>
+
+      <!-- Acoustic Telemetry Summary Table at Card Bottom -->
+      <g transform="translate(0, 376)">
+        <rect x="0" y="0" width="220" height="74" rx="6" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+        <text x="10" y="18" class="mono" font-size="10.5" fill="#707070">RATE</text>
+        <text x="210" y="18" text-anchor="end" class="mono" font-size="10.5" font-weight="600" fill="#111111">158 WPM (Ref 152)</text>
+        
+        <text x="10" y="38" class="mono" font-size="10.5" fill="#707070">MEAN F0</text>
+        <text x="210" y="38" text-anchor="end" class="mono" font-size="10.5" font-weight="600" fill="#111111">164 Hz (+0.6 st)</text>
+
+        <text x="10" y="58" class="mono" font-size="10.5" fill="#707070">VAD RATIO</text>
+        <text x="210" y="58" text-anchor="end" class="mono" font-size="10.5" font-weight="600" fill="#111111">82.4% speech</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- 4B. CENTER COLUMN: WAVEFORM WORKSTATION & TRANSCRIPT                      -->
+  <!-- ========================================================================= -->
+  <g transform="translate(308, 160)">
+    <!-- 4B-1. Waveform Workstation Card (.panel .an-workstation) -->
+    <rect x="0" y="0" width="596" height="326" rx="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1" />
+
+    <!-- Waveform Top Toolbar (.ws-top) -->
+    <g transform="translate(20, 14)">
+      <text x="0" y="12" font-size="14.5" font-weight="600" fill="#111111">Waveform</text>
+
+      <!-- Legend items (.legend) -->
+      <g transform="translate(86, 2)">
+        <!-- Participant -->
+        <rect x="0" y="4" width="12" height="2" fill="#111111" />
+        <text x="16" y="9" font-size="11.5" fill="#707070">Participant</text>
+
+        <!-- Reference -->
+        <rect x="88" y="4" width="12" height="2" fill="#a8a8a8" />
+        <text x="104" y="9" font-size="11.5" fill="#707070">Reference</text>
+
+        <!-- F0 Contour -->
+        <line x1="172" y1="5" x2="184" y2="5" stroke="#111111" stroke-width="1.8" />
+        <text x="188" y="9" font-size="11.5" fill="#707070">F0</text>
+
+        <!-- Ref F0 -->
+        <line x1="210" y1="5" x2="222" y2="5" stroke="#a8a8a8" stroke-width="1.5" stroke-dasharray="3 3" />
+        <text x="226" y="9" font-size="11.5" fill="#707070">Ref F0</text>
+
+        <!-- Flaw marker -->
+        <rect x="274" y="2" width="7" height="7" rx="1.5" fill="#b2443a" />
+        <text x="286" y="9" font-size="11.5" fill="#b2443a">Flaw</text>
+      </g>
+    </g>
+
+    <!-- Waveform Canvas Box (.wave-canvas-wrap from analysis.css line 176: bg #fafafa, border #e5e5e5) -->
+    <g transform="translate(20, 42)">
+      <rect x="0" y="0" width="556" height="186" rx="6" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+
+      <!-- Center Audio Baseline (midline) -->
+      <line x1="0" y1="93" x2="556" y2="93" stroke="#e5e5e5" stroke-width="1" />
+
+      <!-- Horizontal grid guidelines for z-score / semitone levels -->
+      <line x1="0" y1="46" x2="556" y2="46" stroke="#f0f0f0" stroke-width="1" stroke-dasharray="2 4" />
+      <line x1="0" y1="140" x2="556" y2="140" stroke="#f0f0f0" stroke-width="1" stroke-dasharray="2 4" />
+
+      <!-- FLAW REGION 1: Rapid Pacing (sev-warn: #9a6514) [x: 74 to 142] -->
+      <rect x="74" y="0" width="68" height="186" fill="url(#warn-region)" />
+      <line x1="74" y1="0" x2="142" y2="0" stroke="#9a6514" stroke-width="2.5" />
+      <rect x="78" y="6" width="60" height="16" rx="3" fill="#fbf2e2" stroke="#9a6514" stroke-width="0.8" />
+      <text x="108" y="17" text-anchor="middle" class="mono" font-size="8.5" font-weight="600" fill="#9a6514">PACE +38%</text>
+
+      <!-- FLAW REGION 2: Pitch Instability (sev-bad: #b2443a, Selected!) [x: 212 to 298] -->
+      <rect x="212" y="0" width="86" height="186" fill="url(#bad-region)" />
+      <line x1="212" y1="0" x2="298" y2="0" stroke="#b2443a" stroke-width="3" />
+      <line x1="212" y1="0" x2="212" y2="186" stroke="#b2443a" stroke-width="1" stroke-dasharray="2 2" />
+      <line x1="298" y1="0" x2="298" y2="186" stroke="#b2443a" stroke-width="1" stroke-dasharray="2 2" />
+      <rect x="218" y="6" width="74" height="16" rx="3" fill="#fbeceb" stroke="#b2443a" stroke-width="0.8" />
+      <text x="255" y="17" text-anchor="middle" class="mono" font-size="8.5" font-weight="600" fill="#b2443a">F0 Δ+4.2st</text>
+
+      <!-- FLAW REGION 3: Excessive Pause (.wave-pause, striped pattern) [x: 396 to 452] -->
+      <rect x="396" y="0" width="56" height="186" fill="url(#pause-stripe)" />
+      <line x1="396" y1="0" x2="452" y2="0" stroke="#707070" stroke-width="1.5" />
+      <rect x="401" y="6" width="46" height="16" rx="3" fill="#f5f5f5" stroke="#d4d4d4" stroke-width="0.8" />
+      <text x="424" y="17" text-anchor="middle" class="mono" font-size="8.5" font-weight="500" fill="#707070">PAUSE 0.8s</text>
+
+      <!-- Waveform Bars: Reference (Neutral gray #a8a8a8, mirrored top/bottom per drawPeaks) -->
+      <g fill="#a8a8a8" opacity="0.65">
+        <!-- Section 1 -->
+        <rect x="18" y="80" width="2" height="26" /><rect x="23" y="74" width="2" height="38" />
+        <rect x="28" y="68" width="2" height="50" /><rect x="33" y="72" width="2" height="42" />
+        <rect x="38" y="78" width="2" height="30" /><rect x="43" y="84" width="2" height="18" />
+        <!-- Section 2 -->
+        <rect x="80" y="75" width="2" height="36" /><rect x="85" y="66" width="2" height="54" />
+        <rect x="90" y="60" width="2" height="66" /><rect x="95" y="64" width="2" height="58" />
+        <rect x="100" y="70" width="2" height="46" /><rect x="105" y="78" width="2" height="30" />
+        <!-- Section 3 -->
+        <rect x="150" y="82" width="2" height="22" /><rect x="155" y="74" width="2" height="38" />
+        <rect x="160" y="65" width="2" height="56" /><rect x="165" y="70" width="2" height="46" />
+        <rect x="170" y="78" width="2" height="30" /><rect x="175" y="85" width="2" height="16" />
+        <!-- Section 4 -->
+        <rect x="220" y="72" width="2" height="42" /><rect x="225" y="64" width="2" height="58" />
+        <rect x="230" y="58" width="2" height="70" /><rect x="235" y="60" width="2" height="66" />
+        <rect x="240" y="66" width="2" height="54" /><rect x="245" y="74" width="2" height="38" />
+        <rect x="250" y="80" width="2" height="26" /><rect x="255" y="84" width="2" height="18" />
+        <!-- Section 5 -->
+        <rect x="310" y="75" width="2" height="36" /><rect x="315" y="65" width="2" height="56" />
+        <rect x="320" y="68" width="2" height="50" /><rect x="325" y="76" width="2" height="34" />
+        <rect x="330" y="82" width="2" height="22" />
+        <!-- Section 6: Post Pause -->
+        <rect x="460" y="78" width="2" height="30" /><rect x="465" y="70" width="2" height="46" />
+        <rect x="470" y="62" width="2" height="62" /><rect x="475" y="68" width="2" height="50" />
+        <rect x="480" y="76" width="2" height="34" /><rect x="485" y="82" width="2" height="22" />
+      </g>
+
+      <!-- Waveform Bars: Participant (Rich Black #111111 per -participant) -->
+      <g fill="#111111">
+        <!-- Section 1 (Normal intro) -->
+        <rect x="16" y="82" width="2" height="22" /><rect x="21" y="72" width="2" height="42" />
+        <rect x="26" y="64" width="2" height="58" /><rect x="31" y="70" width="2" height="46" />
+        <rect x="36" y="76" width="2" height="34" /><rect x="41" y="84" width="2" height="18" />
+        <!-- Section 2 (Flaw 1: Dense fast spikes) -->
+        <rect x="76" y="60" width="2" height="66" /><rect x="80" y="55" width="2" height="76" />
+        <rect x="84" y="50" width="2" height="86" /><rect x="88" y="52" width="2" height="82" />
+        <rect x="92" y="58" width="2" height="70" /><rect x="96" y="64" width="2" height="58" />
+        <rect x="100" y="54" width="2" height="78" /><rect x="104" y="62" width="2" height="62" />
+        <rect x="108" y="70" width="2" height="46" /><rect x="112" y="78" width="2" height="30" />
+        <!-- Section 3 (Transition) -->
+        <rect x="148" y="80" width="2" height="26" /><rect x="153" y="72" width="2" height="42" />
+        <rect x="158" y="63" width="2" height="60" /><rect x="163" y="69" width="2" height="48" />
+        <rect x="168" y="77" width="2" height="32" /><rect x="173" y="84" width="2" height="18" />
+        <!-- Section 4 (Flaw 2: High excursion pitch/energy glitch) -->
+        <rect x="214" y="48" width="2" height="90" /><rect x="219" y="40" width="2" height="106" />
+        <rect x="224" y="34" width="2" height="118" /><rect x="229" y="38" width="2" height="110" />
+        <rect x="234" y="44" width="2" height="98" /><rect x="239" y="52" width="2" height="82" />
+        <rect x="244" y="60" width="2" height="66" /><rect x="249" y="68" width="2" height="50" />
+        <rect x="254" y="76" width="2" height="34" /><rect x="259" y="82" width="2" height="22" />
+        <!-- Section 5 -->
+        <rect x="308" y="76" width="2" height="34" /><rect x="313" y="66" width="2" height="54" />
+        <rect x="318" y="60" width="2" height="66" /><rect x="323" y="70" width="2" height="46" />
+        <rect x="328" y="78" width="2" height="30" /><rect x="333" y="85" width="2" height="16" />
+        <!-- Pause gap: x: 396 to 452 (Flatline/Silence) -->
+        <rect x="400" y="92.5" width="2" height="1" /><rect x="420" y="92.5" width="2" height="1" /><rect x="440" y="92.5" width="2" height="1" />
+        <!-- Section 6: Recovery -->
+        <rect x="462" y="76" width="2" height="34" /><rect x="467" y="68" width="2" height="50" />
+        <rect x="472" y="58" width="2" height="70" /><rect x="477" y="64" width="2" height="58" />
+        <rect x="482" y="72" width="2" height="42" /><rect x="487" y="80" width="2" height="26" />
+        <rect x="492" y="86" width="2" height="14" /><rect x="497" y="90" width="2" height="6" />
+      </g>
+
+      <!-- F0 Pitch Contour: Reference (Dashed neutral gray #a8a8a8) -->
+      <path d="M 16 98 C 50 94, 90 90, 120 92 C 160 95, 200 90, 240 88 C 280 86, 330 92, 380 95 C 410 95, 440 95, 460 92 C 490 90, 520 92, 540 95"
+            fill="none" stroke="#a8a8a8" stroke-width="1.5" stroke-dasharray="4 4" />
+
+      <!-- F0 Pitch Contour: Participant (Solid rich black #111111 per -participant) -->
+      <path d="M 16 97 C 50 92, 80 82, 110 86 C 140 90, 180 88, 214 74 C 230 46, 260 52, 290 85 C 320 90, 360 92, 396 95 L 452 95 C 465 88, 490 80, 520 88 L 540 92"
+            fill="none" stroke="#111111" stroke-width="2" />
+
+      <!-- Playhead Needle & Cursor Line (.wave-head from analysis.css line 199) -->
+      <line x1="256" y1="0" x2="256" y2="186" stroke="#111111" stroke-width="1.5" />
+      <!-- Top triangle needle -->
+      <polygon points="252,0 260,0 256,5" fill="#111111" />
+    </g>
+
+    <!-- Controls Toolbar (.ws-controls from AnalysisPage.tsx line 31) -->
+    <g transform="translate(20, 240)">
+      <!-- Play button (.btn .btn-primary .btn-icon) -->
+      <rect x="0" y="0" width="32" height="32" rx="6" fill="#111111" />
+      <polygon points="12,10 22,16 12,22" fill="#ffffff" />
+
+      <!-- Rewind button (.btn .btn-ghost) -->
+      <rect x="38" y="0" width="32" height="32" rx="6" fill="#ffffff" stroke="#e5e5e5" stroke-width="1" />
+      <path d="M 58 16 A 5 5 0 1 1 53 11 M 50 11 L 54 11 L 54 7" fill="none" stroke="#707070" stroke-width="1.5" />
+
+      <!-- Time readout (.time-readout) -->
+      <text x="82" y="21" class="mono" font-size="13" font-weight="600" fill="#111111">
+        0:02.8 <tspan font-weight="400" fill="#a3a3a3">/ 0:08.5</tspan>
+      </text>
+
+      <!-- Speed & Volume selectors -->
+      <g transform="translate(240, 6)">
+        <text x="0" y="14" font-size="12" fill="#707070">Speed</text>
+        <rect x="40" y="0" width="44" height="22" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+        <text x="62" y="15" text-anchor="middle" class="mono" font-size="11" fill="#111111">1.0×</text>
+      </g>
+
+      <!-- Zoom controls -->
+      <g transform="translate(350, 6)">
+        <rect x="0" y="0" width="22" height="22" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+        <text x="11" y="15" text-anchor="middle" font-size="12" fill="#707070">−</text>
+
+        <text x="32" y="15" text-anchor="middle" class="mono" font-size="11" fill="#707070">1×</text>
+
+        <rect x="42" y="0" width="22" height="22" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+        <text x="53" y="15" text-anchor="middle" font-size="12" fill="#707070">+</text>
+      </g>
+
+      <!-- Overlay Checkboxes (.ws-toggles) -->
+      <g transform="translate(436, 8)">
+        <circle cx="6" cy="6" r="4.5" fill="#111111" />
+        <text x="16" y="10" font-size="11.5" font-weight="500" fill="#111111">Pitch F0</text>
+
+        <circle cx="78" cy="6" r="4.5" fill="#111111" />
+        <text x="88" y="10" font-size="11.5" font-weight="500" fill="#111111">Flaws</text>
+      </g>
+    </g>
+
+    <!-- 4B-2. Transcript Panel Card (.an-transcript from AnalysisPage.tsx line 294) -->
+    <g transform="translate(0, 288)">
+      <rect x="0" y="0" width="596" height="198" rx="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1" />
+
+      <!-- Panel Head (.panel-head) -->
+      <line x1="0" y1="36" x2="596" y2="36" stroke="#e5e5e5" stroke-width="1" />
+      <text x="20" y="24" font-size="13.5" font-weight="600" fill="#111111">Transcript</text>
+      <rect x="470" y="8" width="106" height="20" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+      <text x="523" y="22" text-anchor="middle" class="mono" font-size="10" fill="#707070">MMS_FA ALIGNED</text>
+
+      <!-- Word-level Anchors (Transcript.tsx with temporal grounding) -->
+      <g transform="translate(20, 56)">
+        <!-- Word 1: "Four" [0.12s - 0.45s] -->
+        <g transform="translate(0, 0)">
+          <rect x="0" y="0" width="46" height="32" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+          <text x="23" y="20" text-anchor="middle" font-size="13" font-weight="500" fill="#111111">Four</text>
+          <text x="23" y="44" text-anchor="middle" class="mono" font-size="9.5" fill="#a3a3a3">0.12s</text>
+        </g>
+
+        <!-- Word 2: "score" [0.46s - 0.88s] -->
+        <g transform="translate(52, 0)">
+          <rect x="0" y="0" width="54" height="32" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+          <text x="27" y="20" text-anchor="middle" font-size="13" font-weight="500" fill="#111111">score</text>
+          <text x="27" y="44" text-anchor="middle" class="mono" font-size="9.5" fill="#a3a3a3">0.48s</text>
+        </g>
+
+        <!-- Word 3: "and" [0.89s - 1.15s] -->
+        <g transform="translate(112, 0)">
+          <rect x="0" y="0" width="42" height="32" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+          <text x="21" y="20" text-anchor="middle" font-size="13" font-weight="500" fill="#111111">and</text>
+          <text x="21" y="44" text-anchor="middle" class="mono" font-size="9.5" fill="#a3a3a3">0.92s</text>
+        </g>
+
+        <!-- Word 4: "seven" [1.20s - 1.85s] FL-01 FLAWED (PACING) -->
+        <g transform="translate(160, 0)">
+          <rect x="0" y="0" width="60" height="32" rx="4" fill="#fbf2e2" stroke="#9a6514" stroke-width="1.2" />
+          <text x="30" y="20" text-anchor="middle" font-size="13" font-weight="600" fill="#9a6514">seven</text>
+          <text x="30" y="44" text-anchor="middle" class="mono" font-size="9.5" font-weight="600" fill="#9a6514">1.20s</text>
+        </g>
+
+        <!-- Word 5: "years" [1.86s - 2.18s] -->
+        <g transform="translate(226, 0)">
+          <rect x="0" y="0" width="52" height="32" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+          <text x="26" y="20" text-anchor="middle" font-size="13" font-weight="500" fill="#111111">years</text>
+          <text x="26" y="44" text-anchor="middle" class="mono" font-size="9.5" fill="#a3a3a3">1.86s</text>
+        </g>
+
+        <!-- Word 6: "ago" [2.19s - 2.45s] -->
+        <g transform="translate(284, 0)">
+          <rect x="0" y="0" width="44" height="32" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+          <text x="22" y="20" text-anchor="middle" font-size="13" font-weight="500" fill="#111111">ago</text>
+          <text x="22" y="44" text-anchor="middle" class="mono" font-size="9.5" fill="#a3a3a3">2.19s</text>
+        </g>
+
+        <!-- Word 7: "our" [2.46s - 2.65s] -->
+        <g transform="translate(334, 0)">
+          <rect x="0" y="0" width="42" height="32" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+          <text x="21" y="20" text-anchor="middle" font-size="13" font-weight="500" fill="#111111">our</text>
+          <text x="21" y="44" text-anchor="middle" class="mono" font-size="9.5" fill="#a3a3a3">2.46s</text>
+        </g>
+
+        <!-- Word 8 & 9: "fathers" [2.68s - 3.12s] FL-04 FLAWED (F0 INSTABILITY) SELECTED -->
+        <g transform="translate(382, 0)">
+          <rect x="0" y="0" width="70" height="32" rx="4" fill="#fbeceb" stroke="#b2443a" stroke-width="1.8" />
+          <text x="35" y="20" text-anchor="middle" font-size="13" font-weight="600" fill="#b2443a">fathers</text>
+          <text x="35" y="44" text-anchor="middle" class="mono" font-size="9.5" font-weight="600" fill="#b2443a">2.68s</text>
+        </g>
+
+        <!-- Word 10: "brought" [3.15s - 3.55s] -->
+        <g transform="translate(458, 0)">
+          <rect x="0" y="0" width="70" height="32" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+          <text x="35" y="20" text-anchor="middle" font-size="13" font-weight="500" fill="#111111">brought</text>
+          <text x="35" y="44" text-anchor="middle" class="mono" font-size="9.5" fill="#a3a3a3">3.15s</text>
+        </g>
+      </g>
+
+      <!-- Second line of transcript -->
+      <g transform="translate(20, 114)">
+        <g transform="translate(0, 0)">
+          <rect x="0" y="0" width="50" height="32" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+          <text x="25" y="20" text-anchor="middle" font-size="13" font-weight="500" fill="#111111">forth</text>
+          <text x="25" y="44" text-anchor="middle" class="mono" font-size="9.5" fill="#a3a3a3">3.56s</text>
+        </g>
+
+        <g transform="translate(56, 0)">
+          <rect x="0" y="0" width="86" height="32" rx="4" fill="#f5f5f5" stroke="#d4d4d4" stroke-width="1" stroke-dasharray="2 2" />
+          <text x="43" y="20" text-anchor="middle" class="mono" font-size="11.5" font-weight="500" fill="#707070">[PAUSE 0.8s]</text>
+          <text x="43" y="44" text-anchor="middle" class="mono" font-size="9.5" fill="#a3a3a3">3.95s</text>
+        </g>
+
+        <g transform="translate(148, 0)">
+          <rect x="0" y="0" width="40" height="32" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+          <text x="20" y="20" text-anchor="middle" font-size="13" font-weight="500" fill="#111111">on</text>
+          <text x="20" y="44" text-anchor="middle" class="mono" font-size="9.5" fill="#a3a3a3">4.75s</text>
+        </g>
+
+        <g transform="translate(194, 0)">
+          <rect x="0" y="0" width="44" height="32" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+          <text x="22" y="20" text-anchor="middle" font-size="13" font-weight="500" fill="#111111">this</text>
+          <text x="22" y="44" text-anchor="middle" class="mono" font-size="9.5" fill="#a3a3a3">4.95s</text>
+        </g>
+
+        <g transform="translate(244, 0)">
+          <rect x="0" y="0" width="76" height="32" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+          <text x="38" y="20" text-anchor="middle" font-size="13" font-weight="500" fill="#111111">continent</text>
+          <text x="38" y="44" text-anchor="middle" class="mono" font-size="9.5" fill="#a3a3a3">5.20s</text>
+        </g>
+
+        <g transform="translate(326, 0)">
+          <rect x="0" y="0" width="112" height="32" rx="4" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+          <text x="56" y="20" text-anchor="middle" font-size="13" font-weight="500" fill="#111111">a new nation...</text>
+          <text x="56" y="44" text-anchor="middle" class="mono" font-size="9.5" fill="#a3a3a3">5.75s</text>
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- 4C. RIGHT COLUMN: FLAW DRAWER & EVIDENCE (.an-side / FlawPanel.tsx)        -->
+  <!-- ========================================================================= -->
+  <g transform="translate(916, 160)">
+    <!-- Container Card (.panel) -->
+    <rect x="0" y="0" width="252" height="486" rx="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1" />
+
+    <!-- Card Header (.panel-head) -->
+    <g transform="translate(18, 14)">
+      <text x="0" y="12" font-size="14.5" font-weight="600" fill="#111111">Flaws</text>
+      <rect x="186" y="0" width="30" height="18" rx="9" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+      <text x="201" y="12.5" text-anchor="middle" class="mono" font-size="10.5" font-weight="600" fill="#707070">3</text>
+    </g>
+    <line x1="0" y1="44" x2="252" y2="44" stroke="#e5e5e5" stroke-width="1" />
+
+    <!-- Flaws List Item 1: Selected Flaw (FlawPanel.tsx) -->
+    <g transform="translate(12, 54)">
+      <rect x="0" y="0" width="228" height="52" rx="6" fill="#f5f5f5" stroke="#111111" stroke-width="1" />
+      <!-- Swatch -->
+      <rect x="12" y="14" width="4" height="24" rx="2" fill="#b2443a" />
+      <text x="24" y="24" font-size="12.5" font-weight="600" fill="#111111">Pitch Instability</text>
+      <text x="24" y="39" class="mono" font-size="10" fill="#707070">2.68s – 3.12s · “fathers”</text>
+      <text x="216" y="32" text-anchor="end" class="mono" font-size="12" font-weight="600" fill="#111111">−1.8</text>
+    </g>
+
+    <!-- Flaw List Item 2 -->
+    <g transform="translate(12, 114)">
+      <rect x="0" y="0" width="228" height="48" rx="6" fill="#ffffff" stroke="#e5e5e5" stroke-width="1" />
+      <rect x="12" y="12" width="4" height="24" rx="2" fill="#9a6514" />
+      <text x="24" y="22" font-size="12" font-weight="500" fill="#111111">Rapid Pacing</text>
+      <text x="24" y="37" class="mono" font-size="10" fill="#707070">1.20s – 1.85s · “seven”</text>
+      <text x="216" y="30" text-anchor="end" class="mono" font-size="11.5" fill="#707070">−1.4</text>
+    </g>
+
+    <!-- Flaw List Item 3 -->
+    <g transform="translate(12, 170)">
+      <rect x="0" y="0" width="228" height="48" rx="6" fill="#ffffff" stroke="#e5e5e5" stroke-width="1" />
+      <rect x="12" y="12" width="4" height="24" rx="2" fill="#707070" />
+      <text x="24" y="22" font-size="12" font-weight="500" fill="#111111">Excessive Pause</text>
+      <text x="24" y="37" class="mono" font-size="10" fill="#707070">3.95s – 4.75s · +0.8s</text>
+      <text x="216" y="30" text-anchor="end" class="mono" font-size="11.5" fill="#707070">−0.8</text>
+    </g>
+
+    <line x1="12" y1="228" x2="240" y2="228" stroke="#e5e5e5" stroke-width="1" />
+
+    <!-- Flaw Evidence Detail Box (.flaw-panel from FlawPanel.tsx) -->
+    <g transform="translate(14, 238)">
+      <!-- Badge (.badge badge-bad) -->
+      <rect x="0" y="0" width="108" height="20" rx="4" fill="#fbeceb" />
+      <text x="54" y="13.5" text-anchor="middle" class="mono" font-size="9.5" font-weight="600" fill="#b2443a">PITCH_UNSTABLE</text>
+
+      <text x="0" y="36" font-size="14.5" font-weight="600" fill="#111111">Pitch Instability</text>
+      <text x="0" y="52" class="mono" font-size="11" fill="#707070">02.68s — 03.12s</text>
+
+      <!-- Acoustic Evidence Table (.flaw-evidence) -->
+      <g transform="translate(0, 64)">
+        <rect x="0" y="0" width="224" height="68" rx="5" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+        <text x="8" y="16" class="mono" font-size="9.5" fill="#707070">METRIC</text>
+        <text x="216" y="16" text-anchor="end" class="mono" font-size="9.5" font-weight="600" fill="#111111">F0 Semitone Shift</text>
+
+        <text x="8" y="34" class="mono" font-size="9.5" fill="#707070">PARTICIPANT</text>
+        <text x="216" y="34" text-anchor="end" class="mono" font-size="9.5" fill="#111111">184 Hz (+4.2 st)</text>
+
+        <text x="8" y="52" class="mono" font-size="9.5" fill="#707070">DEVIATION</text>
+        <text x="216" y="52" text-anchor="end" class="mono" font-size="9.5" font-weight="600" fill="#b2443a">+4.2 st (&gt;2.0 st)</text>
+      </g>
+
+      <!-- Measured text (.flaw-block) -->
+      <g transform="translate(0, 142)">
+        <text x="0" y="10" class="mono" font-size="9.5" font-weight="600" fill="#707070">MEASURED FACT</text>
+        <text x="0" y="25" font-size="11.5" fill="#222222">Pitch rose 4.2 semitones above</text>
+        <text x="0" y="39" font-size="11.5" fill="#222222">canonical contour on “fathers”.</text>
+      </g>
+
+      <!-- Actionable Tip (.flaw-block) -->
+      <g transform="translate(0, 192)">
+        <text x="0" y="10" class="mono" font-size="9.5" font-weight="600" fill="#3c7a52">ACTIONABLE ADVICE</text>
+        <text x="0" y="25" font-size="11.5" fill="#222222">Keep intonation grounded;</text>
+        <text x="0" y="39" font-size="11.5" fill="#222222">avoid abrupt upward inflections.</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- 5. BOTTOM FOOTER BAR: WORKSPACES & PLATFORM SUITE                         -->
+  <!-- ========================================================================= -->
+  <g transform="translate(32, 664)">
+    <!-- Container Bar -->
+    <rect x="0" y="0" width="1136" height="108" rx="8" fill="#ffffff" stroke="#e5e5e5" stroke-width="1" />
+
+    <!-- Header label -->
+    <g transform="translate(20, 14)">
+      <text x="0" y="10" class="mono" font-size="10.5" font-weight="600" fill="#707070" letter-spacing="0.08em">
+        SPEECH GURU MULTI-MODE WORKSPACES // ZERO-LLM SCORING CRITICAL PATH
+      </text>
+    </g>
+
+    <!-- 5 Workspace Mode Badges (Matching App.tsx & PracticeLayout) -->
+    <g transform="translate(20, 36)">
+      <!-- 1. AI Interviewer -->
+      <g transform="translate(0, 0)">
+        <rect x="0" y="0" width="210" height="52" rx="6" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+        <circle cx="22" cy="26" r="10" fill="#eeeeee" />
+        <text x="22" y="30" text-anchor="middle" font-size="11" font-weight="600" fill="#111111">Q</text>
+        <text x="40" y="22" font-size="12" font-weight="600" fill="#111111">AI Interviewer</text>
+        <text x="40" y="37" font-size="10.5" fill="#707070">STAR Framework · 20+ fields</text>
+      </g>
+
+      <!-- 2. News Anchor Studio -->
+      <g transform="translate(222, 0)">
+        <rect x="0" y="0" width="210" height="52" rx="6" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+        <circle cx="22" cy="26" r="10" fill="#eeeeee" />
+        <rect x="18" y="22" width="8" height="8" rx="1" fill="#111111" />
+        <text x="40" y="22" font-size="12" font-weight="600" fill="#111111">News Anchor</text>
+        <text x="40" y="37" font-size="10.5" fill="#707070">Teleprompter · WPM pace sync</text>
+      </g>
+
+      <!-- 3. Debate Sparring -->
+      <g transform="translate(444, 0)">
+        <rect x="0" y="0" width="210" height="52" rx="6" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+        <circle cx="22" cy="26" r="10" fill="#eeeeee" />
+        <text x="22" y="30" text-anchor="middle" font-size="11" font-weight="600" fill="#111111">⚔</text>
+        <text x="40" y="22" font-size="12" font-weight="600" fill="#111111">Debate Sparring</text>
+        <text x="40" y="37" font-size="10.5" fill="#707070">Crowd reaction &amp; floor clock</text>
+      </g>
+
+      <!-- 4. Storyteller -->
+      <g transform="translate(666, 0)">
+        <rect x="0" y="0" width="210" height="52" rx="6" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+        <circle cx="22" cy="26" r="10" fill="#eeeeee" />
+        <path d="M 18 29 Q 22 21 26 29" stroke="#111111" stroke-width="1.8" fill="none" />
+        <text x="40" y="22" font-size="12" font-weight="600" fill="#111111">Storyteller</text>
+        <text x="40" y="37" font-size="10.5" fill="#707070">Freytag's Pyramid dynamic arc</text>
+      </g>
+
+      <!-- 5. 1v1 Arena & You-vs-You -->
+      <g transform="translate(888, 0)">
+        <rect x="0" y="0" width="208" height="52" rx="6" fill="#fafafa" stroke="#e5e5e5" stroke-width="1" />
+        <circle cx="22" cy="26" r="10" fill="#eeeeee" />
+        <text x="22" y="30" text-anchor="middle" font-size="11" font-weight="600" fill="#111111">★</text>
+        <text x="40" y="22" font-size="12" font-weight="600" fill="#111111">Arena &amp; Progress</text>
+        <text x="40" y="37" font-size="10.5" fill="#707070">Async battles &amp; delta tracking</text>
+      </g>
+    </g>
+  </g>
+</svg>

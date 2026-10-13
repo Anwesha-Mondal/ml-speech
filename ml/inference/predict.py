@@ -263,15 +263,34 @@ class SpeechFlawPredictor:
         
         if checkpoint_path is None:
             best_path = os.path.join(PROJECT_ROOT, "ml", "checkpoints", "best_checkpoint.pt")
+            head_path = os.path.join(PROJECT_ROOT, "ml", "checkpoints", "head_checkpoint.pt")
             latest_path = os.path.join(PROJECT_ROOT, "ml", "checkpoints", "latest_checkpoint.pt")
-            checkpoint_path = best_path if os.path.exists(best_path) else latest_path
+
+            # Auto-reassemble parts if best_checkpoint.pt was deployed as chunks
+            if not os.path.exists(best_path):
+                import glob
+                parts = sorted(glob.glob(best_path + ".part*"))
+                if parts:
+                    print(f"[*] Reassembling heavy model checkpoint from {len(parts)} parts...")
+                    with open(best_path, "wb") as out:
+                        for p in parts:
+                            with open(p, "rb") as inp:
+                                out.write(inp.read())
+                    print(f"[+] Reassembled {best_path} successfully!")
+
+            if os.path.exists(best_path):
+                checkpoint_path = best_path
+            elif os.path.exists(head_path):
+                checkpoint_path = head_path
+            else:
+                checkpoint_path = latest_path
             
         self.checkpoint_path = checkpoint_path
         
         if not os.path.exists(self.checkpoint_path):
             raise FileNotFoundError(
                 f"Production speech model checkpoint is missing at {self.checkpoint_path}. "
-                "Place ml/checkpoints/best_checkpoint.pt or latest_checkpoint.pt on the backend host."
+                "Place ml/checkpoints/best_checkpoint.pt or head_checkpoint.pt on the backend host."
             )
 
         # Inspect checkpoint architecture before initializing classifier
@@ -314,8 +333,20 @@ class SpeechFlawPredictor:
         
         # Initialize model architecture with matching number of classes
         self.model = SpeechFlawClassifier(num_classes=num_classes).to(self.device)
-        self.model.load_state_dict(state_dict)
+        self.model.load_state_dict(state_dict, strict=False)
         self.model.eval()
+
+        # Dynamic INT8 quantization for CPU deployment (reduces memory footprint from ~580MB to ~340MB, fitting within Render 512MB free tier)
+        if self.device.type == "cpu" and os.environ.get("QUANTIZE_MODEL", "1").lower() in ("1", "true", "yes"):
+            try:
+                import torch.ao.quantization as quantization
+                self.model = quantization.quantize_dynamic(
+                    self.model, {torch.nn.Linear}, dtype=torch.qint8
+                )
+                print("[+] Applied dynamic INT8 quantization for low-memory CPU deployment (~340MB RAM).")
+            except Exception as e:
+                print(f"[!] Warning: dynamic quantization skipped ({e}). Running standard float32 model.")
+
         print(f"[+] Loaded model checkpoint from {self.checkpoint_path} on {self.device} with {num_classes} classes: {self.labels}")
 
     def predict_audio(

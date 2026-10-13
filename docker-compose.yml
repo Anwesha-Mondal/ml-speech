@@ -19,6 +19,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        TORCH_INDEX_URL: https://download.pytorch.org/whl/cu121
     volumes:
       - ./ml/checkpoints:/app/ml/checkpoints
       - ./ml/runs:/app/ml/runs
