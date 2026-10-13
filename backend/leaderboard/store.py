@@ -8,14 +8,15 @@ or deleting the account takes a name off every board at once.
 
 from __future__ import annotations
 
-from typing import TypedDict
+from typing import Any, TypedDict
 
-from pymongo import ASCENDING, DESCENDING
-from pymongo.errors import PyMongoError
+from pymongo import ASCENDING, DESCENDING, ReturnDocument
+from pymongo.errors import DuplicateKeyError, PyMongoError
 
-from backend.auth.db import LEADERBOARD, get_db, ping as mongo_ping, utcnow
+from backend.auth.db import LEADERBOARD, get_db, utcnow
+from backend.auth.db import ping as mongo_ping
 
-from .config import LeaderboardSettings, get_leaderboard_settings
+from .config import get_leaderboard_settings
 
 
 class Entry(TypedDict):
@@ -34,32 +35,30 @@ def ping() -> bool:
 
 
 def submit(user_id: str, prompt_id: str, score: float) -> bool:
-    """Record a score if it beats the user's best for this passage. Returns True when it did."""
+    """Record a score if it beats the user's best for this passage. Returns True when it did.
+
+    One atomic upsert with $max: concurrent results can never lower a stored best.
+    """
     cfg = get_leaderboard_settings()
     if prompt_id not in cfg.prompts:
         return False
     score_val = round(float(score), 2)
+    doc_id = f"{user_id}:{cfg.scoring_version}:{prompt_id}"
+    update = {
+        "$max": {"best_score": score_val},
+        "$setOnInsert": {"user_id": user_id, "scoring_version": cfg.scoring_version, "prompt_id": prompt_id},
+    }
     try:
         col = get_db()[LEADERBOARD]
-        doc_id = f"{user_id}:{cfg.scoring_version}:{prompt_id}"
-        existing = col.find_one({"_id": doc_id})
-        now = utcnow()
-        if existing is None:
-            col.insert_one(
-                {
-                    "_id": doc_id,
-                    "user_id": user_id,
-                    "scoring_version": cfg.scoring_version,
-                    "prompt_id": prompt_id,
-                    "best_score": score_val,
-                    "updated_at": now,
-                }
-            )
-            return True
-        elif score_val > float(existing.get("best_score", 0.0)):
-            col.update_one({"_id": doc_id}, {"$set": {"best_score": score_val, "updated_at": now}})
-            return True
-        return False
+        try:
+            before = col.find_one_and_update({"_id": doc_id}, update, upsert=True, return_document=ReturnDocument.BEFORE)
+        except DuplicateKeyError:
+            # Two first results raced to insert; the document exists now, so update it.
+            before = col.find_one_and_update({"_id": doc_id}, update, return_document=ReturnDocument.BEFORE)
+        new_best = before is None or score_val > float(before.get("best_score", 0.0))
+        if new_best:
+            col.update_one({"_id": doc_id}, {"$set": {"updated_at": utcnow()}})
+        return new_best
     except PyMongoError as e:
         raise LeaderboardUnavailable(str(e)) from e
 
@@ -70,7 +69,7 @@ def top(prompt_id: str | None, limit: int) -> list[tuple[str, float]]:
     try:
         col = get_db()[LEADERBOARD]
         if prompt_id is None:
-            pipeline = [
+            pipeline: list[dict[str, Any]] = [
                 {"$match": {"scoring_version": cfg.scoring_version, "prompt_id": {"$in": list(cfg.prompts.keys())}}},
                 {"$group": {"_id": "$user_id", "total_score": {"$sum": "$best_score"}}},
                 {"$sort": {"total_score": -1, "_id": 1}},

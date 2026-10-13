@@ -6,9 +6,13 @@ export default function PracticeLayout() {
     <>
       <PageHeader
         title="Practice"
-        description="Read a passage, record it, and see exactly where your delivery differs from the reference."
+        description="Five practice workspaces. Each one changes the material and which parts of delivery count most."
         tabs={[
           { to: '/practice', label: 'Speech test', end: true },
+          { to: '/practice/interviewer', label: 'Interviewer' },
+          { to: '/practice/news-anchor', label: 'News anchor' },
+          { to: '/practice/public-speaking', label: 'Public speaking' },
+          { to: '/practice/storytelling', label: 'Storytelling' },
           { to: '/practice/progress', label: 'You vs You' },
         ]}
       />

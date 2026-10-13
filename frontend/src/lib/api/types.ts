@@ -24,9 +24,32 @@ export interface ApiFlaw {
   }
 }
 
+/** Delivery measurements behind the mode bonus rules (configs/scoring/modes_v2.0.yaml). */
+export interface DeliveryMetrics {
+  duration_sec: number
+  word_count: number
+  wpm: number
+  wpm_stdev: number
+  filler_count: number
+  uptalk_count: number
+  pitch_range_st: number
+  energy_range_db: number
+  climax_peak: boolean
+  longest_pause_sec: number
+  deliberate_pause_count: number
+}
+
 export interface ApiAnalysisResult {
   mode: string
-  score: { total: number; buckets: Partial<Record<Bucket, number>> }
+  score: {
+    total: number
+    buckets: Partial<Record<Bucket, number>>
+    bonuses?: number
+    bonus_rules?: { rule_id: string; description: string; points: number }[]
+    scoring_version?: string
+    config_hash?: string
+  }
+  metrics?: DeliveryMetrics
   flaws: ApiFlaw[]
   words?: { text: string; start: number; end: number }[]
   duration?: number

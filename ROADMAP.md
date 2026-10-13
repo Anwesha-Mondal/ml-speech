@@ -179,9 +179,21 @@ graph LR
 - [x] Update dashboard to poll for real job status.
 - [x] Validate end-to-end processing with real audio.
 
+## P13: Interactive Multi-Mode Workspaces (megaev.md §14)
+- [x] M1-Ext: `configs/scoring/modes_v2.0.yaml`, mode weights/caps/bonuses, up-talk and filled-pause detectors, stable flaw IDs, version stamp
+- [x] M2: corpus extracted from megaev.md, BM25 retriever, `/api/rag/query` (dense embeddings deferred, D-071)
+- [x] M3: interviewer catalog/start/next, STAR structure check, probe follow-ups, Interviewer workspace
+- [x] M4: news scripts and breaking alerts, studio teleprompter workspace
+- [x] M5: stage tiers, crowd soundscape, 4-7-8 pacer, projection meter, sparring, debate clock
+- [x] M6: story scripts, character-coded prompter, Freytag energy arc
+- [ ] M7: live end-to-end run of every workspace with the model checkpoint
+- [ ] M7: stress suite against the model (§15 / §32.3) and 0-warning release check
+- [ ] Optional: dense embeddings + RRF, LLM dialogue/TTS, speech-synced prompter, webcam overlay
+
 ---
 ## Current Status
-- **Active phase:** Interactive Multi-Mode Workspaces & Grounded RAG Architecture (`megaev.md`) / Auth & Security (Session 48).
+- **Active phase:** P13 Interactive multi-mode workspaces: M1-Ext to M6 built (Session 50); M7 convergence open.
 - **Last completed:** Lowered minimum password length to 8 characters (8–128 supported) and implemented complete rate-limited, SHA-256 hashed self-service Forgot & Reset Password workflow across backend and frontend with full test coverage (Session 48).
-- **Next action:** Implement Phase M1-Ext multi-mode scoring configurations (`configs/scoring/modes_v2.0.yaml`) and scaffold interactive workspace routers and UI layouts.
+- **Security (Session 49):** password-reset token leak fixed; MongoDB session TTL/indexes and atomic leaderboard writes on branch `fix/mongo-sessions-and-lint`.
+- **Next action:** Merge `fix/mongo-sessions-and-lint`; provision the model checkpoint and run each workspace end to end; P13 M7 items.
 

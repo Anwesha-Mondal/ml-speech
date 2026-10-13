@@ -193,8 +193,8 @@ def delete_account(
     db[USERS].delete_one({"_id": user_id})
     audit(db, "account_deleted")
 
-    # Leaderboards store only user IDs and drop IDs with no account when read, so a Redis
-    # outage here can't leave a name on a board. Remove the scores now when Redis is up.
+    # Leaderboards store only user IDs and drop IDs with no account when read, so a failure
+    # here can't leave a name on a board. Remove the scores now.
     from backend.leaderboard.store import LeaderboardUnavailable, remove_user
 
     try:

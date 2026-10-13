@@ -173,7 +173,7 @@ def test_retention_purges_old_audit_events(client: TestClient, db: Any) -> None:
     db[AUDIT].drop_index("ttl_at")
     register(client)
     db[AUDIT].insert_one({"event": "login", "at": utcnow() - timedelta(days=400), "email": "old@example.com"})
-    assert purge(db, get_privacy_settings()) == {"audit_events": 1}
+    assert purge(db, get_privacy_settings()) == {"sessions": 0, "audit_events": 1}
     assert db[AUDIT].count_documents({}) >= 1  # recent events kept
     assert client.get("/api/auth/me").status_code == 200
 

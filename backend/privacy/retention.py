@@ -1,9 +1,8 @@
-"""Data retention: delete what we no longer need (old audit events).
+"""Data retention: delete what we no longer need (ended sessions, old audit events).
 
-MongoDB's TTL index on audit events (see backend/auth/db.py) does this on its own about once
-a minute. `purge` applies the same rule explicitly so retention also holds where the TTL
-monitor is off, and so tests can check the rule directly. Sign-in sessions live in Redis and
-expire there, so there is nothing to purge for them.
+MongoDB's TTL indexes (see backend/auth/db.py) do this on their own about once a minute.
+`purge` applies the same rules explicitly, so retention also holds where the TTL monitor is off
+and for session documents created before `purge_at` existed, and so tests can check the rules.
 """
 
 from __future__ import annotations
@@ -14,7 +13,7 @@ from typing import Any
 
 from pymongo.database import Database
 
-from backend.auth.db import AUDIT, utcnow
+from backend.auth.db import AUDIT, SESSIONS, utcnow
 
 from .config import PrivacySettings
 
@@ -22,8 +21,15 @@ Db = Database[dict[str, Any]]
 
 
 def purge(db: Db, cfg: PrivacySettings) -> dict[str, int]:
-    audit = db[AUDIT].delete_many({"at": {"$lt": utcnow() - timedelta(days=cfg.audit_days)}})
-    return {"audit_events": int(audit.deleted_count)}
+    from backend.auth.config import get_settings
+
+    now = utcnow()
+    idle_cutoff = now - timedelta(hours=get_settings().idle_timeout_hours)
+    sessions = db[SESSIONS].delete_many(
+        {"$or": [{"expires_at": {"$lte": now}}, {"last_seen_at": {"$lte": idle_cutoff}}]}
+    )
+    audit = db[AUDIT].delete_many({"at": {"$lt": now - timedelta(days=cfg.audit_days)}})
+    return {"sessions": int(sessions.deleted_count), "audit_events": int(audit.deleted_count)}
 
 
 _last_run = 0.0

@@ -9,10 +9,10 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | Interactive Multi-Mode Workspaces & Grounded RAG Architecture (`megaev.md`) / Auth & Security (Session 48) |
-| Last milestone | Lowered password minimum length to 8 characters (8–128 supported) and implemented complete rate-limited, SHA-256 hashed self-service Forgot & Reset Password workflow across backend and frontend with full test coverage (Session 48) |
-| Next action | Implement Phase M1-Ext multi-mode scoring configurations (`configs/scoring/modes_v2.0.yaml`) and scaffold interactive workspace routers and UI layouts |
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-069 |
+| Active phase | Interactive multi-mode workspaces built (megaev M1-Ext to M6); M7 convergence partly open (Session 50) |
+| Last milestone | Mode scoring s2.0 in YAML, RAG corpus + BM25 retriever, /api/modes interviewer/news/public/story endpoints, four /practice workspaces; 95 tests pass (Session 50) |
+| Next action | Merge `fix/mongo-sessions-and-lint`; provision the model checkpoint and run one live analysis per mode; remaining M7 items in ROADMAP P13 |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-071 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
 
 
@@ -91,6 +91,8 @@
 | D-067 | 2026-10-13 | Defined RAG Knowledge Engine utilizing local sentence-transformers (all-MiniLM-L6-v2) and MongoDB vector storage across 20+ specialized industries, AP broadcast news wire copy, parliamentary debate motions, and creative storytelling scripts. | User & Agent (Session 47) |
 | D-068 | 2026-10-13 | Published comprehensive 5,200+ line master technical specification and convergence blueprint in `megaev.md` (Document ID `MEGAEV-2026-V1.0`), detailing exact DSP algorithms, YAML scoring schemas, OpenAPI contracts, React workspace code, and GSD convergence phases. | User & Agent (Session 47) |
 | D-069 | 2026-10-13 | Lowered minimum password length from 12 to 8 characters in versioned config (`configs/auth/auth.yaml`) and NIST validator (`backend/auth/passwords.py`) allowing 8–128 character passphrases. Implemented self-service Forgot Password flow (`/api/auth/forgot-password` and `/api/auth/reset-password`) with SHA-256 token hashing, 15-minute TTL expiry in MongoDB (`password_resets` collection), session revocation upon reset, rate limiting, and dedicated UI pages (`ForgotPasswordPage`, reset modal, "Forgot password?" links) with automated tests. | User & Agent (Session 48) |
+| D-070 | 2026-10-13 | Password reset never returns the token (it allowed takeover of any account): every email gets the same answer; the single-use link goes to the owner via `PASSWORD_RESET_DELIVERY` in `.env` (`none` default, `log` for local development) or an admin's `python -m backend.auth.cli reset-link`; `APP_URL` in `.env` builds the link. MongoDB-only storage kept (D-063) and hardened: sessions carry `purge_at` = min(idle, absolute expiry) with a TTL index and a unique `token_hash` index; leaderboard bests use one atomic `$max` upsert; retention purge also deletes ended sessions. Privacy Policy 1.2. | User & Agent (Session 49) |
+| D-071 | 2026-10-13 | megaev.md implemented with these deviations (AGENTS.md takes precedence): (1) RAG is deterministic BM25 over a versioned corpus extracted from megaev.md (`scripts/build_rag_corpus.py`), not dense embeddings/MongoDB vectors (D-067 deferred): no model installed, no random fallbacks; (2) no LLM in the dialogue layer: interviewer follow-ups are the corpus' keyword-triggered probes, debate sparring uses the corpus' opposing case; (3) bonus rules are structured {metric, op, value} YAML conditions, never evaluated strings; (4) mode endpoints are stateless, so no new personal data is stored; (5) rights-restricted speech texts (King, Jobs, Churchill) and the psychological VOCAL_TREMOR wording are excluded; (6) /assessment/* pages became /practice/* workspaces with redirects. | Agent (Session 50) |
 
 
 
@@ -1740,5 +1742,87 @@
 **Next step**
 - Begin Phase M1-Ext execution: deploy `configs/scoring/modes_v2.0.yaml` and implement the `/api/modes/` backend routers and interactive frontend workspaces.
 
+---
+
+### Session 49 (2026-10-13) [Reset-token takeover fix; MongoDB session/leaderboard hardening]
+
+**User requests**
+- "update yourself" (several times); keep MongoDB-only (accept D-063) and fix the problems found on `main` on a new branch; no commits, give the commands. Left the choice of reset fix and branch update to the agent (recommended options taken).
+
+**What was done**
+- Synced with `origin/main` twice. First: 35 new commits (Docker, Tier 1 training, model wiring, `dev.py`, Redis removal). Then Sessions 46–48 from Pushkar (warning cleanup, `megaev.md`, 8-character minimum password, Forgot/Reset Password). Brought `fix/mongo-sessions-and-lint` up to date; conflicts only in `SESSION_LOG.md`, `ROADMAP.md` (took main's, then added this entry) and `backend/auth/db.py` (kept both index blocks; removed a `try/except: pass` around the reset indexes).
+- **Security fix:** `/api/auth/forgot-password` returned `reset_token` to whoever asked, so anyone knowing an email could take over that account (admins included), and it answered differently for unknown emails. Now it gives one answer for every email and never returns the token. New `backend/auth/reset_delivery.py` sends the link via `PASSWORD_RESET_DELIVERY` (`none` default, `log` = API console for local development). New CLI `python -m backend.auth.cli reset-link --email ...`. The reset page no longer expects a token, opens from the link and removes the token from the address bar. `.env.example` gained `APP_URL` and `PASSWORD_RESET_DELIVERY`.
+- Storage hardening (found after D-063): `ensure_indexes` adds session `token_hash_unique`, `by_user`, TTL `purge_at`, and leaderboard `by_board`/`by_user`. Sessions store and refresh `purge_at`. `retention.purge` also deletes ended sessions. `store.submit` is one `$max` upsert. Fixed the `analysis.py` `traceback` shadowing from Session 33 (a leaderboard failure failed the analysis). Removed Redis deps, config keys, `REDIS_URL` and stale docs. Privacy Policy 1.2 (single database; reset-request row). 28 ruff errors fixed.
+- Tests: 57 pass. New `tests/api/test_storage.py`, plus reset tests: token never in the response, identical answers, `none` sends nothing, CLI link. Main's reset tests now read the link from the log. Both regression tests fail on the old code. ruff clean, strict mypy clean (auth/privacy/leaderboard), frontend build passes (2 older warnings).
+- Live check on a real MongoDB 9 server (temporary data folder; the local MongoDB service is stopped and needs admin to start):
+  - Indexes are created.
+  - Register, `purge_at` and the leaderboard work.
+  - Forgot-password gives identical responses with no token, and the link appears only in the API console.
+  - The reset page opens from the link and strips the token; the new password works; reusing the token gives 400.
+
+**Files changed**
+- New: `backend/auth/reset_delivery.py`, `tests/api/test_storage.py`
+- Changed: `backend/auth/{db,sessions,config,router,cli,migrate_sqlite}.py`, `backend/privacy/{retention,router}.py`, `backend/leaderboard/{store,config,__init__}.py`, `backend/api/routers/{analysis,gamification}.py`, `backend/env.py`, `configs/{auth/auth.yaml,leaderboard/leaderboard.yaml,privacy/privacy.yaml}`, `pyproject.toml`, `uv.lock`, `.env.example`, `docs/legal/privacy.md`, `docs/SECURITY.md`, `docs/PRIVACY_REVIEW.md`, `frontend/README.md`, `frontend/src/{lib/api/client.ts,lib/api/auth.ts,lib/useApiHealth.ts,pages/auth/AuthPages.tsx,pages/system/System.tsx}`, `tests/api/{conftest,test_auth,test_leaderboard,test_privacy}.py`, `SESSION_LOG.md`, `ROADMAP.md`
+
+**Decisions**
+- D-070 (see register).
+
+**Problems / bugs found**
+- The local MongoDB Windows service is stopped; start it from an admin terminal (`Start-Service MongoDB`).
+- No mail service yet, so real users can't receive reset links; admins use `cli reset-link`.
+- `PRIVACY_CONTACT_URL` differs between team members' `.env` files.
+- The 8-character minimum (D-069) is NIST's floor; 12+ remains the safer default.
+
+**Next step**
+- Open a PR from `fix/mongo-sessions-and-lint`; tell Pushkar about the reset-token fix.
+
+---
+
+### Session 50 (2026-10-13) [megaev.md phases M1-Ext to M6: multi-mode scoring, RAG, mode APIs, workspaces]
+
+**User request**
+- Read `megaev.md`, `ROADMAP.md` and `SESSION_LOG.md` line by line and build the plan step by step.
+
+**What was done**
+- Read all 5,249 lines of `megaev.md` (§1-§45), `ROADMAP.md` and the recent `SESSION_LOG.md` entries. Industry sections 17.6-17.21 were checked programmatically to be one template with names substituted; news 18.6-18.25 are one filler text repeated, so only 18.1-18.5 (+ §41.3) were used.
+- **M1-Ext:** `configs/scoring/modes_v2.0.yaml` (s2.0) holds every mode multiplier, cap, detector threshold and bonus rule. New `packages/speech_arena/scoring/modes.py` (pure, deterministic): stable content-derived flaw IDs (replacing uuid4), `PITCH_UPTALK` (terminal pitch slope in semitones/s before a phrase-end pause) and `FILLER_HEAVY` (filled-pause tokens) detectors, delivery metrics, mode weighting, caps, bonus evaluation, `scoring_version` + `config_hash` stamp. `ml/inference/predict.py` delegates to it (hardcoded multipliers/caps removed); `/api/analyze` allowed modes come from the YAML; job results now carry `metrics` and the full score.
+- **M2:** `scripts/build_rag_corpus.py` extracts the corpus from megaev.md into `backend/rag/corpus/*.json`: 110 interview questions (21 industries + §43 quant, VLSI, smart contracts; 320 probes; §4.2 roles), 6 news scripts, 10 debate motions, 5 stories. `backend/rag/retriever.py` (BM25, metadata filters, deterministic ties, `configs/rag/rag.yaml`), `POST /api/rag/query`.
+- **M3-M6:** `configs/modes/modes.yaml` (turn limits, STAR cues, answer-length bounds, stage tiers, 4-7-8 breathing, debate clocks, Freytag phases). `backend/modes/` endpoints: interview catalog/start/next (STAR structure coverage, keyword hits, probe-or-next-question), news config/scripts, public config/motions/spar, story scripts/arc (owner-only, from the analysis job's energy contour). All require sign-in; stateless.
+- **Frontend:** `/practice/interviewer`, `/news-anchor`, `/public-speaking`, `/storytelling` workspaces (lazy chunk), `/practice/speech-test` alias; `/assessment/*` redirects; old assessment pages removed; nav/jump/overview links updated. Interviewer (multi-turn: transcribe → score → STAR/keywords → follow-up), News studio (rAF teleprompter, WPM/size/mirror, ON AIR tally, breaking-news alert at its trigger second), Public speaking (4-7-8 pacer gating the recorder, synthesised crowd with RT60 reverb and timed distractions, mic projection meter, sparring, debate clock), Storyteller (character-coded scripts, Freytag energy arc, pitch-range vs target). The analysis model now shows the server's scoring version.
+- Tests: 95 pass (+17 scoring, +12 RAG/corpus incl. "corpus matches megaev.md" and "no restricted speeches", +12 mode endpoints incl. a 3-turn Healthcare interview, the megaev §14.2/§14.3 exit criteria). ruff and strict mypy clean on new modules; `npm run build` passes, no new lint warnings.
+- Browser check (temporary MongoDB): interviewer setup → Healthcare diagnostic question with hints; news prompter ON AIR, 140 wpm scroll, breaking alert at ~21 s; breathing pacer, sparring (against → affirmative case, cross-ex, POI), debate clock, crowd start/stop; storyteller voice colouring; `/assessment/*` redirects.
+
+**Files changed**
+- New: `configs/scoring/modes_v2.0.yaml`, `configs/rag/rag.yaml`, `configs/modes/modes.yaml`, `packages/speech_arena/scoring/modes.py`, `scripts/build_rag_corpus.py`, `backend/rag/*`, `backend/modes/*`, `frontend/src/lib/api/modes.ts`, `frontend/src/lib/analysis/useInlineRun.ts`, `frontend/src/lib/audio/crowd.ts`, `frontend/src/pages/practice/workspaces/*`, `tests/scoring/*`, `tests/rag/*`, `tests/api/test_modes_endpoints.py`
+- Changed: `ml/inference/predict.py`, `backend/api/main.py`, `backend/api/routers/analysis.py`, `tests/api/conftest.py`, `frontend/src/App.tsx`, `frontend/src/pages/practice/PracticeLayout.tsx`, `frontend/src/components/shell/nav.ts`, `frontend/src/pages/overview/Overview.tsx`, `frontend/src/lib/api/types.ts`, `frontend/src/lib/analysis/model.ts`, `frontend/src/styles/modes.css`
+- Removed: `frontend/src/pages/assessment/AssessmentPages.tsx`, `frontend/src/pages/assessment/Teleprompter.tsx`
+
+**Decisions**
+- D-071 (see register).
+
+**Problems / not done**
+- No model checkpoint on this machine (D-060), so a live mode-scored analysis (s2.0 stamp, up-talk/filler detection on real audio) was not run end to end; the scoring is unit-tested.
+- Not built from megaev: dense embeddings/vector index, LLM dialogue and TTS of questions, speech-synchronised prompter scrolling, webcam eye-line overlay, Zustand stores, `/api/rag/ingest`, ML stress suite against the model (§15/§32.3), real-data ingestion (§24), new golden references (asset-08/09: rights).
+- megaev §29 VOCAL_TREMOR and parts of §37.1 use psychological wording; not adopted (AGENTS.md).
+
+**Next step**
+- Run each workspace end to end once the checkpoint is provisioned; finish ROADMAP P13 open items.
 
 
+---
+
+### Session 51 (2026-10-13) [Local .env pointed at the team MongoDB Atlas cluster]
+
+**User request**
+- Apply the team env file (`Downloads/env`) and keep the project ready accordingly.
+
+**What was done**
+- Merged it into the gitignored root `.env` (backup in gitignored `.env.backup-local`): `MONGODB_URI` → team Atlas cluster, `MONGODB_DB=speech`, `PRIVACY_CONTACT_URL` → `pushkarverse/orcter`. Kept `APP_URL` and `PASSWORD_RESET_DELIVERY`, which the reset fix (D-070) needs and the team file lacks. `VITE_API_URL` already matched `frontend/.env`. No credentials in any tracked file.
+- Read-only check first: Atlas reachable; collections `users` (0), `sessions` (1), `audit_events` (6), `consent_records` (6), `password_resets` (0); no duplicate values that would break the unique indexes.
+- Started the API against Atlas: health ok; `sessions` gained `token_hash_unique`, `by_user`, `ttl_purge_at`; `leaderboard_scores` gained `by_board`, `by_user`. Sign-in page loads. No test accounts were created in the shared database.
+
+**Problems / risks**
+- The Atlas password is short and was shared as a plaintext file; rotate it and restrict Atlas network access to known IPs. Teammates need `APP_URL` and `PASSWORD_RESET_DELIVERY` in their `.env` (see `.env.example`).
+
+**Next step**
+- Commit the branch; teammates add the two new keys to their `.env`.

@@ -1,0 +1,118 @@
+# Speech Arena multi-mode scoring (megaev.md §10, Phase M1-Ext; decisions D-065, D-068).
+# Every penalty, cap, multiplier, detector threshold and bonus lives here (AGENTS.md rule 3).
+# The engine stamps each result with scoring_version and config_hash (sha256 of this file's
+# parsed content), so a score can always be traced to the exact rules that produced it.
+
+scoring_version: "s2.0"
+start_score: 100.0
+
+# Default deduction caps per bucket (a mode may override them).
+bucket_caps:
+  pacing: -15.0
+  pitch: -15.0
+  pauses: -10.0
+  energy_clarity: -10.0
+
+# Base penalties for flaw types the rule-based detectors add. Model-detected flaws keep the
+# penalty attached by the predictor; only the mode multiplier is applied to them.
+flaw_definitions:
+  PITCH_UPTALK:
+    bucket: pitch
+    base_penalty: -2.5
+  FILLER_HEAVY:
+    bucket: energy_clarity
+    base_penalty: -2.0
+
+detectors:
+  uptalk:
+    # Rising terminal: linear slope of pitch (semitones/sec) over the last window before a
+    # phrase-ending pause, on voiced frames only (megaev §9.2: +3.5 st/s over the final 300 ms).
+    window_sec: 0.30
+    min_slope_st_per_sec: 3.5
+    phrase_end_pause_sec: 0.40
+    min_voiced_points: 3
+    confidence: 0.70
+  fillers:
+    # Filled-pause tokens matched against the word timings (case-insensitive, punctuation stripped).
+    tokens: ["um", "umm", "uh", "uhh", "er", "erm", "ah", "hmm", "mm"]
+    confidence: 0.80
+  # Sanity bounds for contour pitch values (Hz); anything outside counts as unvoiced.
+  pitch_floor_hz: 60.0
+  pitch_ceiling_hz: 600.0
+
+# Delivery metrics feeding the bonus rules (computed from words, contours and flaws).
+metrics:
+  # Local speaking rate for wpm_stdev: words per window, windows of this length (seconds).
+  wpm_window_sec: 10.0
+  # Pitch range uses these percentiles of voiced semitones (robust to octave errors).
+  pitch_range_percentiles: [5, 95]
+  # Energy range (dB) uses these percentiles of the energy contour.
+  energy_range_percentiles: [10, 90]
+  # A climax energy peak counts when the loudest point exceeds the median by this many dB.
+  climax_peak_over_median_db: 6.0
+  # Pauses in this range count as deliberate (rhetorical or dramatic) pauses.
+  deliberate_pause_sec: [1.0, 2.5]
+
+# Bonus rule conditions are ANDed; each is {metric, op, value} with op in <, <=, >, >=, ==.
+# Bonuses are capped so the total never exceeds start_score.
+modes:
+  sandbox:
+    label: "Speech Test"
+    description: "Neutral diagnostic baseline; all four buckets balanced equally."
+    bucket_caps: {pacing: -15.0, pitch: -15.0, pauses: -10.0, energy_clarity: -10.0}
+    multipliers: {pacing: 1.0, pitch: 1.0, pauses: 1.0, energy_clarity: 1.0}
+    bonus_rules: []
+
+  interviewer:
+    label: "Industry AI Interviewer"
+    description: "Weighs hesitation, filler words and rising terminals on statements."
+    bucket_caps: {pacing: -10.0, pitch: -10.0, pauses: -15.0, energy_clarity: -15.0}
+    multipliers: {pacing: 0.9, pitch: 0.8, pauses: 1.5, energy_clarity: 1.4}
+    bonus_rules:
+      - rule_id: concise_answer
+        description: "45 to 90 second answer with no filled pauses."
+        bonus_points: 3.0
+        conditions:
+          - {metric: duration_sec, op: ">=", value: 45.0}
+          - {metric: duration_sec, op: "<=", value: 90.0}
+          - {metric: filler_count, op: "==", value: 0}
+
+  news_anchor:
+    label: "News Anchor & Broadcast"
+    description: "Steady 130-150 WPM cadence, articulation, and no rising terminals."
+    bucket_caps: {pacing: -20.0, pitch: -15.0, pauses: -10.0, energy_clarity: -10.0}
+    multipliers: {pacing: 1.6, pitch: 1.4, pauses: 1.0, energy_clarity: 1.2}
+    bonus_rules:
+      - rule_id: cadence_lock
+        description: "Local speaking rate varies by at most 5 WPM and no rising terminals."
+        bonus_points: 4.0
+        conditions:
+          - {metric: wpm_stdev, op: "<=", value: 5.0}
+          - {metric: uptalk_count, op: "==", value: 0}
+          - {metric: word_count, op: ">=", value: 20}
+
+  public_speaking:
+    label: "Public Speaking & Debate"
+    description: "Projection, pitch variation, tempo and deliberate pauses."
+    bucket_caps: {pacing: -12.0, pitch: -12.0, pauses: -10.0, energy_clarity: -16.0}
+    multipliers: {pacing: 1.1, pitch: 1.2, pauses: 0.8, energy_clarity: 1.5}
+    bonus_rules:
+      - rule_id: rhetorical_power_pause
+        description: "At least one deliberate 1.0-2.5 s pause and an energy range of 15 dB or more."
+        bonus_points: 3.5
+        conditions:
+          - {metric: deliberate_pause_count, op: ">=", value: 1}
+          - {metric: energy_range_db, op: ">=", value: 15.0}
+
+  storytelling:
+    label: "Storyteller, Author & Director"
+    description: "Pitch and energy dynamic range, voice contrast and dramatic pauses."
+    bucket_caps: {pacing: -10.0, pitch: -20.0, pauses: -8.0, energy_clarity: -12.0}
+    multipliers: {pacing: 0.8, pitch: 1.8, pauses: 0.6, energy_clarity: 1.4}
+    bonus_rules:
+      - rule_id: dramatic_excursion
+        description: "Pitch range of 9 semitones or more with a climax energy peak."
+        bonus_points: 5.0
+        conditions:
+          - {metric: pitch_range_st, op: ">=", value: 9.0}
+          - {metric: climax_peak, op: "==", value: true}

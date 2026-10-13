@@ -10,7 +10,7 @@ interface Health {
   checkedAt: number | null
   latencyMs: number | null
   /** Databases behind the API, as the API reports them. */
-  services: { mongodb?: ServiceState; redis?: ServiceState }
+  services: { mongodb?: ServiceState }
 }
 
 let health: Health = { state: 'checking', checkedAt: null, latencyMs: null, services: {} }

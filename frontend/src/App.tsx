@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import { createBrowserRouter, Link, Navigate, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, Link, Navigate, RouterProvider, useParams } from 'react-router-dom'
 import AuthProvider from './components/auth/AuthProvider'
 import { PublicOnly, RequireAdmin, RequireAuth } from './components/auth/Guards'
 import AppShell from './components/shell/AppShell'
@@ -9,7 +9,6 @@ import EmptyState from './components/ui/EmptyState'
 import AnalysisData from './pages/analysis/AnalysisData'
 import AnalysisIndex from './pages/analysis/AnalysisIndex'
 import AnalysisPage from './pages/analysis/AnalysisPage'
-import { AssessmentLayout, Interviewer, NewsAnchor, PublicSpeaking, Storytelling } from './pages/assessment/AssessmentPages'
 import Leaderboard from './pages/leaderboard/Leaderboard'
 import Overview from './pages/overview/Overview'
 import PracticeLayout from './pages/practice/PracticeLayout'
@@ -26,6 +25,12 @@ const arena = () => import('./pages/arena/arenaRoutes')
 const dataset = () => import('./pages/dataset/Dataset')
 const system = () => import('./pages/system/System')
 const pipeline = () => import('./pages/pipeline/Pipeline')
+const workspaces = () => import('./pages/practice/workspaces/workspaceRoutes')
+function AssessmentRedirect() {
+  const { mode } = useParams()
+  return <Navigate to={`/practice/${mode ?? 'interviewer'}`} replace />
+}
+
 function lazy<M>(load: () => Promise<M>, pick: (m: M) => ComponentType) {
   return async () => ({ Component: pick(await load()) })
 }
@@ -113,20 +118,17 @@ const router = createBrowserRouter([
                 element: <PracticeLayout />,
                 children: [
                   { index: true, element: <SpeechTest /> },
+                  { path: 'speech-test', element: <SpeechTest /> },
+                  { path: 'interviewer', lazy: lazy(workspaces, (m) => m.InterviewWorkspace) },
+                  { path: 'news-anchor', lazy: lazy(workspaces, (m) => m.NewsAnchorWorkspace) },
+                  { path: 'public-speaking', lazy: lazy(workspaces, (m) => m.PublicSpeakingWorkspace) },
+                  { path: 'storytelling', lazy: lazy(workspaces, (m) => m.StorytellerWorkspace) },
                   { path: 'progress', element: <YouVsYou /> },
                 ],
               },
-              {
-                path: 'assessment',
-                element: <AssessmentLayout />,
-                children: [
-                  { index: true, element: <Navigate to="interviewer" replace /> },
-                  { path: 'interviewer', element: <Interviewer /> },
-                  { path: 'news-anchor', element: <NewsAnchor /> },
-                  { path: 'public-speaking', element: <PublicSpeaking /> },
-                  { path: 'storytelling', element: <Storytelling /> },
-                ],
-              },
+              // The assessment pages became the practice workspaces; keep old links working.
+              { path: 'assessment', element: <Navigate to="/practice/interviewer" replace /> },
+              { path: 'assessment/:mode', element: <AssessmentRedirect /> },
               {
                 path: 'arena',
                 lazy: lazy(arena, (m) => m.ArenaLayout),

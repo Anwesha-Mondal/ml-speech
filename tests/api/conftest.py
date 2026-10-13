@@ -19,14 +19,19 @@ from backend.auth.db import SESSIONS, User, use_database
 from backend.auth.ratelimit import limiter
 from backend.leaderboard import leaderboard_router
 from backend.leaderboard.config import get_leaderboard_settings
+from backend.modes import modes_router
 from backend.privacy import privacy_router
-from backend.privacy.config import get_privacy_settings                                                                                                                                                                                 
+from backend.privacy.config import get_privacy_settings
+from backend.rag import rag_router
+
 TEST_ENV = {
     "MONGODB_URI": "mongodb://test.invalid:27017",
     "MONGODB_DB": "speech_arena_test",
     "CORS_ORIGINS": "http://testserver",
     "COOKIE_SECURE": "0",
     "PRIVACY_CONTACT_URL": "https://example.invalid/contact",
+    "APP_URL": "http://app.invalid",
+    "PASSWORD_RESET_DELIVERY": "log",  # tests read the link from the log, never from the API
 }
 
 HDR = {"X-Requested-With": "SpeechArena"}
@@ -65,6 +70,8 @@ def app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[FastAPI]:
     app.include_router(admin_router, prefix="/api")
     app.include_router(privacy_router, prefix="/api")
     app.include_router(leaderboard_router, prefix="/api")
+    app.include_router(rag_router, prefix="/api")
+    app.include_router(modes_router, prefix="/api")
 
     @app.get("/api/private")
     def private(user: User = Depends(require_user)) -> dict[str, str]:
@@ -105,7 +112,7 @@ def rds(db: Any) -> Any:
 
 
 def session_keys(db_or_rds: Any) -> list[str]:
-    from backend.auth.db import SESSIONS, get_db
+    from backend.auth.db import get_db
 
     database = db_or_rds if hasattr(db_or_rds, "__getitem__") else get_db()
     return sorted(f"sa:sess:tok:{doc['token_hash']}" for doc in database[SESSIONS].find())

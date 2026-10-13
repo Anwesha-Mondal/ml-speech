@@ -1,4 +1,4 @@
-"""Opt-in leaderboards kept in Redis (sorted sets of each user's best score per passage)."""
+"""Opt-in leaderboards: each user's best score per passage, kept in MongoDB."""
 
 from .router import router as leaderboard_router
 

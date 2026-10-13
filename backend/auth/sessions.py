@@ -1,8 +1,9 @@
 """Sign-in sessions (stored in MongoDB) and the FastAPI dependencies that enforce sign-in, CSRF and roles.
 
-Sessions live in MongoDB in the `sessions` collection.
-Each session document expires automatically via a MongoDB TTL index on `expires_at`,
-and is also checked against the idle timeout upon access. Signing out deletes it immediately.
+Sessions live in the MongoDB `sessions` collection. Only the SHA-256 of the cookie token is
+stored. Each document carries `purge_at`, the earlier of its idle expiry (pushed forward on
+activity) and its absolute expiry, and a TTL index on it lets MongoDB delete the session as soon
+as it ends. Expiry is also checked on every request, and signing out deletes it at once.
 """
 
 from __future__ import annotations
@@ -14,11 +15,7 @@ import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-try:
-    from datetime import UTC, datetime, timedelta
-except ImportError:
-    from datetime import datetime, timedelta, timezone
-    UTC = timezone.utc
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import Depends, HTTPException, Request, Response, status
@@ -109,6 +106,7 @@ class AuthSession:
             "created_at": self.created_at,
             "last_seen_at": self.last_seen_at,
             "expires_at": self.expires_at,
+            "purge_at": self.expires_at,  # replaced by _purge_at() when stored
             "ip": self.ip,
             "user_agent": self.user_agent,
         }
@@ -127,32 +125,6 @@ class AuthSession:
             user_agent=str(d.get("user_agent", "")),
         )
 
-    def to_hash(self) -> dict[str, str]:
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "csrf_token": self.csrf_token,
-            "created_at": self.created_at.isoformat(),
-            "last_seen_at": self.last_seen_at.isoformat(),
-            "expires_at": self.expires_at.isoformat(),
-            "ip": self.ip,
-            "user_agent": self.user_agent,
-        }
-
-    @classmethod
-    def from_hash(cls, th: str, h: dict[str, str]) -> AuthSession:
-        return cls(
-            token_hash=th,
-            csrf_token=h["csrf_token"],
-            user_id=h["user_id"],
-            expires_at=datetime.fromisoformat(h["expires_at"]),
-            created_at=datetime.fromisoformat(h["created_at"]),
-            last_seen_at=datetime.fromisoformat(h["last_seen_at"]),
-            ip=h.get("ip", ""),
-            user_agent=h.get("user_agent", ""),
-            id=h["id"],
-        )
-
 
 @contextmanager
 def _session_col(db: Db | None = None) -> Iterator[Collection[dict[str, Any]]]:
@@ -164,11 +136,9 @@ def _session_col(db: Db | None = None) -> Iterator[Collection[dict[str, Any]]]:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, STORE_DOWN) from None
 
 
-def _ttl_seconds(s: AuthSession, now: datetime, cfg: AuthSettings) -> int:
-    """Idle timeout, but never past the absolute expiry."""
-    idle = cfg.idle_timeout_hours * 3600
-    left = int((s.expires_at - now).total_seconds())
-    return max(1, min(idle, left))
+def _purge_at(s: AuthSession, cfg: AuthSettings) -> datetime:
+    """When MongoDB may delete the session: idle expiry, but never past the absolute expiry."""
+    return min(s.last_seen_at + timedelta(hours=cfg.idle_timeout_hours), s.expires_at)
 
 
 def create_session(
@@ -186,8 +156,10 @@ def create_session(
         ip=client_ip(request),
         user_agent=(request.headers.get("user-agent") or "")[:256],
     )
+    doc = sess.to_doc()
+    doc["purge_at"] = _purge_at(sess, cfg)
     with _session_col(db) as col:
-        col.insert_one(sess.to_doc())
+        col.insert_one(doc)
 
     response.set_cookie(
         cfg.cookie_name,
@@ -278,7 +250,7 @@ def _load_principal(request: Request, db: Db, cfg: AuthSettings) -> Principal | 
         if (now - sess.last_seen_at).total_seconds() >= cfg.touch_interval_seconds:
             # Sliding idle window: record the activity and push last_seen_at forward
             sess.last_seen_at = now
-            col.update_one({"_id": sess.id}, {"$set": {"last_seen_at": now}})
+            col.update_one({"_id": sess.id}, {"$set": {"last_seen_at": now, "purge_at": _purge_at(sess, cfg)}})
         return Principal(user=user, session=sess)
 
 
