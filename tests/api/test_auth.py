@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from backend.auth.cli import _update
 from backend.auth.config import get_settings
-from backend.auth.db import SESSIONS, USERS, utcnow
+from backend.auth.db import PASSWORD_RESETS, SESSIONS, USERS, utcnow
 from backend.auth.passwords import check_policy, hash_password, needs_rehash, verify_password
 
 from .conftest import AGREE, HDR, STRONG, csrf_headers, register, session_keys
@@ -36,6 +36,8 @@ def test_needs_rehash_when_parameters_change(app: FastAPI) -> None:
 def test_policy() -> None:
     cfg = get_settings()
     assert check_policy(STRONG, cfg).ok
+    assert check_policy("tidal-88", cfg).ok  # 8 characters passes
+    assert not check_policy("tidal-8", cfg).ok  # 7 characters fails min length
     assert not check_policy("short", cfg).ok
     assert not check_policy("password1234", cfg).ok  # blocklisted base word
     assert not check_policy("aaaaaaaaaaaaaaa", cfg).ok
@@ -307,3 +309,84 @@ def test_admin_unlock_is_audited_and_restores_sign_in(app: FastAPI) -> None:
     details = [e["detail"] for e in admin.get("/api/admin/audit").json()["events"] if e["event"] == "admin_user_updated"]
     assert any("unlocked" in d for d in details)
     assert user.post("/api/auth/login", json={"email": "user@example.com", "password": STRONG}, headers=HDR).status_code == 200
+
+
+def test_forgot_and_reset_password_flow(app: FastAPI, db: Any) -> None:
+    client = TestClient(app, base_url="http://testserver")
+    register(client, email="ana@example.com", name="Ana")
+
+    # Another client session is active
+    other = TestClient(app, base_url="http://testserver")
+    assert other.post("/api/auth/login", json={"email": "ana@example.com", "password": STRONG}, headers=HDR).status_code == 200
+
+    # Request password reset
+    r = client.post("/api/auth/forgot-password", json={"email": "Ana@example.com"}, headers=HDR)
+    assert r.status_code == 200
+    data = r.json()
+    assert "Password reset token generated" in data["message"]
+    token = data.get("reset_token")
+    assert token is not None
+
+    # Check DB has hashed token, not plain token
+    entry = db[PASSWORD_RESETS].find_one({"email": "ana@example.com"})
+    assert entry is not None
+    assert entry["token_hash"] != token
+    assert not entry["used"]
+
+    # Reset password with valid token and 8-character new password
+    NEW_PW = "tidal-88"
+    res = client.post("/api/auth/reset-password", json={"token": token, "new_password": NEW_PW}, headers=HDR)
+    assert res.status_code == 200
+    assert "Password successfully reset" in res.json()["message"]
+
+    # Token is marked used
+    entry = db[PASSWORD_RESETS].find_one({"email": "ana@example.com"})
+    assert entry["used"] is True
+
+    # Replay fails
+    replay = client.post("/api/auth/reset-password", json={"token": token, "new_password": STRONG}, headers=HDR)
+    assert replay.status_code == 400
+    assert "invalid" in replay.json()["detail"].lower()
+
+    # Active sessions revoked
+    assert other.get("/api/auth/me").status_code == 401
+    assert client.get("/api/auth/me").status_code == 401
+
+    # Login with old password fails
+    assert client.post("/api/auth/login", json={"email": "ana@example.com", "password": STRONG}, headers=HDR).status_code == 401
+
+    # Login with new password succeeds
+    assert client.post("/api/auth/login", json={"email": "ana@example.com", "password": NEW_PW}, headers=HDR).status_code == 200
+
+
+def test_reset_password_errors_and_expiry(app: FastAPI, db: Any) -> None:
+    client = TestClient(app, base_url="http://testserver")
+    register(client, email="bob@example.com", name="Bob")
+
+    # Unknown email returns 200 to prevent enumeration, but creates no DB entry
+    r = client.post("/api/auth/forgot-password", json={"email": "nonexistent@example.com"}, headers=HDR)
+    assert r.status_code == 200
+    assert "If an account with this email exists" in r.json()["message"]
+    assert db[PASSWORD_RESETS].find_one({"email": "nonexistent@example.com"}) is None
+
+    # Invalid token format (< 16 chars) -> 422
+    assert client.post("/api/auth/reset-password", json={"token": "short", "new_password": "tidal-ember-lantern-9"}, headers=HDR).status_code == 422
+
+    # Unknown token (>= 16 chars) -> 400
+    res = client.post("/api/auth/reset-password", json={"token": "nonexistent-reset-token-12345", "new_password": "tidal-ember-lantern-9"}, headers=HDR)
+    assert res.status_code == 400
+
+    # Generate token for Bob
+    r2 = client.post("/api/auth/forgot-password", json={"email": "bob@example.com"}, headers=HDR)
+    token = r2.json()["reset_token"]
+
+    # New password fails policy (< 8 chars)
+    short_pw = client.post("/api/auth/reset-password", json={"token": token, "new_password": "tidal-8"}, headers=HDR)
+    assert short_pw.status_code == 422
+    assert "at least 8 characters" in short_pw.json()["detail"].lower()
+
+    # Expire token in DB
+    db[PASSWORD_RESETS].update_one({"email": "bob@example.com"}, {"$set": {"expires_at": utcnow() - timedelta(seconds=1)}})
+    exp = client.post("/api/auth/reset-password", json={"token": token, "new_password": "tidal-ember-lantern-9"}, headers=HDR)
+    assert exp.status_code == 400
+    assert "invalid" in exp.json()["detail"].lower()

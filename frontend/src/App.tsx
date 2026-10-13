@@ -17,7 +17,7 @@ import SpeechTest from './pages/practice/SpeechTest'
 import YouVsYou from './pages/practice/YouVsYou'
 import Settings from './pages/settings/Settings'
 import { AdminAudit, AdminLayout, AdminUsers } from './pages/admin/Admin'
-import { LoginPage, RegisterPage } from './pages/auth/AuthPages'
+import { ForgotPasswordPage, LoginPage, RegisterPage } from './pages/auth/AuthPages'
 import LegalPage from './pages/legal/LegalPage'
 
 // Less-visited sections load on first visit to keep the first download small.
@@ -71,6 +71,24 @@ const router = createBrowserRouter([
         element: (
           <PublicOnly>
             <RegisterPage />
+          </PublicOnly>
+        ),
+        errorElement: <RouteError />,
+      },
+      {
+        path: '/forgot-password',
+        element: (
+          <PublicOnly>
+            <ForgotPasswordPage />
+          </PublicOnly>
+        ),
+        errorElement: <RouteError />,
+      },
+      {
+        path: '/reset-password',
+        element: (
+          <PublicOnly>
+            <ForgotPasswordPage />
           </PublicOnly>
         ),
         errorElement: <RouteError />,

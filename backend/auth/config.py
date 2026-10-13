@@ -46,6 +46,8 @@ class AuthSettings:
     login_per_minute: int
     register_per_hour: int
     registration_open: bool
+    reset_lifetime_minutes: int = 15
+    reset_request_per_hour: int = 10
     allowed_origins: tuple[str, ...] = field(default_factory=tuple)
 
 
@@ -65,6 +67,7 @@ def load_settings(config_path: Path | None = None) -> AuthSettings:
     raw: dict[str, Any] = yaml.safe_load(path.read_text(encoding="utf-8"))
 
     pw, h, s = raw["password"], raw["hashing"], raw["session"]
+    reset_cfg = raw.get("password_reset", {})
 
     return AuthSettings(
         version=str(raw["version"]),
@@ -94,6 +97,8 @@ def load_settings(config_path: Path | None = None) -> AuthSettings:
         login_per_minute=int(raw["rate_limit"]["login_per_minute"]),
         register_per_hour=int(raw["rate_limit"]["register_per_hour"]),
         registration_open=bool(raw["registration"]["open"]),
+        reset_lifetime_minutes=int(reset_cfg.get("token_lifetime_minutes", 15)),
+        reset_request_per_hour=int(reset_cfg.get("request_per_hour", 10)),
         allowed_origins=csv("CORS_ORIGINS"),
     )
 

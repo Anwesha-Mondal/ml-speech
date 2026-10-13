@@ -1,4 +1,4 @@
-import { CircleAlert, Info, LockKeyhole } from 'lucide-react'
+import { Check, CircleAlert, Info, LockKeyhole } from 'lucide-react'
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { PasswordFeedback, PasswordField } from '../../components/auth/PasswordField'
@@ -9,7 +9,7 @@ import { useAuth } from '../../lib/auth/context'
 import { safeNext } from '../../lib/auth/redirect'
 
 const DEFAULT_POLICY: PasswordPolicy = {
-  min_length: 12,
+  min_length: 8,
   max_length: 128,
   registration_open: true,
   lockout_attempts: 5,
@@ -140,6 +140,11 @@ export function LoginPage() {
           autoComplete="current-password"
           invalid={Boolean(error)}
           describedBy={error ? 'login-error' : undefined}
+          headerRight={
+            <Link to="/forgot-password" className="t-small muted link-btn">
+              Forgot password?
+            </Link>
+          }
         />
         {error && (
           <p id="login-error" className="notice notice-bad" role="alert">
@@ -312,3 +317,191 @@ export function RegisterPage() {
     </AuthLayout>
   )
 }
+
+export function ForgotPasswordPage() {
+  const policy = usePolicy()
+  const loc = useLocation()
+  const searchParams = new URLSearchParams(loc.search)
+  const initialToken = searchParams.get('token') || ''
+
+  const [step, setStep] = useState<'request' | 'reset'>(initialToken ? 'reset' : 'request')
+  const [email, setEmail] = useState('')
+  const [token, setToken] = useState(initialToken)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [pwOk, setPwOk] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const matches = confirmPassword.length > 0 && confirmPassword === newPassword
+
+  const handleRequest = async (e: FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      const res = await authApi.forgotPassword(email)
+      if (res.reset_token) {
+        setToken(res.reset_token)
+        setStep('reset')
+        setSuccess('Reset token generated. Enter your new password below.')
+      } else {
+        setSuccess(res.message || 'If an account exists with that email, instructions have been generated.')
+      }
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to request password reset.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleReset = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!token || !pwOk || !matches) return
+    setBusy(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      const res = await authApi.resetPassword(token, newPassword)
+      setSuccess(res.message || 'Password successfully reset! You can now sign in.')
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Password reset failed. The token may be invalid or expired.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <AuthLayout
+      title={step === 'request' ? 'Reset password' : 'Set new password'}
+      subtitle={
+        step === 'request'
+          ? 'Enter your account email to receive a password reset token.'
+          : `Choose a new password with at least ${policy.min_length} characters.`
+      }
+    >
+      {success && (
+        <p className="notice notice-ok" role="status">
+          <Check size={15} />
+          <span>{success}</span>
+        </p>
+      )}
+
+      {error && (
+        <p className="notice notice-bad" role="alert">
+          <CircleAlert size={15} />
+          <span>{error}</span>
+        </p>
+      )}
+
+      {success && step === 'reset' && !busy && error === null ? (
+        <div className="stack gap-16">
+          <Link to="/login" className="btn btn-primary btn-lg" style={{ textAlign: 'center' }}>
+            Back to Sign in
+          </Link>
+        </div>
+      ) : step === 'request' ? (
+        <form className="stack gap-16" onSubmit={handleRequest}>
+          <div className="field">
+            <label htmlFor="reset-email">Email address</label>
+            <input
+              id="reset-email"
+              name="email"
+              className="input"
+              type="email"
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoFocus
+              maxLength={254}
+              placeholder="you@example.com"
+            />
+          </div>
+          <button type="submit" className="btn btn-primary btn-lg" disabled={busy || !email}>
+            {busy ? 'Generating token…' : 'Request Password Reset'}
+          </button>
+          <p className="t-small auth-switch">
+            Remember your password? <Link to="/login">Sign in</Link>
+          </p>
+        </form>
+      ) : (
+        <form className="stack gap-16" onSubmit={handleReset}>
+          <div className="field">
+            <label htmlFor="reset-token">Reset Token</label>
+            <input
+              id="reset-token"
+              name="token"
+              className="input"
+              type="text"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              required
+              placeholder="Paste your reset token"
+            />
+          </div>
+          <PasswordField
+            id="reset-new-password"
+            label="New password"
+            value={newPassword}
+            onChange={setNewPassword}
+            autoComplete="new-password"
+          />
+          <PasswordFeedback
+            id="reset-feedback"
+            password={newPassword}
+            email={email}
+            min={policy.min_length}
+            max={policy.max_length}
+            onValidity={setPwOk}
+          />
+          <div className="field">
+            <label htmlFor="reset-confirm">Confirm new password</label>
+            <input
+              id="reset-confirm"
+              name="confirm"
+              className="input"
+              type="password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              maxLength={256}
+            />
+            {confirmPassword && !matches && (
+              <p className="field-hint" style={{ color: 'var(--bad)' }}>
+                Passwords don't match.
+              </p>
+            )}
+          </div>
+          <button
+            type="submit"
+            className="btn btn-primary btn-lg"
+            disabled={busy || !token || !pwOk || !matches}
+          >
+            {busy ? 'Updating password…' : 'Set New Password'}
+          </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="link-btn t-small"
+              onClick={() => {
+                setStep('request')
+                setError(null)
+                setSuccess(null)
+              }}
+            >
+              ← Back to request token
+            </button>
+            <Link to="/login" className="t-small">
+              Back to Sign in
+            </Link>
+          </div>
+        </form>
+      )}
+    </AuthLayout>
+  )
+}
+

@@ -12,7 +12,7 @@ from pymongo import ReturnDocument
 from pymongo.errors import DuplicateKeyError
 
 from .config import AuthSettings, get_settings
-from .db import USERS, User, get_db, utcnow
+from .db import PASSWORD_RESETS, USERS, User, get_db, utcnow
 from .passwords import check_policy, dummy_verify, hash_password, needs_rehash, verify_password
 from .ratelimit import limiter
 from .sessions import (
@@ -57,6 +57,15 @@ class LoginIn(BaseModel):
 
 class ChangePasswordIn(BaseModel):
     current_password: str = Field(max_length=1024)
+    new_password: str = Field(max_length=1024)
+
+
+class ForgotPasswordIn(BaseModel):
+    email: str = Field(max_length=254)
+
+
+class ResetPasswordIn(BaseModel):
+    token: str = Field(min_length=16, max_length=256)
     new_password: str = Field(max_length=1024)
 
 
@@ -364,3 +373,105 @@ def logout_others(
     n = revoke_user_sessions(p.user.id, except_id=p.session.id)
     audit(db, "sessions_revoked", request=request, user=p.user, detail=f"{n} session(s)")
     return {"ok": True, "revoked_sessions": n}
+
+
+@router.post("/forgot-password")
+def forgot_password(
+    body: ForgotPasswordIn,
+    request: Request,
+    db: Db = Depends(get_db),
+    cfg: AuthSettings = Depends(get_settings),
+) -> dict[str, object]:
+    email = normalize_email(body.email)
+    ip = client_ip(request)
+    _rate_limit(f"forgot-pw:{ip}", cfg.reset_request_per_hour, 3600)
+    _rate_limit(f"forgot-pw-email:{email}", cfg.reset_request_per_hour, 3600)
+
+    user = get_user_by_email(db, email)
+    if user is None or not user.is_active:
+        return {
+            "ok": True,
+            "message": "If an account with this email exists, password reset instructions have been generated.",
+        }
+
+    import hashlib
+    import secrets
+
+    raw_token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+    now = utcnow()
+    expires_at = now + timedelta(minutes=cfg.reset_lifetime_minutes)
+
+    db[PASSWORD_RESETS].delete_many({"email": email})
+    db[PASSWORD_RESETS].insert_one({
+        "token_hash": token_hash,
+        "email": email,
+        "created_at": now,
+        "expires_at": expires_at,
+        "used": False,
+    })
+
+    audit(db, "password_reset_requested", request=request, user=user)
+
+    return {
+        "ok": True,
+        "message": "Password reset token generated. Use it to set a new password.",
+        "reset_token": raw_token,
+    }
+
+
+@router.post("/reset-password")
+def reset_password(
+    body: ResetPasswordIn,
+    request: Request,
+    db: Db = Depends(get_db),
+    cfg: AuthSettings = Depends(get_settings),
+) -> dict[str, object]:
+    ip = client_ip(request)
+    _rate_limit(f"reset-pw:{ip}", 20, 60)
+
+    import hashlib
+
+    token_hash = hashlib.sha256(body.token.strip().encode("utf-8")).hexdigest()
+    now = utcnow()
+
+    rec = db[PASSWORD_RESETS].find_one({"token_hash": token_hash, "used": False})
+    if rec is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "This password reset token is invalid or has already been used.")
+
+    expires_at = aware(rec.get("expires_at"))
+    if expires_at and expires_at < now:
+        db[PASSWORD_RESETS].delete_one({"_id": rec["_id"]})
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "This password reset token has expired. Please request a new one.")
+
+    email = rec["email"]
+    user = get_user_by_email(db, email)
+    if user is None or not user.is_active:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Account not found or inactive.")
+
+    policy = check_policy(body.new_password, cfg, user.email, user.display_name)
+    if not policy.ok:
+        raise HTTPException(422, " ".join(policy.problems))
+
+    db[PASSWORD_RESETS].update_one({"_id": rec["_id"]}, {"$set": {"used": True}})
+
+    db[USERS].update_one(
+        {"_id": user.id},
+        {
+            "$set": {
+                "password_hash": hash_password(body.new_password, cfg),
+                "password_changed_at": now,
+                "failed_attempts": 0,
+                "locked_until": None,
+            }
+        },
+    )
+
+    revoked = revoke_user_sessions(user.id)
+    audit(db, "password_reset_completed", request=request, user=user, detail=f"revoked {revoked} session(s)")
+
+    return {
+        "ok": True,
+        "message": "Password successfully reset. You can now sign in with your new password.",
+    }
+

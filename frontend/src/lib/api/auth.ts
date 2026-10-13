@@ -96,6 +96,10 @@ export const authApi = {
   revokeSession: (id: string) =>
     request<{ ok: boolean }>(`/api/auth/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   logoutOthers: () => request<{ ok: boolean; revoked_sessions: number }>('/api/auth/logout-others', { method: 'POST' }),
+  forgotPassword: (email: string) =>
+    request<{ ok: boolean; message: string; reset_token?: string }>('/api/auth/forgot-password', json({ email }), 15000),
+  resetPassword: (token: string, new_password: string) =>
+    request<{ ok: boolean; message: string }>('/api/auth/reset-password', json({ token, new_password }), 20000),
 }
 
 export const adminApi = {

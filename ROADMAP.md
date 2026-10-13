@@ -181,6 +181,7 @@ graph LR
 
 ---
 ## Current Status
-- **Active phase:** Full Stack Integration & Live App Verification (Session 43).
-- **Last completed:** Wired the Tier 1 seven-class contract into inference/training validation and made missing or incompatible checkpoints fail explicitly.
-- **Next action:** Transfer Tier 1 source/generated artifacts to the separate training system; do not train locally, then provision the compatible checkpoint for backend integration.
+- **Active phase:** Interactive Multi-Mode Workspaces & Grounded RAG Architecture (`megaev.md`) / Auth & Security (Session 48).
+- **Last completed:** Lowered minimum password length to 8 characters (8–128 supported) and implemented complete rate-limited, SHA-256 hashed self-service Forgot & Reset Password workflow across backend and frontend with full test coverage (Session 48).
+- **Next action:** Implement Phase M1-Ext multi-mode scoring configurations (`configs/scoring/modes_v2.0.yaml`) and scaffold interactive workspace routers and UI layouts.
+

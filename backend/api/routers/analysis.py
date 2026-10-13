@@ -193,6 +193,11 @@ async def generate_script(user: User = Depends(require_user)):
         return {"transcript": "transformers library is not installed."}
 
     try:
+        import warnings
+        from transformers import logging as hf_logging
+        warnings.filterwarnings("ignore", category=UserWarning)
+        warnings.filterwarnings("ignore", category=FutureWarning)
+        hf_logging.set_verbosity_error()
         if _text_pipeline is None:
             _text_pipeline = pipeline("text-generation", model="distilgpt2")
         import random
@@ -204,7 +209,9 @@ async def generate_script(user: User = Depends(require_user)):
             "Let me tell you a story about a time when everything seemed to go wrong, but"
         ]
         prompt = random.choice(prompts)
-        result = _text_pipeline(prompt, max_new_tokens=40, do_sample=True, temperature=0.7, repetition_penalty=1.2)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            result = _text_pipeline(prompt, max_new_tokens=40, do_sample=True, temperature=0.7, repetition_penalty=1.2)
         generated_text = result[0]["generated_text"].strip()
         # Clean up any trailing incomplete sentences
         if not generated_text.endswith((".", "!", "?")):
@@ -232,15 +239,24 @@ async def transcribe_audio(file: UploadFile = File(...), user: User = Depends(re
 
     temp_path = None
     try:
+        import warnings
+        from transformers import logging as hf_logging
+        warnings.filterwarnings("ignore", category=UserWarning)
+        warnings.filterwarnings("ignore", category=FutureWarning)
+        hf_logging.set_verbosity_error()
         if _asr_pipeline is None:
             _asr_pipeline = pipeline("automatic-speech-recognition", model="openai/whisper-tiny.en")
+            if hasattr(_asr_pipeline, "tokenizer") and _asr_pipeline.tokenizer is not None:
+                _asr_pipeline.tokenizer.clean_up_tokenization_spaces = False
 
         # Whisper reads from a file; the recording exists on disk only for this call.
         with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as temp_audio:
             temp_audio.write(audio)
             temp_path = temp_audio.name
 
-        result = _asr_pipeline(temp_path)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            result = _asr_pipeline(temp_path)
         return {"transcript": result["text"].strip()}
     except Exception:
         import traceback
