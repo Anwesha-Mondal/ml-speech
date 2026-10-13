@@ -62,7 +62,7 @@ Render does not include a free persistent database, so a cloud MongoDB cluster i
 
 ## Step 2: Deploy Backend to Render
 
-### Method A: Web Service via Dashboard (Recommended)
+### Method A: Docker Web Service (Professional & Containerized)
 
 1. Push your repository to GitHub.
 2. Sign in to [Render](https://dashboard.render.com/).
@@ -70,18 +70,12 @@ Render does not include a free persistent database, so a cloud MongoDB cluster i
 4. Connect your GitHub repository (`pushkarverse/orcter` or your fork).
 5. Configure the service settings:
    - **Name**: `speech-guru-api` (or your choice)
-   - **Region**: Choose a region close to your users (e.g. `Ohio (US East)` or `Frankfurt`)
+   - **Region**: Choose a region close to your database (e.g. `Singapore` or `Ohio (US East)`)
    - **Branch**: `main`
-   - **Runtime**: `Python 3`
-   - **Build Command**:
-     ```bash
-     chmod +x render_build.sh && ./render_build.sh
-     ```
-   - **Start Command**:
-     ```bash
-     uvicorn backend.api.main:app --host 0.0.0.0 --port $PORT
-     ```
+   - **Runtime**: **Docker** (Render will automatically detect `Dockerfile`)
    - **Instance Type**: `Free`
+   *(Render will run `docker build` using our production multi-stage Dockerfile, install system FFmpeg and libsndfile, pre-cache the facebook/wav2vec2-base backbone, load `head_checkpoint.pt`, and bind to `$PORT` automatically).*
+
 6. Scroll down to **Environment Variables** and add the following:
 
 | Key | Value | Explanation |

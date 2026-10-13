@@ -22,10 +22,12 @@ datasets/variants/*
 !datasets/variants/.gitkeep
 
 # ML assets, weights, and run logs (per AGENTS.md rule 3)
-ml/checkpoints/
+ml/checkpoints/*
+!ml/checkpoints/head_checkpoint.pt
 ml/data/audio/
 ml/runs/
 *.pt
+!ml/checkpoints/head_checkpoint.pt
 *.bin
 *.safetensors
 
