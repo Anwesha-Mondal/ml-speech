@@ -85,7 +85,7 @@ export default function CookieBanner() {
               Your storage choices
             </span>
             <p className="t-small muted">
-              Speech Arena uses one essential cookie to keep you signed in. With your permission it also saves your
+              Speech Guru uses one essential cookie to keep you signed in. With your permission it also saves your
               preferences and analysis history in this browser. No ads, analytics or third-party cookies.{' '}
               <Link to="/cookies">Cookie Policy</Link>
             </p>

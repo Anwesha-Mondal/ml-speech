@@ -100,7 +100,7 @@ def main():
             pass
 
     print("\n" + "=" * 60)
-    print("  [*] Starting Speech Arena (Full Stack Dev Environment)")
+    print("  [*] Starting Speech Guru (Full Stack Dev Environment)")
     print("=" * 60)
     print(f"  * Python Interpreter : {py_exe}")
     print(f"  * Frontend Directory : {FRONTEND_DIR}")
@@ -115,14 +115,7 @@ def main():
     if not frontend_only:
         backend_cmd = [
             py_exe,
-            "-m",
-            "uvicorn",
-            "backend.api.main:app",
-            "--host",
-            "127.0.0.1",
-            "--port",
-            "8000",
-            "--reload",
+            str(ROOT / "backend" / "dev.py"),
         ]
         backend_proc = subprocess.Popen(
             backend_cmd,

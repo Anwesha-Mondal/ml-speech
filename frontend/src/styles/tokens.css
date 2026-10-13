@@ -1,4 +1,4 @@
-/* Speech Arena design tokens, from uiux.md §3–§7.
+/* Speech Guru design tokens, from uiux.md §3–§7.
    Light is the default. Dark is opt-in from Settings → Appearance (data-theme on <html>),
    or follows the OS when the user picks "System". */
 :root {

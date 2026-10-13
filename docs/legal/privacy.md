@@ -3,7 +3,7 @@ title: Privacy Policy
 version: 1.2
 effective: 2026-10-13
 ---
-Speech Arena helps you practise speaking by comparing how you deliver a passage with a reference recording. This policy explains what we collect to do that, why, how long we keep it, and what you can do about it. Speech Arena is a hackathon prototype run by the Speech Arena project team, who decide how your data is used.
+Speech Guru helps you practise speaking by comparing how you deliver a passage with a reference recording. This policy explains what we collect to do that, why, how long we keep it, and what you can do about it. Speech Guru is a hackathon prototype run by the Speech Guru project team, who decide how your data is used.
 
 ## Summary
 
@@ -28,7 +28,7 @@ Speech Arena helps you practise speaking by comparing how you deliver a passage 
 
 We don't ask for your date of birth, phone number, location, or anything else not listed here.
 
-Account, sign-in session, agreement, security and leaderboard records are kept in one MongoDB database run for Speech Arena. Leaderboard entries are linked to a random account number rather than your name or email.
+Account, sign-in session, agreement, security and leaderboard records are kept in one MongoDB database run for Speech Guru. Leaderboard entries are linked to a random account number rather than your name or email.
 
 ## Leaderboards
 
@@ -49,7 +49,7 @@ Leaderboards are off until you turn them on in **Settings** or on the Leaderboar
 
 ## Who else sees it
 
-Nobody outside the project team. The server downloads speech-model files from Hugging Face the first time they're needed; none of your data is sent with that download. Fonts and all other page files are served by Speech Arena itself. Links to outside websites (for example, the sources of reference recordings) only open when you click them. Administrators can see account details and security events to keep the service running, but they can't see your recordings or results.
+Nobody outside the project team. The server downloads speech-model files from Hugging Face the first time they're needed; none of your data is sent with that download. Fonts and all other page files are served by Speech Guru itself. Links to outside websites (for example, the sources of reference recordings) only open when you click them. Administrators can see account details and security events to keep the service running, but they can't see your recordings or results.
 
 ## Your browser
 
@@ -71,7 +71,7 @@ Passwords are hashed with scrypt. Sessions use a random token in a cookie that p
 
 ## Age
 
-You must be at least 16 to use Speech Arena.
+You must be at least 16 to use Speech Guru.
 
 ## Changes
 
@@ -79,4 +79,4 @@ When this policy changes, we update its version number and ask you to review and
 
 ## Contact
 
-Contact the Speech Arena project team through the project's [issue tracker](https://github.com/pushkarverse/orcter/issues). Don't post personal details there; ask for a private contact and we'll reply.
+Contact the Speech Guru project team through the project's [issue tracker](https://github.com/pushkarverse/orcter/issues). Don't post personal details there; ask for a private contact and we'll reply.

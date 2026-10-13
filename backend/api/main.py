@@ -46,7 +46,7 @@ from backend.rag import rag_router
 
 _docs = flag("ENABLE_DOCS")
 app = FastAPI(
-    title="Speech Arena API",
+    title="Speech Guru API",
     docs_url="/docs" if _docs else None,
     redoc_url="/redoc" if _docs else None,
     openapi_url="/openapi.json" if _docs else None,
@@ -84,5 +84,5 @@ if __name__ == "__main__":
     import uvicorn
     host = require("API_HOST")
     port = int(require("API_PORT"))
-    print(f"[*] Starting Speech Arena Backend on http://{host}:{port} ...")
+    print(f"[*] Starting Speech Guru Backend on http://{host}:{port} ...")
     uvicorn.run("backend.api.main:app", host=host, port=port, reload=True)

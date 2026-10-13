@@ -12,7 +12,7 @@ export default function SiteFooter({ compact = false }: { compact?: boolean }) {
           Cookie settings
         </button>
       </nav>
-      <span className="faint">Speech Arena · hackathon prototype</span>
+      <span className="faint">Speech Guru · hackathon prototype</span>
     </footer>
   )
 }

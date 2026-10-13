@@ -1,7 +1,7 @@
 export type SourceKind = 'live' | 'example' | 'sample' | 'repo' | 'browser'
 
 const COPY: Record<SourceKind, { label: string; title: string }> = {
-  live: { label: 'Live', title: 'Computed by the Speech Arena API for this recording.' },
+  live: { label: 'Live', title: 'Computed by the Speech Guru API for this recording.' },
   example: {
     label: 'Example',
     title: 'Built-in example data so this screen can be explored without the backend.',
