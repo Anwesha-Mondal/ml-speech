@@ -1,4 +1,4 @@
-import { Check, CircleAlert, Minus } from 'lucide-react'
+import { Check, CircleAlert, Minus, RotateCcw } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AudioInput from '../../../components/recording/AudioInput'
@@ -121,7 +121,22 @@ export default function StorytellerWorkspace() {
         )}
 
         {inline.progress ? (
-          <ProcessingSteps progress={inline.progress} />
+          <div className="stack gap-12">
+            <ProcessingSteps progress={inline.progress} />
+            {inline.error && (
+              <div className="stack gap-12">
+                <p className="notice notice-bad">
+                  <CircleAlert size={15} />
+                  <span>{inline.error}</span>
+                </p>
+                <div className="row gap-8">
+                  <button type="button" className="btn btn-primary" onClick={inline.reset}>
+                    <RotateCcw size={14} /> Try again
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
           <>
             <AudioInput id="story-audio" file={file} onFile={setFile} label="Your reading" />

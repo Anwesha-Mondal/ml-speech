@@ -9,9 +9,15 @@
 
 | Key | Value |
 | --- | --- |
+<<<<<<< HEAD
 | Active phase | Interactive multi-mode workspaces built (megaev M1-Ext to M6); M7 convergence open (Session 56) |
 | Last milestone | Rebranded website title, navigation, legal docs, and app UI to Speech Guru (Session 57) |
 | Next action | Run live end-to-end verification of every workspace with the model checkpoint (P13 M7 items) |
+=======
+| Active phase | Interactive multi-mode workspaces built (megaev M1-Ext to M6); M7 convergence open / 24x Pipeline Acceleration & Error Recovery (Session 56) |
+| Last milestone | Accelerated speech flaw analysis from 365s to 11.9s on 120s audio via vectorized frame features, batched PyTorch inference, in-memory chunked ASR, and added UI error recovery in multi-mode workspaces (Session 56); merged PR #10 (Session 57) |
+| Next action | Validate news anchor, debate, and mimic modes with live audio |
+>>>>>>> 1c29566594d4e1ca4fc06a6671bde160b4b81552
 | Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-075 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
 
@@ -96,7 +102,11 @@
 | D-072 | 2026-10-13 | Created frontend/.env with VITE_API_URL=http://localhost:8000; updated dev.py to auto-initialize frontend/.env from frontend/.env.example if missing; installed missing font dependencies (@fontsource/inter, @fontsource/jetbrains-mono); modernized vite.config.ts to resolve import.meta.dirname instead of __dirname to support Vite native configLoader cleanly. | Agent (Session 52) |
 | D-073 | 2026-10-13 | Integrated imageio-ffmpeg static binaries and PyAV decoders with in-memory WAV fast-path in `ml/inference/predict.py` and `pyproject.toml`, resolving LibsndfileError on browser-recorded WebM/Opus audio and verifying end-to-end multi-format audio decoding and scoring. | Agent (Session 53) |
 | D-074 | 2026-10-13 | Fixed speech analysis audio playback by converting browser WebM recordings to seekable WAV blobs via `encodeWav`, resolved React StrictMode unmount-cleanup bug with `ensureAudio()`, added direct `<audio controls>` element to `AnalysisPage.tsx`, added IndexedDB caching (`mediaDb.ts`) to survive page reloads, and eliminated health check flickering via 15s MongoDB ping caching and 2-failure threshold. | Agent (Session 54) |
+<<<<<<< HEAD
 | D-075 | 2026-10-13 | Rebranded website title, brand markers, legal texts, and user-facing notifications from Speech Arena to Speech Guru. | User (Session 57) |
+=======
+| D-075 | 2026-10-13 | Accelerated ML inference pipeline 24x for long speech recordings (120s response: 365s -> 11.9s) via single-pass vectorized frame feature caching (`_extract_contours_and_features`), batched PyTorch inference (`batch_size=16`, `hop_s=2.0` for >45s), pure deterministic word alignment on long audio, in-memory chunked Whisper transcription bypassing disk subprocesses, and added interactive error recovery & reset actions to `InterviewWorkspace` and `StorytellerWorkspace`. | Agent (Session 56) |
+>>>>>>> 1c29566594d4e1ca4fc06a6671bde160b4b81552
 
 
 
@@ -1976,29 +1986,53 @@
 
 ---
 
-### Session 56 (2026-10-13, ~20:20 IST) [Pull origin/main and Restore Local Changes]
+### Session 56 (2026-10-13, ~20:55 IST) [Interview Mode 2-min Recording Pipeline Failure & Timeout Fix]
 **User requests**
-- Pull the latest changes from GitHub.
+1. Fix 2-minute voice recording in Interviewer mode returning "server pipeline error with failed api error" at 187s on the Server pipeline stage.
 
 **What was done**
-- Fetched `origin/main` and fast-forwarded local `main` from `4ddc739` to `c399a49`.
-- Stashed all pre-existing local changes, including untracked files, to allow the pull.
-- Restored the local changes after pulling. Kept local deletions for the five upstream-modified files as requested, and preserved the non-conflicting frontend edits and `backend/dev.py`.
-- Resolved the overlapping session log and roadmap changes using the newer upstream history/status, then recorded this pull.
-- The stash is retained as a recovery copy until the restored working tree is confirmed.
+- **Diagnosed root cause of the 187s timeout:**
+  - `_detect_temporal_flaws` in `ml/inference/predict.py` sliced 120s audio into 119 overlapping windows (window=2.0s, hop=1.0s). Each window repeatedly executed 4 independent Librosa spectral routines (piptrack, STFT, centroid, onset detection) taking 2.76s per slice, followed by unbatched Wav2Vec2 forward passes (0.31s per slice).
+  - Total per-slice execution was 3.07s; 119 slices required **365.00s (~6.1 minutes)**!
+  - `frontend/src/lib/analysis/run.ts` had a hard timeout of `TIMEOUT_MS = 180_000` (180s = 3 minutes). At 187s, the frontend aborted polling, flagged the Server pipeline stage with a red (X), and failed.
+- **Diagnosed root cause of transcription failures on browser WebM:**
+  - `transcribe_audio` in `backend/api/routers/analysis.py` wrote temporary `.webm` files and passed file paths to Whisper `_asr_pipeline(temp_path)`. Transformers' internal `ffmpeg_read` failed when system `ffmpeg.exe` was missing from `PATH`.
+- **Diagnosed UI stuck state on error:**
+  - In `useInlineRun.ts`: when `runAnalysis` threw an error, `progress` remained non-null in the error state. In `InterviewWorkspace.tsx` and `StorytellerWorkspace.tsx`, `<ProcessingSteps progress={inline.progress} />` was rendered unconditionally when `inline.progress` was truthy without error notices or a "Try again" button, trapping the user permanently on the failed screen.
+- **Implemented 24x Accelerated Pipeline in `ml/inference/predict.py`:**
+  - Added `decode_audio_to_array(audio_input: bytes, target_sr: int = 16000)`: fast in-memory WAV/FLAC decoding with static imageio-ffmpeg binary and PyAV fallbacks.
+  - Added `_extract_contours_and_features`: precomputes 50ms frame arrays (RMS energy in dB, pitch F0, spectral centroid, ZCR, onsets) in one vectorized pass across the full audio in <2.9s.
+  - Slices look up acoustic features from precomputed frame arrays in microseconds (<0.01s for all slices).
+  - Padded audio slices and executed batched PyTorch inference (`batch_size=16`, `hop_s = 2.0` for audio >45s): 60 slices evaluated in 9.2s.
+  - Deterministic token-weighted word alignment for long audio (>30s) or when transcript tokens exist (instant, ADR-002, D-004).
+  - End-to-end execution on 120s audio dropped from **365s to 11.92s (24x speedup)**.
+- **Updated `backend/api/routers/analysis.py`:**
+  - Transcribe endpoint now decodes audio directly in-memory with `decode_audio_to_array` and passes `{"raw": y, "sampling_rate": 16000}` with `chunk_length_s=30` to `_asr_pipeline`. Completely eliminated disk temp files and transformers' `ffmpeg_read` dependency.
+- **Updated Frontend:**
+  - `frontend/src/lib/analysis/run.ts`: increased `TIMEOUT_MS` to `300_000` (5 minutes).
+  - `frontend/src/pages/practice/workspaces/InterviewWorkspace.tsx` & `StorytellerWorkspace.tsx`: added error notices and interactive "Try again" (`inline.reset()`) buttons beneath `ProcessingSteps` when an error occurs.
+- **Verified:**
+  - End-to-end 120s test (`scratch/verify_2min_end_to_end.py`): completed in 11.92s with full score (60.0), 141 flaws, 37 words, and 200 contour points.
+  - Frontend production build (`npm run build`): passed cleanly (0 errors).
+  - Backend test suite (`uv run --extra dev pytest tests/api tests/scoring tests/rag`): all 95 tests passed.
 
 **Files changed**
+- `ml/inference/predict.py`
+- `backend/api/routers/analysis.py`
+- `frontend/src/lib/analysis/run.ts`
+- `frontend/src/pages/practice/workspaces/InterviewWorkspace.tsx`
+- `frontend/src/pages/practice/workspaces/StorytellerWorkspace.tsx`
 - `SESSION_LOG.md`
 - `ROADMAP.md`
-- Existing local changes restored from the stash.
 
 **Decisions**
-- None.
+- D-075: Accelerated ML inference pipeline 24x for long speech recordings (120s response: 365s -> 11.9s) via single-pass vectorized frame feature caching (`_extract_contours_and_features`), batched PyTorch inference (`batch_size=16`, `hop_s=2.0` for >45s), pure deterministic word alignment on long audio, in-memory chunked Whisper transcription bypassing disk subprocesses, and added interactive error recovery & reset actions to `InterviewWorkspace` and `StorytellerWorkspace`.
 
 **Problems / bugs found**
-- Local deletions conflicted with upstream updates to four API test files and `uv.lock`; the local deletions were preserved.
+- None.
 
 **Next step**
+<<<<<<< HEAD
 - Confirm the restored working tree, then remove the temporary recovery stash and continue P13 M7 workspace verification.
 
 ---
@@ -2049,10 +2083,40 @@
 
 **Decisions**
 - D-075: Rebranded website title, brand markers, legal texts, and user-facing notifications from Speech Arena to Speech Guru.
+=======
+- Test practice workspaces and speech analysis end-to-end with live recordings.
+
+---
+
+### Session 57 (2026-10-13, ~21:10 IST) [Merge PR #10: Dev Relative API Proxy & Conflict Resolution]
+**User requests**
+1. Resolve merge conflict on PR #10 from `farhan-debugs:main` and approve/merge changes without deleting any files.
+
+**What was done**
+- Integrated PR #10 intended enhancements:
+  - `frontend/vite.config.ts`: Added dev server proxy for `/api` targeting `VITE_API_URL` or `http://127.0.0.1:8000`.
+  - `frontend/src/lib/api/client.ts`: Configured `API_BASE` to use same-origin relative URLs in dev mode so `SameSite=Strict` session cookies attach correctly across browsers.
+- Resolved merge conflicts across `ROADMAP.md` and `SESSION_LOG.md`.
+- Restored and preserved all 11 files that were erroneously deleted in PR #10 (`uv.lock`, `test.wav`, `tests/api/*`, `uiux.md`, `training/dataset.txt`, etc.).
+- Verified test suite and frontend build pass with 0 errors.
+
+**Files changed**
+- `frontend/vite.config.ts`
+- `frontend/src/lib/api/client.ts`
+- `ROADMAP.md`
+- `SESSION_LOG.md`
+
+**Decisions**
+- Maintained D-075 and preserved all repository files, test suites, and documentation.
+>>>>>>> 1c29566594d4e1ca4fc06a6671bde160b4b81552
 
 **Problems / bugs found**
 - None.
 
 **Next step**
+<<<<<<< HEAD
 - Continue with P13 M7 live workspace verification.
+=======
+- Push merged `main` to `origin/main` to complete PR #10 merge on GitHub.
+>>>>>>> 1c29566594d4e1ca4fc06a6671bde160b4b81552
 

@@ -28,7 +28,7 @@ export interface RunProgress {
 }
 
 const POLL_MS = 1000
-const TIMEOUT_MS = 180_000
+const TIMEOUT_MS = 300_000
 
 const sleep = (ms: number, signal?: AbortSignal) =>
   new Promise<void>((resolve, reject) => {

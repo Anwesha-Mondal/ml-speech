@@ -232,34 +232,26 @@ async def transcribe_audio(file: UploadFile = File(...), user: User = Depends(re
     if pipeline is None:
         return {"transcript": "transformers library is not installed."}
 
-    import tempfile
-
-    temp_path = None
     try:
         import warnings
-
         from transformers import logging as hf_logging
+        from ml.inference.predict import decode_audio_to_array
+
         warnings.filterwarnings("ignore", category=UserWarning)
         warnings.filterwarnings("ignore", category=FutureWarning)
         hf_logging.set_verbosity_error()
         if _asr_pipeline is None:
-            _asr_pipeline = pipeline("automatic-speech-recognition", model="openai/whisper-tiny.en")
+            _asr_pipeline = pipeline("automatic-speech-recognition", model="openai/whisper-tiny.en", chunk_length_s=30)
             if hasattr(_asr_pipeline, "tokenizer") and _asr_pipeline.tokenizer is not None:
                 _asr_pipeline.tokenizer.clean_up_tokenization_spaces = False
 
-        # Whisper reads from a file; the recording exists on disk only for this call.
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as temp_audio:
-            temp_audio.write(audio)
-            temp_path = temp_audio.name
+        # In-memory audio decoding into 16kHz float32 waveform (bypasses disk temp files and transformers' ffmpeg_read)
+        y, sr = decode_audio_to_array(audio, target_sr=16000)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            result = _asr_pipeline(temp_path)
+            result = _asr_pipeline({"raw": y, "sampling_rate": sr})
         return {"transcript": result["text"].strip()}
-    except Exception:  # noqa: BLE001 - report a failed transcription; the temp file is still deleted
+    except Exception:  # noqa: BLE001 - report a failed transcription cleanly
         traceback.print_exc()
         return {"transcript": "", "error": "Transcription failed on the server."}
-    finally:
-        # Always delete the recording, including when transcription fails.
-        if temp_path and os.path.exists(temp_path):
-            os.remove(temp_path)

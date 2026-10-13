@@ -27,6 +27,21 @@ def load_env() -> None:
         load_dotenv(PROJECT_ROOT / ".env", override=False)
         _loaded = True
 
+        # Ensure imageio_ffmpeg static binary directory and .venv/Scripts are in PATH
+        try:
+            import imageio_ffmpeg
+            ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+            ffmpeg_dir = os.path.dirname(ffmpeg_exe)
+            cur_path = os.environ.get("PATH", "")
+            if ffmpeg_dir not in cur_path:
+                os.environ["PATH"] = ffmpeg_dir + os.pathsep + cur_path
+            scripts_dir = PROJECT_ROOT / ".venv" / "Scripts"
+            if scripts_dir.exists() and not (scripts_dir / "ffmpeg.exe").exists():
+                import shutil
+                shutil.copy2(ffmpeg_exe, scripts_dir / "ffmpeg.exe")
+        except Exception:
+            pass
+
 
 def require(name: str) -> str:
     load_env()

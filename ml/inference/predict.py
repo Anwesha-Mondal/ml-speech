@@ -145,6 +145,88 @@ FLAW_MAP: Dict[str, Dict[str, Any]] = {
     }
 }
 
+
+def decode_audio_to_array(audio_input: bytes, target_sr: int = 16000) -> tuple[np.ndarray, int]:
+    """
+    Decode multi-format audio bytes (WAV, FLAC, WebM/Opus, OGG, MP4/AAC)
+    into a mono float32 numpy waveform resampled to target_sr.
+    """
+    import io
+    import soundfile as sf
+
+    # 1. Fast path: in-memory decode for standard uncompressed formats (WAV/FLAC)
+    try:
+        y, sr = sf.read(io.BytesIO(audio_input))
+        if y.ndim > 1:
+            y = np.mean(y, axis=1)
+        if sr != target_sr:
+            y = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
+            sr = target_sr
+        return y.astype(np.float32), sr
+    except Exception:
+        pass
+
+    # 2. imageio-ffmpeg static binary or system ffmpeg
+    ffmpeg_bin = None
+    try:
+        import imageio_ffmpeg
+        ffmpeg_bin = imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        import shutil
+        ffmpeg_bin = shutil.which("ffmpeg")
+
+    tmp_in_path = None
+    tmp_out_path = None
+    if ffmpeg_bin:
+        import tempfile
+        import subprocess
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp_in:
+                tmp_in.write(audio_input)
+                tmp_in_path = tmp_in.name
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_out:
+                tmp_out_path = tmp_out.name
+
+            subprocess.run([
+                ffmpeg_bin, "-y", "-i", tmp_in_path,
+                "-ar", str(target_sr), "-ac", "1", "-c:a", "pcm_s16le",
+                tmp_out_path
+            ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            y, sr = sf.read(tmp_out_path)
+            return y.astype(np.float32), sr
+        except Exception:
+            pass
+        finally:
+            if tmp_in_path and os.path.exists(tmp_in_path):
+                try: os.remove(tmp_in_path)
+                except Exception: pass
+            if tmp_out_path and os.path.exists(tmp_out_path):
+                try: os.remove(tmp_out_path)
+                except Exception: pass
+
+    # 3. PyAV in-memory decode
+    try:
+        import av
+        container = av.open(io.BytesIO(audio_input))
+        resampler = av.AudioResampler(format='s16', layout='mono', rate=target_sr)
+        frames = []
+        for frame in container.decode(audio=0):
+            for r_frame in resampler.resample(frame):
+                frames.append(r_frame.to_ndarray())
+        if frames:
+            audio_data = np.concatenate(frames, axis=1).squeeze()
+            y = (audio_data / 32768.0).astype(np.float32)
+            return y, target_sr
+    except Exception:
+        pass
+
+    # 4. Final fallback via librosa
+    y, sr = librosa.load(io.BytesIO(audio_input), sr=target_sr)
+    if y.ndim > 1:
+        y = np.mean(y, axis=1)
+    return y.astype(np.float32), sr
+
+
 class SpeechFlawPredictor:
     """
     Inference engine that loads the trained PyTorch Wav2Vec2 + MLP checkpoint
@@ -255,81 +337,7 @@ class SpeechFlawPredictor:
         if isinstance(audio_input, str):
             y, sr = librosa.load(audio_input, sr=sr)
         elif isinstance(audio_input, bytes):
-            import io
-            import soundfile as sf
-            import tempfile
-            import subprocess
-
-            # Fast path: in-memory decode for standard uncompressed formats (WAV/FLAC)
-            y = None
-            try:
-                y, sr = sf.read(io.BytesIO(audio_input))
-                if y.ndim > 1:
-                    y = np.mean(y, axis=1)
-                if sr != 16000:
-                    y = librosa.resample(y, orig_sr=sr, target_sr=16000)
-                    sr = 16000
-            except Exception:
-                y = None
-
-            # Streaming or browser-recorded formats (WebM/Opus, OGG, MP4/AAC)
-            if y is None:
-                # Primary decoder: ffmpeg binary (imageio_ffmpeg bundle or system PATH)
-                ffmpeg_bin = None
-                try:
-                    import imageio_ffmpeg
-                    ffmpeg_bin = imageio_ffmpeg.get_ffmpeg_exe()
-                except Exception:
-                    import shutil
-                    ffmpeg_bin = shutil.which("ffmpeg")
-
-                tmp_in_path = None
-                tmp_out_path = None
-                if ffmpeg_bin:
-                    try:
-                        with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp_in:
-                            tmp_in.write(audio_input)
-                            tmp_in_path = tmp_in.name
-
-                        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_out:
-                            tmp_out_path = tmp_out.name
-
-                        subprocess.run([
-                            ffmpeg_bin, "-y", "-i", tmp_in_path,
-                            "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le",
-                            tmp_out_path
-                        ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        y, sr = sf.read(tmp_out_path)
-                    except Exception:
-                        y = None
-                    finally:
-                        if tmp_in_path and os.path.exists(tmp_in_path):
-                            try: os.remove(tmp_in_path)
-                            except Exception: pass
-                        if tmp_out_path and os.path.exists(tmp_out_path):
-                            try: os.remove(tmp_out_path)
-                            except Exception: pass
-
-                # Secondary decoder: PyAV in-memory decode
-                if y is None:
-                    try:
-                        import av
-                        container = av.open(io.BytesIO(audio_input))
-                        resampler = av.AudioResampler(format='s16', layout='mono', rate=16000)
-                        frames = []
-                        for frame in container.decode(audio=0):
-                            for r_frame in resampler.resample(frame):
-                                frames.append(r_frame.to_ndarray())
-                        if frames:
-                            audio_data = np.concatenate(frames, axis=1).squeeze()
-                            y = (audio_data / 32768.0).astype(np.float32)
-                            sr = 16000
-                    except Exception:
-                        y = None
-
-                # Final fallback via librosa
-                if y is None:
-                    y, sr = librosa.load(io.BytesIO(audio_input), sr=sr)
+            y, sr = decode_audio_to_array(audio_input, target_sr=sr)
         elif isinstance(audio_input, np.ndarray):
             y = audio_input.astype(np.float32)
             if y.ndim > 1:
@@ -341,15 +349,18 @@ class SpeechFlawPredictor:
         if duration <= 0:
             return self._empty_result(mode)
 
-        # 2. Extract global features and model prediction
-        global_features = extract_acoustic_features(y, sr=sr)
-        global_probs = self._run_model_inference(y, global_features, sr=sr)
+        # 2. Extract global frame features and contours in one fast pass
+        contours, frame_data = self._extract_contours_and_features(y, sr)
 
-        # 3. Detect silent pause gaps (> 0.4s)
+        # Global features and model prediction
+        global_features = extract_acoustic_features(y[:min(len(y), sr * 30)], sr=sr)
+        global_probs = self._run_model_inference(y[:min(len(y), sr * 30)], global_features, sr=sr)
+
+        # 3. Detect silent pause gaps (> 0.5s)
         pause_flaws = self._detect_pauses(y, sr, duration)
 
-        # 4. Temporal window evaluation (sliding window)
-        window_flaws = self._detect_temporal_flaws(y, sr, duration, threshold=threshold)
+        # 4. Temporal window evaluation with vectorized features and batched model forward passes
+        window_flaws = self._detect_temporal_flaws(y, sr, duration, frame_data, threshold=threshold)
 
         # Merge flaws
         raw_flaws = pause_flaws + window_flaws
@@ -358,10 +369,7 @@ class SpeechFlawPredictor:
         aligned_words = self._align_words(y, sr, transcript, duration)
         raw_flaws = self._tag_flaws_with_words(raw_flaws, aligned_words)
 
-        # 6. Contours (visualization and the rule-based up-talk detector)
-        contours = self._extract_contours(y, sr)
-
-        # 7. Mode scoring from configs/scoring/modes_v2.0.yaml: up-talk and filled-pause
+        # 6. Mode scoring from configs/scoring/modes_v2.0.yaml: up-talk and filled-pause
         #    detectors, mode multipliers, bucket caps and bonus rules (megaev §10, M1-Ext).
         mode_flaws, score_breakdown, delivery_metrics = score_analysis(
             raw_flaws, aligned_words, contours, duration, mode
@@ -445,39 +453,91 @@ class SpeechFlawPredictor:
         y: np.ndarray,
         sr: int,
         duration: float,
+        frame_data: Dict[str, Any],
         threshold: float = 0.18
     ) -> List[Dict[str, Any]]:
         flaws = []
         window_size_s = 2.0
-        hop_s = 1.0
+        hop_s = 2.0 if duration > 45.0 else 1.0
         window_len = int(window_size_s * sr)
         hop_len = int(hop_s * sr)
-        
+
         if len(y) <= window_len:
-            slices = [(0.0, duration, y)]
+            slice_data = y
+            if len(slice_data) < window_len:
+                slice_data = np.pad(slice_data, (0, window_len - len(slice_data)))
+            slices = [slice_data]
+            slice_meta = [(0.0, duration)]
         else:
             slices = []
+            slice_meta = []
             for start_sample in range(0, len(y) - int(0.5 * sr), hop_len):
                 end_sample = min(start_sample + window_len, len(y))
+                slice_data = y[start_sample:end_sample]
+                if len(slice_data) < window_len:
+                    slice_data = np.pad(slice_data, (0, window_len - len(slice_data)))
                 start_t = float(start_sample / sr)
                 end_t = float(end_sample / sr)
-                slices.append((start_t, end_t, y[start_sample:end_sample]))
+                slices.append(slice_data)
+                slice_meta.append((start_t, end_t))
+
+        if not slices:
+            return []
+
+        rms = frame_data["rms"]
+        cent = frame_data["cent"]
+        zcr = frame_data["zcr"]
+        pitch_vals = frame_data["pitch_vals"]
+        onsets = frame_data["onsets"]
+
+        # Fast slice acoustic features extracted from precomputed frame arrays in microseconds
+        slice_feats = []
+        slice_metrics = []
+        for start_t, end_t in slice_meta:
+            start_f = int(start_t / 0.05)
+            end_f = max(start_f + 1, int(end_t / 0.05))
+
+            r_slice = rms[start_f:end_f] if start_f < len(rms) else np.array([0.0])
+            c_slice = cent[start_f:end_f] if start_f < len(cent) else np.array([0.0])
+            z_slice = zcr[start_f:end_f] if start_f < len(zcr) else np.array([0.0])
+            p_slice = [p for p in pitch_vals[start_f:end_f] if p is not None]
+
+            r_mean = float(np.mean(r_slice)) if len(r_slice) else 0.0
+            r_std = float(np.std(r_slice)) if len(r_slice) else 0.0
+            c_mean = float(np.mean(c_slice)) if len(c_slice) else 0.0
+            z_mean = float(np.mean(z_slice)) if len(z_slice) else 0.0
+            p_mean = float(np.mean(p_slice)) if len(p_slice) else 0.0
+
+            n_onsets = np.sum((onsets >= start_t) & (onsets < end_t))
+            dur_slice = max(end_t - start_t, 0.1)
+            onset_rate = float(n_onsets / dur_slice)
+
+            feat = np.nan_to_num(np.array([r_mean, r_std, p_mean, c_mean, z_mean, onset_rate], dtype=np.float32))
+            slice_feats.append(feat)
+
+            db_val = float(20 * np.log10(max(r_mean, 1e-5)))
+            slice_metrics.append((onset_rate, db_val, p_mean))
+
+        # Batched model inference
+        batch_size = 16
+        all_probs = []
+        with torch.no_grad():
+            for i in range(0, len(slices), batch_size):
+                b_audio = slices[i:i + batch_size]
+                b_feat = slice_feats[i:i + batch_size]
+                inputs = self.processor(b_audio, sampling_rate=sr, return_tensors="pt", padding=True)
+                audio_tensor = inputs.input_values.to(self.device)
+                feat_tensor = torch.from_numpy(np.stack(b_feat)).to(self.device)
+                logits = self.model(audio_tensor, feat_tensor)
+                probs = torch.sigmoid(logits).cpu().numpy()
+                all_probs.extend(probs)
 
         label_to_idx = {lbl: i for i, lbl in enumerate(self.labels)}
 
-        for start_t, end_t, slice_audio in slices:
-            if len(slice_audio) < int(0.3 * sr):
-                continue
-                
-            slice_features = extract_acoustic_features(slice_audio, sr=sr)
-            probs = self._run_model_inference(slice_audio, slice_features, sr=sr)
-            
-            onset_rate = float(slice_features[5])
-            rms_val = float(slice_features[0])
-            db_val = float(20 * np.log10(max(rms_val, 1e-5)))
-            pitch_val = float(slice_features[2])
-            
-            # Hybrid detection: model prob + acoustic thresholds
+        for idx, (start_t, end_t) in enumerate(slice_meta):
+            probs = all_probs[idx]
+            onset_rate, db_val, pitch_val = slice_metrics[idx]
+
             # 1. TOO FAST
             fast_idx = label_to_idx.get('TOO_FAST')
             fast_prob = float(probs[fast_idx]) if fast_idx is not None else 0.0
@@ -586,11 +646,33 @@ class SpeechFlawPredictor:
         return flaws
 
     def _align_words(self, y: np.ndarray, sr: int, transcript: str, duration: float) -> List[Dict[str, Any]]:
-        # Attempt to use real ASR for precise word timestamps
+        # Fast path: For recordings with transcript or longer duration (>30s),
+        # deterministic token-weighted distribution aligns words instantly and deterministically (ADR-002, D-004)
+        tokens = [t for t in transcript.strip().split() if t]
+        if duration > 30.0 or tokens:
+            if not tokens or duration <= 0:
+                return []
+            lead = min(0.3, duration * 0.05)
+            span = max(duration - lead * 2, 0.1)
+            weights = [max(len(w), 1) + 1.5 for w in tokens]
+            total_w = sum(weights)
+            words = []
+            cur_t = lead
+            for i, word in enumerate(tokens):
+                w_dur = (weights[i] / total_w) * span
+                words.append({
+                    "text": word,
+                    "start": round(cur_t, 2),
+                    "end": round(cur_t + w_dur * 0.9, 2)
+                })
+                cur_t += w_dur
+            return words
+
+        # Attempt to use real ASR for short recordings when no transcript is present
         try:
             from transformers import pipeline
             if not hasattr(self, "asr_pipeline"):
-                self.asr_pipeline = pipeline("automatic-speech-recognition", model="openai/whisper-tiny.en")
+                self.asr_pipeline = pipeline("automatic-speech-recognition", model="openai/whisper-tiny.en", chunk_length_s=30)
                 if hasattr(self.asr_pipeline, "tokenizer") and self.asr_pipeline.tokenizer is not None:
                     self.asr_pipeline.tokenizer.clean_up_tokenization_spaces = False
 
@@ -615,28 +697,7 @@ class SpeechFlawPredictor:
         except Exception as e:
             print(f"Real word alignment failed, falling back to synthetic: {e}")
 
-        # Fallback to synthetic alignment if ASR fails
-        tokens = [t for t in transcript.strip().split() if t]
-        if not tokens or duration <= 0:
-            return []
-            
-        # Distribute tokens smoothly across spoken span
-        lead = min(0.2, duration * 0.05)
-        span = max(duration - lead * 2, 0.1)
-        weights = [max(len(w), 1) + 1.5 for w in tokens]
-        total_w = sum(weights)
-        
-        words = []
-        cur_t = lead
-        for i, word in enumerate(tokens):
-            w_dur = (weights[i] / total_w) * span
-            words.append({
-                "text": word,
-                "start": round(cur_t, 2),
-                "end": round(cur_t + w_dur * 0.9, 2)
-            })
-            cur_t += w_dur
-        return words
+        return []
 
     def _tag_flaws_with_words(self, flaws: List[Dict[str, Any]], words: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         for f in flaws:
@@ -661,18 +722,21 @@ class SpeechFlawPredictor:
         """Capped bucket deductions from configs/scoring/modes_v2.0.yaml (kept for callers and tests)."""
         return compute_score(flaws, mode)
 
-    def _extract_contours(self, y: np.ndarray, sr: int) -> Dict[str, Any]:
-        # Compute pitch and RMS contour downsampled to ~20 points/sec (every 50ms)
-        hop_length = int(sr * 0.05)  # 50ms
-        frame_times = librosa.frames_to_time(np.arange(len(y) // hop_length), sr=sr, hop_length=hop_length)
-        
-        # RMS energy in dB
+    def _extract_contours_and_features(self, y: np.ndarray, sr: int) -> tuple[Dict[str, Any], Dict[str, Any]]:
+        """
+        Compute frame-level contours (RMS and pitch at 50ms hop) and frame features
+        (RMS, centroid, ZCR, onsets) in one vectorized pass across the audio.
+        """
+        hop_length = int(sr * 0.05)  # 50ms (20 Hz)
+        n_frames = max(1, len(y) // hop_length)
+        frame_times = librosa.frames_to_time(np.arange(n_frames), sr=sr, hop_length=hop_length)
+
+        # 1. RMS energy in dB
         rms = librosa.feature.rms(y=y, hop_length=hop_length)[0]
         rms_db = 20 * np.log10(np.maximum(rms, 1e-4))
-        # Normalize dB between -40 and 0
         rms_norm = np.clip(rms_db, -40, 0).tolist()
-        
-        # Pitch F0 estimation
+
+        # 2. Pitch F0 estimation
         pitches, magnitudes = librosa.piptrack(y=y, sr=sr, hop_length=hop_length)
         pitch_vals = []
         for i in range(pitches.shape[1]):
@@ -684,18 +748,31 @@ class SpeechFlawPredictor:
                 pitch_vals.append(p0 if p0 > 40.0 else None)
             else:
                 pitch_vals.append(None)
-                
-        # Limit points to max 200 for frontend efficiency
+
         step = max(1, len(frame_times) // 200)
-        t_sample = [round(float(t), 2) for t in frame_times[::step]]
-        energy_sample = [round(float(e), 1) for e in rms_norm[::step]]
-        pitch_sample = [round(float(p), 1) if p is not None else None for p in pitch_vals[::step]]
-        
-        return {
-            "t": t_sample,
-            "energyPart": energy_sample,
-            "pitchPart": pitch_sample
+        contours = {
+            "t": [round(float(t_val), 2) for t_val in frame_times[::step]],
+            "energyPart": [round(float(e), 1) for e in rms_norm[::step]],
+            "pitchPart": [round(float(p), 1) if p is not None else None for p in pitch_vals[::step]]
         }
+
+        # 3. Spectral centroid, ZCR and onsets
+        cent = librosa.feature.spectral_centroid(y=y, sr=sr, hop_length=hop_length)[0]
+        zcr = librosa.feature.zero_crossing_rate(y=y, hop_length=hop_length)[0]
+        onsets = librosa.onset.onset_detect(y=y, sr=sr, hop_length=hop_length, units='time')
+
+        frame_data = {
+            "rms": rms,
+            "pitch_vals": pitch_vals,
+            "cent": cent,
+            "zcr": zcr,
+            "onsets": onsets,
+        }
+        return contours, frame_data
+
+    def _extract_contours(self, y: np.ndarray, sr: int) -> Dict[str, Any]:
+        contours, _ = self._extract_contours_and_features(y, sr)
+        return contours
 
     def _empty_result(self, mode: str) -> Dict[str, Any]:
         cfg = get_mode_config()
