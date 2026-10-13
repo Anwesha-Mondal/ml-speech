@@ -1,7 +1,7 @@
 import type { ApiBattle, ApiHistory, ApiJob, ApiLeaderboard, ApiLeaderboardPrompts, ApiMimic, Mode } from './types'
 
-// Set in frontend/.env (gitignored). vite.config.ts refuses to start or build without it.
-export const API_BASE: string = import.meta.env.VITE_API_URL
+// Use same-origin relative URLs in dev mode so SameSite=Strict cookies are attached by browsers.
+export const API_BASE: string = import.meta.env.DEV ? '' : import.meta.env.VITE_API_URL
 
 export class ApiError extends Error {
   readonly status: number

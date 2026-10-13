@@ -10,7 +10,7 @@
 | Key | Value |
 | --- | --- |
 | Active phase | Interactive multi-mode workspaces built (megaev M1-Ext to M6); M7 convergence open / 24x Pipeline Acceleration & Error Recovery (Session 56) |
-| Last milestone | Accelerated speech flaw analysis from 365s to 11.9s on 120s audio via vectorized frame features, batched PyTorch inference, in-memory chunked ASR, and added UI error recovery in multi-mode workspaces (Session 56) |
+| Last milestone | Accelerated speech flaw analysis from 365s to 11.9s on 120s audio via vectorized frame features, batched PyTorch inference, in-memory chunked ASR, and added UI error recovery in multi-mode workspaces (Session 56); merged PR #10 (Session 57) |
 | Next action | Validate news anchor, debate, and mimic modes with live audio |
 | Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-075 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
@@ -2024,4 +2024,32 @@
 **Next step**
 - Test practice workspaces and speech analysis end-to-end with live recordings.
 
+---
+
+### Session 57 (2026-10-13, ~21:10 IST) [Merge PR #10: Dev Relative API Proxy & Conflict Resolution]
+**User requests**
+1. Resolve merge conflict on PR #10 from `farhan-debugs:main` and approve/merge changes without deleting any files.
+
+**What was done**
+- Integrated PR #10 intended enhancements:
+  - `frontend/vite.config.ts`: Added dev server proxy for `/api` targeting `VITE_API_URL` or `http://127.0.0.1:8000`.
+  - `frontend/src/lib/api/client.ts`: Configured `API_BASE` to use same-origin relative URLs in dev mode so `SameSite=Strict` session cookies attach correctly across browsers.
+- Resolved merge conflicts across `ROADMAP.md` and `SESSION_LOG.md`.
+- Restored and preserved all 11 files that were erroneously deleted in PR #10 (`uv.lock`, `test.wav`, `tests/api/*`, `uiux.md`, `training/dataset.txt`, etc.).
+- Verified test suite and frontend build pass with 0 errors.
+
+**Files changed**
+- `frontend/vite.config.ts`
+- `frontend/src/lib/api/client.ts`
+- `ROADMAP.md`
+- `SESSION_LOG.md`
+
+**Decisions**
+- Maintained D-075 and preserved all repository files, test suites, and documentation.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Push merged `main` to `origin/main` to complete PR #10 merge on GitHub.
 
