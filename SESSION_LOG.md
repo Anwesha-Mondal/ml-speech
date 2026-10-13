@@ -9,10 +9,10 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | Production Deployment on Vercel & Render (Session 64) |
-| Last milestone | Un-ignored and tracked `frontend/src/lib/data/dataset.generated.ts` in git, resolving 25 TypeScript build errors in `Dataset.tsx` and verifying clean Vercel compilation (Session 64) |
+| Active phase | Production Deployment on Vercel & Render (Session 65) |
+| Last milestone | Eliminated Vercel build crash by providing safe fallback backend URL (https://speech-guru-api.onrender.com) and static define in vite.config.ts and client.ts (Session 65) |
 | Next action | Push to GitHub to trigger successful Vercel frontend deployment |
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-083 |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-084 |
 | Open questions | Final YouTube demo video link; team member Devpost account verification |
 
 
@@ -105,6 +105,7 @@
 | D-081 | 2026-10-14 | Enabled full 380 MB heavy model checkpoint (`best_checkpoint.pt`) deployment by chunking into 5 parts under 90 MB (`best_checkpoint.pt.part00`..`04`) to comply with GitHub's 100 MB per-file limit without Git LFS. Dockerfile build step and `SpeechFlawPredictor` automatically reassemble the chunks with verified 100% SHA-256 hash match on boot. | User & Agent (Session 62) |
 | D-082 | 2026-10-14 | Dynamic INT8 CPU quantization for SpeechFlawPredictor in `ml/inference/predict.py`: reduces runtime memory footprint of the full heavy model (`best_checkpoint.pt`, 15 classes) from ~580 MB down to ~340 MB, enabling accurate neural flaw detection to run reliably within Render's 512 MB free tier RAM without OOM kills. | Agent (Session 63) |
 | D-083 | 2026-10-14 | Fixed Vercel production build failure by explicitly scoping root `.gitignore` to un-ignore `frontend/src/lib/data/` and tracking `frontend/src/lib/data/dataset.generated.ts`, resolving 25 TypeScript compilation errors (TS2307, TS7006) on `Dataset.tsx` during Vercel deployment. | Agent (Session 64) |
+| D-084 | 2026-10-14 | Fixed Vercel build failure from missing `VITE_API_URL` by replacing hard-fail check in `frontend/vite.config.ts` with safe defaults (`https://speech-guru-api.onrender.com` in production, `http://localhost:8000` in dev), added `import.meta.env.VITE_API_URL` static define, added client-side `API_BASE` fallback in `frontend/src/lib/api/client.ts`, and updated CSP to allow `*.onrender.com` domains. | Agent (Session 65) |
 
 
 
@@ -2350,6 +2351,41 @@
 
 **Next step**
 - Commit and push changes to GitHub; Vercel will automatically re-deploy cleanly.
+
+---
+
+### Session 65 (2026-10-14, ~00:54 IST) [Vercel Deployment Build Fix: VITE_API_URL Fallback & CSP]
+**User requests**
+- Fix Vercel build crash: `Error: VITE_API_URL is not set. Please set VITE_API_URL in frontend/.env or Vercel Environment Variables` and ensure backend URL `https://speech-guru-api.onrender.com` is configured seamlessly with no further build errors.
+
+**What was done**
+- Diagnosed root cause:
+  - `frontend/vite.config.ts` threw a hard runtime exception if `VITE_API_URL` was not present in the environment or `.env`. Since `.env` is gitignored and Vercel builds pull raw Git checkouts before environment variables may be configured in the UI, this abruptly stopped `npm run build` with exit code 1.
+- Implemented resilient build configuration:
+  - `frontend/vite.config.ts`: Changed `rawApiUrl` resolution to prioritize `env.VITE_API_URL` or `process.env.VITE_API_URL`, falling back gracefully to `https://speech-guru-api.onrender.com` (production) or `http://localhost:8000` (development). Added warning logging instead of throwing exceptions.
+  - Injected `'import.meta.env.VITE_API_URL': JSON.stringify(rawApiUrl)` in Vite `define` block to ensure runtime client bundles always have the active API base baked in.
+  - `frontend/src/lib/api/client.ts`: Added fallback to `https://speech-guru-api.onrender.com` for `API_BASE` if `VITE_API_URL` is empty string or undefined in production.
+  - `frontend/vite.config.ts`: Updated Content Security Policy (CSP) header to explicitly whitelist `https://*.onrender.com` and `https://speech-guru-api.onrender.com` under `connect-src`.
+- Tested and verified:
+  - `npx tsc -b`: 0 errors.
+  - `npm run build`: built production client bundle cleanly in <800ms with zero errors.
+  - Tested build with `.env` absent: succeeds cleanly.
+  - Oxlint: 0 errors.
+
+**Files changed**
+- `frontend/vite.config.ts`
+- `frontend/src/lib/api/client.ts`
+- `SESSION_LOG.md`
+- `ROADMAP.md`
+
+**Decisions**
+- D-084: Fixed Vercel build failure from missing `VITE_API_URL` by replacing hard-fail check in `frontend/vite.config.ts` with safe defaults (`https://speech-guru-api.onrender.com` in production, `http://localhost:8000` in dev), added `import.meta.env.VITE_API_URL` static define, added client-side `API_BASE` fallback in `frontend/src/lib/api/client.ts`, and updated CSP to allow `*.onrender.com` domains.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Commit and push to GitHub (`main`) to trigger clean automatic Vercel deployment.
 
 
 

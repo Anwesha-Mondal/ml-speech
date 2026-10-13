@@ -192,6 +192,6 @@ graph LR
 
 ---
 ## Current Status
-- **Active phase:** Production Deployment & Cloud Optimization (Session 64).
-- **Last completed:** Fixed Vercel production build failure (D-083) by un-ignoring `frontend/src/lib/data/` in `.gitignore` and tracking `dataset.generated.ts`. Both strict TypeScript check (`tsc -b`) and Vite production bundle (`npm run build`) pass cleanly with 0 errors.
+- **Active phase:** Production Deployment & Cloud Optimization (Session 65).
+- **Last completed:** Hardened frontend build with resilient `VITE_API_URL` defaults (`https://speech-guru-api.onrender.com`), static define injection, CSP allowlist for Render backend, and verified error-free Vercel production build (Session 65, D-084).
 - **Next action:** Verify live Vercel frontend and Render backend deployments.
