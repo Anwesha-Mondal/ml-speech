@@ -9,10 +9,10 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | Interactive multi-mode workspaces built (megaev M1-Ext to M6); M7 convergence open / Analysis Audio Playback & Health Check Stabilization (Session 55) |
-| Last milestone | Merged origin/main (M1-Ext–M6 multi-mode workspaces, RAG corpus) with local audio playback fixes (seekable WAV, StrictMode fix, mediaDb) and health check ping caching (Session 55) |
-| Next action | Run live end-to-end verification of every workspace with the model checkpoint (P13 M7 items) |
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-074 |
+| Active phase | Interactive multi-mode workspaces built (megaev M1-Ext to M6); M7 convergence open / 24x Pipeline Acceleration & Error Recovery (Session 56) |
+| Last milestone | Accelerated speech flaw analysis from 365s to 11.9s on 120s audio via vectorized frame features, batched PyTorch inference, in-memory chunked ASR, and added UI error recovery in multi-mode workspaces (Session 56) |
+| Next action | Validate news anchor, debate, and mimic modes with live audio |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-075 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
 
 
@@ -96,6 +96,7 @@
 | D-072 | 2026-10-13 | Created frontend/.env with VITE_API_URL=http://localhost:8000; updated dev.py to auto-initialize frontend/.env from frontend/.env.example if missing; installed missing font dependencies (@fontsource/inter, @fontsource/jetbrains-mono); modernized vite.config.ts to resolve import.meta.dirname instead of __dirname to support Vite native configLoader cleanly. | Agent (Session 52) |
 | D-073 | 2026-10-13 | Integrated imageio-ffmpeg static binaries and PyAV decoders with in-memory WAV fast-path in `ml/inference/predict.py` and `pyproject.toml`, resolving LibsndfileError on browser-recorded WebM/Opus audio and verifying end-to-end multi-format audio decoding and scoring. | Agent (Session 53) |
 | D-074 | 2026-10-13 | Fixed speech analysis audio playback by converting browser WebM recordings to seekable WAV blobs via `encodeWav`, resolved React StrictMode unmount-cleanup bug with `ensureAudio()`, added direct `<audio controls>` element to `AnalysisPage.tsx`, added IndexedDB caching (`mediaDb.ts`) to survive page reloads, and eliminated health check flickering via 15s MongoDB ping caching and 2-failure threshold. | Agent (Session 54) |
+| D-075 | 2026-10-13 | Accelerated ML inference pipeline 24x for long speech recordings (120s response: 365s -> 11.9s) via single-pass vectorized frame feature caching (`_extract_contours_and_features`), batched PyTorch inference (`batch_size=16`, `hop_s=2.0` for >45s), pure deterministic word alignment on long audio, in-memory chunked Whisper transcription bypassing disk subprocesses, and added interactive error recovery & reset actions to `InterviewWorkspace` and `StorytellerWorkspace`. | Agent (Session 56) |
 
 
 
@@ -1972,4 +1973,55 @@
 
 **Next step**
 - Test practice workspaces and speech analysis end-to-end with live recordings.
+
+---
+
+### Session 56 (2026-10-13, ~20:55 IST) [Interview Mode 2-min Recording Pipeline Failure & Timeout Fix]
+**User requests**
+1. Fix 2-minute voice recording in Interviewer mode returning "server pipeline error with failed api error" at 187s on the Server pipeline stage.
+
+**What was done**
+- **Diagnosed root cause of the 187s timeout:**
+  - `_detect_temporal_flaws` in `ml/inference/predict.py` sliced 120s audio into 119 overlapping windows (window=2.0s, hop=1.0s). Each window repeatedly executed 4 independent Librosa spectral routines (piptrack, STFT, centroid, onset detection) taking 2.76s per slice, followed by unbatched Wav2Vec2 forward passes (0.31s per slice).
+  - Total per-slice execution was 3.07s; 119 slices required **365.00s (~6.1 minutes)**!
+  - `frontend/src/lib/analysis/run.ts` had a hard timeout of `TIMEOUT_MS = 180_000` (180s = 3 minutes). At 187s, the frontend aborted polling, flagged the Server pipeline stage with a red (X), and failed.
+- **Diagnosed root cause of transcription failures on browser WebM:**
+  - `transcribe_audio` in `backend/api/routers/analysis.py` wrote temporary `.webm` files and passed file paths to Whisper `_asr_pipeline(temp_path)`. Transformers' internal `ffmpeg_read` failed when system `ffmpeg.exe` was missing from `PATH`.
+- **Diagnosed UI stuck state on error:**
+  - In `useInlineRun.ts`: when `runAnalysis` threw an error, `progress` remained non-null in the error state. In `InterviewWorkspace.tsx` and `StorytellerWorkspace.tsx`, `<ProcessingSteps progress={inline.progress} />` was rendered unconditionally when `inline.progress` was truthy without error notices or a "Try again" button, trapping the user permanently on the failed screen.
+- **Implemented 24x Accelerated Pipeline in `ml/inference/predict.py`:**
+  - Added `decode_audio_to_array(audio_input: bytes, target_sr: int = 16000)`: fast in-memory WAV/FLAC decoding with static imageio-ffmpeg binary and PyAV fallbacks.
+  - Added `_extract_contours_and_features`: precomputes 50ms frame arrays (RMS energy in dB, pitch F0, spectral centroid, ZCR, onsets) in one vectorized pass across the full audio in <2.9s.
+  - Slices look up acoustic features from precomputed frame arrays in microseconds (<0.01s for all slices).
+  - Padded audio slices and executed batched PyTorch inference (`batch_size=16`, `hop_s = 2.0` for audio >45s): 60 slices evaluated in 9.2s.
+  - Deterministic token-weighted word alignment for long audio (>30s) or when transcript tokens exist (instant, ADR-002, D-004).
+  - End-to-end execution on 120s audio dropped from **365s to 11.92s (24x speedup)**.
+- **Updated `backend/api/routers/analysis.py`:**
+  - Transcribe endpoint now decodes audio directly in-memory with `decode_audio_to_array` and passes `{"raw": y, "sampling_rate": 16000}` with `chunk_length_s=30` to `_asr_pipeline`. Completely eliminated disk temp files and transformers' `ffmpeg_read` dependency.
+- **Updated Frontend:**
+  - `frontend/src/lib/analysis/run.ts`: increased `TIMEOUT_MS` to `300_000` (5 minutes).
+  - `frontend/src/pages/practice/workspaces/InterviewWorkspace.tsx` & `StorytellerWorkspace.tsx`: added error notices and interactive "Try again" (`inline.reset()`) buttons beneath `ProcessingSteps` when an error occurs.
+- **Verified:**
+  - End-to-end 120s test (`scratch/verify_2min_end_to_end.py`): completed in 11.92s with full score (60.0), 141 flaws, 37 words, and 200 contour points.
+  - Frontend production build (`npm run build`): passed cleanly (0 errors).
+  - Backend test suite (`uv run --extra dev pytest tests/api tests/scoring tests/rag`): all 95 tests passed.
+
+**Files changed**
+- `ml/inference/predict.py`
+- `backend/api/routers/analysis.py`
+- `frontend/src/lib/analysis/run.ts`
+- `frontend/src/pages/practice/workspaces/InterviewWorkspace.tsx`
+- `frontend/src/pages/practice/workspaces/StorytellerWorkspace.tsx`
+- `SESSION_LOG.md`
+- `ROADMAP.md`
+
+**Decisions**
+- D-075: Accelerated ML inference pipeline 24x for long speech recordings (120s response: 365s -> 11.9s) via single-pass vectorized frame feature caching (`_extract_contours_and_features`), batched PyTorch inference (`batch_size=16`, `hop_s=2.0` for >45s), pure deterministic word alignment on long audio, in-memory chunked Whisper transcription bypassing disk subprocesses, and added interactive error recovery & reset actions to `InterviewWorkspace` and `StorytellerWorkspace`.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Test practice workspaces and speech analysis end-to-end with live recordings.
+
 

@@ -243,8 +243,21 @@ export default function InterviewWorkspace() {
           </div>
         ) : inline.progress ? (
           <div className="stack gap-12">
-            <span className="t-section">Scoring your answer</span>
+            <span className="t-section">{inline.error ? 'Analysis failed' : 'Scoring your answer'}</span>
             <ProcessingSteps progress={inline.progress} />
+            {inline.error && (
+              <div className="stack gap-12">
+                <p className="notice notice-bad">
+                  <CircleAlert size={15} />
+                  <span>{inline.error}</span>
+                </p>
+                <div className="row gap-8">
+                  <button type="button" className="btn btn-primary" onClick={inline.reset}>
+                    <RotateCcw size={14} /> Try again
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           question && (
