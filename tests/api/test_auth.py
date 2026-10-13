@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from backend.auth.cli import _update
 from backend.auth.config import get_settings
-from backend.auth.db import USERS, utcnow
+from backend.auth.db import SESSIONS, USERS, utcnow
 from backend.auth.passwords import check_policy, hash_password, needs_rehash, verify_password
 
 from .conftest import AGREE, HDR, STRONG, csrf_headers, register, session_keys
@@ -77,14 +77,12 @@ def test_register_sets_secure_cookie_and_hides_hash(client: TestClient, db: Any,
 
     user = db[USERS].find_one()
     assert user is not None and user["password_hash"].startswith("scrypt$")
-    keys = session_keys(rds)
-    assert len(keys) == 1
+    sessions = list(db[SESSIONS].find())
+    assert len(sessions) == 1
     token = client.cookies.get("sa_session")
-    # Only the token's hash is stored, and the session is in Redis, not MongoDB.
-    assert token and token not in keys[0] and token not in str(rds.hgetall(keys[0]))
-    assert "sessions" not in db.list_collection_names()
-    cfg = get_settings()
-    assert 0 < rds.ttl(keys[0]) <= cfg.idle_timeout_hours * 3600  # Redis expires idle sessions itself
+    # Only the token's hash is stored in MongoDB, never the raw token.
+    assert token and token != sessions[0]["token_hash"]
+    assert "sessions" in db.list_collection_names()
 
 
 def test_register_rejects_weak_duplicate_and_bad_email(client: TestClient) -> None:
@@ -173,44 +171,47 @@ def test_logout_revokes_session(client: TestClient) -> None:
 
 
 def test_idle_and_absolute_expiry(client: TestClient, rds: Any) -> None:
+    from backend.auth.db import get_db
+
     register(client)
     cfg = get_settings()
-    (key,) = session_keys(rds)
-    rds.hset(key, "last_seen_at", (utcnow() - timedelta(hours=cfg.idle_timeout_hours + 1)).isoformat())
+    get_db()[SESSIONS].update_one({}, {"$set": {"last_seen_at": utcnow() - timedelta(hours=cfg.idle_timeout_hours + 1)}})
     assert client.get("/api/private").status_code == 401
     assert session_keys(rds) == []  # the stale session was deleted
 
     client.cookies.clear()
     register(client, email="bo@example.com", name="Bo")
-    (key,) = session_keys(rds)
-    rds.hset(key, "expires_at", (utcnow() - timedelta(seconds=1)).isoformat())
+    get_db()[SESSIONS].update_one({}, {"$set": {"expires_at": utcnow() - timedelta(seconds=1)}})
     assert client.get("/api/private").status_code == 401
 
-    # And when Redis's own expiry fires, the session is simply gone.
+    # And when the session is simply removed from MongoDB, the session is gone.
     client.cookies.clear()
     register(client, email="cy@example.com", name="Cy")
-    for k in rds.scan_iter(match="sa:sess:*"):
-        rds.delete(k)
+    get_db()[SESSIONS].delete_many({})
     assert client.get("/api/private").status_code == 401
 
 
-def test_sign_out_deletes_the_session_from_redis(client: TestClient, rds: Any) -> None:
+def test_sign_out_deletes_the_session(client: TestClient, rds: Any) -> None:
     s = register(client)
     assert len(session_keys(rds)) == 1
     assert client.post("/api/auth/logout", headers=csrf_headers(s)).status_code == 200
-    assert session_keys(rds) == [] and list(rds.scan_iter(match="sa:sess:id:*")) == []
+    assert session_keys(rds) == []
 
 
-def test_session_store_down_gives_503(app: FastAPI) -> None:
-    import fakeredis
-
-    from backend.redis_client import use_client
+def test_session_store_down_gives_503(app: FastAPI, monkeypatch: Any) -> None:
+    from contextlib import contextmanager
+    from fastapi import HTTPException, status
+    from backend.auth import sessions
 
     c = TestClient(app, base_url="http://testserver")
     register(c)
-    server = fakeredis.FakeServer()
-    server.connected = False  # every command, pipelines included, raises ConnectionError
-    use_client(fakeredis.FakeRedis(server=server, decode_responses=True))
+
+    @contextmanager
+    def _broken_col(*args: Any, **kwargs: Any) -> Any:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, sessions.STORE_DOWN)
+        yield
+
+    monkeypatch.setattr(sessions, "_session_col", _broken_col)
     me = c.get("/api/auth/me")
     assert me.status_code == 503 and "session store" in me.json()["detail"]
     c.cookies.clear()

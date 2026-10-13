@@ -1,0 +1,11 @@
+# Speech Arena - One Command Full Stack Launcher (PowerShell)
+$ErrorActionPreference = "Stop"
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+Set-Location $ScriptDir
+
+$PythonExe = Join-Path $ScriptDir ".venv\Scripts\python.exe"
+if (-not (Test-Path $PythonExe)) {
+    $PythonExe = "python"
+}
+
+& $PythonExe dev.py @args

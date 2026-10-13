@@ -9,10 +9,10 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | Full Stack Integration & Live App Verification (Session 43) |
-| Last milestone | Tier 1 labels wired into inference/training validation; incompatible or missing checkpoints now fail explicitly (Session 43) |
-| Next action | Transfer the preserved OpenSLR archive to the training system; do not train on this machine |
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-060 |
+| Active phase | Redis Retirement & MongoDB Full-Stack Unification (Session 45) |
+| Last milestone | Completely removed Redis; sessions and leaderboards now persist in MongoDB; frontend fonts installed; all 45 API tests pass (Session 45) |
+| Next action | Run `npm run dev` or `python dev.py` to start both backend & frontend and test live in browser |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-063 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
 
 ---
@@ -81,6 +81,9 @@
 | D-058 | 2026-10-11 | Validated scaled real-speech model: achieved record low validation loss of 0.1357 at Epoch 24 (best checkpoint auto-secured). Verified grounded inference on test audio (`ENERGY_LOW` detected with -100 dB acoustic evidence). Production model frozen for vertical slice integration. | User (Session 41) |
 | D-059 | 2026-10-11 | Documented Tier 1 real-world speech dataset expansion (1,680 physical 16 kHz WAV files across 40 OpenSLR speakers with 7 balanced flaw categories and speaker-disjoint splits) in DATASET_CARD_v1.md and synchronized training data logs. | User (Session 42) |
 | D-060 | 2026-10-11 | Production inference uses the seven Tier 1 labels; training validates manifests and requires speaker-disjoint validation; inference rejects missing or incompatible checkpoints instead of serving an untrained/random classifier. | Agent (Session 43) |
+| D-061 | 2026-10-13 | Merged backend and frontend environment configurations into root `.env` and `frontend/.env`; dynamic checkpoint shape detection in `SpeechFlawPredictor` accommodates both 15-class and 7-class models cleanly. | User & Agent (Session 44) |
+| D-062 | 2026-10-13 | Confirmed complete integration of MongoDB backend architecture; deleted redundant staging artifacts `backend/mongodb-files` and `backend/db.py`. | User & Agent (Session 44) |
+| D-063 | 2026-10-13 | Removed Redis completely (supersedes D-049 and D-052): sign-in sessions and leaderboards moved to MongoDB collections ('sessions' and 'leaderboard_scores'); removed REDIS_URL and all Redis dependencies. dev.py auto-clears ports 8000 and 5173 on launch. | User (Session 45) |
 
 
 
@@ -1496,3 +1499,97 @@
 
 **Next step**
 - Transfer the preserved archive, or the generated Tier 1 manifests/audio/checkpoint, to the training system. Do not run training locally.
+
+---
+
+### Session 44 (2026-10-13, ~00:45 IST) [Env Merge, Model Wiring & Backend MongoDB Architecture Cleanup]
+**User requests**
+1. Merge both `env` and `env (1)` files together.
+2. Wire up the `ml/` model folder (the latest checkpoint) with the API service and backend.
+3. Wire up the imported `backend/mongodb-files` and `backend/db.py` with the architecture directory, and once ported, delete both temporary files.
+
+**What was done**
+- Merged all environment settings from `env` and `env (1)` into root `.env` (providing MongoDB, Redis, CORS, API host/port, privacy settings, and frontend settings) and created `frontend/.env` (`VITE_API_URL=http://localhost:8000`).
+- Updated `SpeechFlawPredictor` in `ml/inference/predict.py` to dynamically inspect the loaded checkpoint's classifier output dimension (supporting both 15-class and 7-class models) and automatically load the corresponding taxonomy.
+- Created `ml/checkpoints/best_checkpoint.pt` synchronized from `latest_checkpoint.pt`.
+- Successfully verified model inference on `test.wav`: loaded checkpoint, extracted speech acoustic features, detected acoustic flaws (`ENERGY_LOW`), and computed score buckets.
+- Tested `process_audio_pipeline` in `backend/api/routers/analysis.py`: jobs transition to `completed` with full score, flaws, words, and contours populated.
+- Verified that all components in `backend/mongodb-files` and `backend/db.py` were already fully integrated into `backend/auth`, `backend/api`, `backend/privacy`, `backend/leaderboard`, and test suites.
+- Safely removed the redundant staging folder `backend/mongodb-files` and duplicate `backend/db.py`.
+- Ran test suite (`pytest tests/ -q`): all 45 tests passed.
+- Configured and validated live connection to MongoDB Atlas cluster (`speech_orcter`); verified collections `users`, `consent_records`, and `audit_events` and index creation.
+
+- Updated `PRIVACY_CONTACT_URL` in `.env`, `.env.example`, `docs/legal/privacy.md`, and `docs/legal/terms.md` to point to `https://github.com/pushkarverse/orcter/issues`.
+- Ran test suite (`pytest tests/api/test_privacy.py -q`): all 15 tests passed.
+
+- Fixed leading dot typo in `frontend/.env` (`VITE_API_URL`).
+- Built unified one-command dev launcher (`dev.py`, root `package.json`, `start.ps1`, `start.bat`) that concurrently orchestrates the FastAPI backend and Vite frontend with colored tags and graceful shutdown. Tested live startup of both servers.
+
+**Files changed**
+- `dev.py` (unified one-command runner)
+- `package.json` (root package scripts `npm run dev`)
+- `start.ps1` (PowerShell runner script)
+- `start.bat` (Windows batch runner script)
+- `frontend/.env` (fixed VITE_API_URL key)
+- `.env` (created merged root environment configuration; updated PRIVACY_CONTACT_URL)
+- `.env.example` (updated PRIVACY_CONTACT_URL)
+- `docs/legal/privacy.md` (updated issue tracker link)
+- `docs/legal/terms.md` (updated issue tracker link)
+- `ml/inference/predict.py` (dynamic class adaptation and checkpoint loading)
+- `ml/checkpoints/best_checkpoint.pt` (mirrored from latest_checkpoint.pt)
+- `backend/mongodb-files` (deleted after verifying integration)
+- `backend/db.py` (deleted after verifying integration)
+- `SESSION_LOG.md` (updated Quick State, Decision Register with D-061 and D-062, and Session 44)
+
+**Decisions**
+- D-061: Merged backend and frontend environment configurations into root `.env` and `frontend/.env`; dynamic checkpoint shape detection in `SpeechFlawPredictor` accommodates both 15-class and 7-class models cleanly.
+- D-062: Confirmed complete integration of MongoDB backend architecture; deleted redundant staging artifacts `backend/mongodb-files` and `backend/db.py`.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Start full stack services via `python dev.py` or `npm run dev` and test live recording in the browser.
+
+---
+
+### Session 45 (2026-10-13, ~01:20 IST) [Complete Redis Removal & Migration to MongoDB]
+**User requests**
+1. Fix frontend bundling errors (`@fontsource` imports).
+2. "i dont want redis remove it completely. Will be stored in MongoDB"
+
+**What was done**
+- Installed missing `@fontsource/inter` and `@fontsource/jetbrains-mono` dependencies into `frontend/` and regenerated `frontend/src/lib/data/dataset.generated.ts` via `scripts/sync_frontend_data.py`. Confirmed clean `npm run build` with zero errors.
+- Completely removed Redis from the architecture:
+  - Ported `backend/auth/sessions.py` to persist sessions directly in the MongoDB `sessions` collection with native TTL index and idle timeout checks.
+  - Ported `backend/leaderboard/store.py` to persist leaderboard scores in the MongoDB `leaderboard_scores` collection with aggregations for global rankings.
+  - Updated `ensure_indexes` in `backend/auth/db.py` to manage indexes for both `sessions` and `leaderboard_scores`.
+  - Removed Redis health check from `backend/api/main.py`.
+  - Deleted `backend/redis_client.py` and stripped `REDIS_URL` from `.env`.
+  - Added port autodetection and automatic process termination (`free_port`) in `dev.py` for ports 8000 and 5173 to prevent restart collisions.
+  - Updated test suite (`conftest.py`, `test_auth.py`, `test_leaderboard.py`, `test_privacy.py`) to run purely against in-memory MongoDB (`mongomock`).
+  - Ran full test suite (`pytest tests/api -v`): all 45 tests passed.
+
+**Files changed**
+- `backend/auth/db.py` (added `SESSIONS`, `LEADERBOARD` collections and indexes)
+- `backend/auth/sessions.py` (ported session persistence to MongoDB)
+- `backend/leaderboard/store.py` (ported leaderboard rankings to MongoDB)
+- `backend/api/main.py` (removed Redis health check and imports)
+- `backend/redis_client.py` (deleted)
+- `.env` (removed `REDIS_URL`)
+- `dev.py` (added automatic port 8000/5173 clearing before spawn)
+- `frontend/src/lib/data/dataset.generated.ts` (regenerated)
+- `tests/api/conftest.py` (switched fixtures from fakeredis to mongomock)
+- `tests/api/test_auth.py` (updated session assertions and simulated outage test)
+- `tests/api/test_leaderboard.py` (removed fakeredis and updated outage test)
+- `SESSION_LOG.md` (updated Quick State, Decision Register with D-063, and added Session 45)
+
+**Decisions**
+- D-063: Removed Redis completely (supersedes D-049 and D-052): sign-in sessions and leaderboards moved to MongoDB collections ('sessions' and 'leaderboard_scores'); removed REDIS_URL and all Redis dependencies. dev.py auto-clears ports 8000 and 5173 on launch.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Start full stack services via `npm run dev` or `python dev.py` and test account registration, login, and speech analysis live in the browser.
+

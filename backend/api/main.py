@@ -30,10 +30,7 @@ from backend.auth.db import ping as mongo_ping
 from backend.leaderboard import leaderboard_router
 from backend.privacy import privacy_router
 from backend.privacy.retention import maybe_purge
-from backend.redis_client import ping as redis_ping
 
-# The interactive /docs pages load scripts from a third-party CDN, so they are off unless
-# explicitly enabled for local development (ENABLE_DOCS=1 in .env).
 _docs = flag("ENABLE_DOCS")
 app = FastAPI(
     title="Speech Arena API",
@@ -43,10 +40,7 @@ app = FastAPI(
 )
 
 _auth = get_settings()
-maybe_purge(init_db())  # connect to MongoDB, create indexes, apply retention limits at start-up
-
-# Credentials (the session cookie) are only accepted from the configured origins.
-# A wildcard origin with credentials would let any website act as the signed-in user.
+maybe_purge(init_db())
 app.add_middleware(SecurityMiddleware)
 app.add_middleware(
     CORSMiddleware,
@@ -65,18 +59,15 @@ app.include_router(leaderboard_router, prefix="/api")
 
 @app.get("/api/health")
 def health_check() -> dict[str, object]:
-    # Both are required: MongoDB holds accounts, Redis holds sign-in sessions and leaderboards.
-    mongo, redis_up = mongo_ping(), redis_ping()
+    mongo = mongo_ping()
     return {
-        "status": "ok" if mongo and redis_up else "degraded",
-        "services": {"mongodb": "up" if mongo else "down", "redis": "up" if redis_up else "down"},
+        "status": "ok" if mongo else "degraded",
+        "services": {"mongodb": "up" if mongo else "down"},
     }
 
 if __name__ == "__main__":
     import uvicorn
-    # API_HOST=127.0.0.1 listens on this machine only (0.0.0.0 exposes the API to
-    # everyone on the same network).
     host = require("API_HOST")
     port = int(require("API_PORT"))
     print(f"[*] Starting Speech Arena Backend on http://{host}:{port} ...")
-    uvicorn.run("main:app", host=host, port=port, reload=True)
+    uvicorn.run("backend.api.main:app", host=host, port=port, reload=True)

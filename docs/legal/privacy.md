@@ -78,4 +78,4 @@ When this policy changes, we update its version number and ask you to review and
 
 ## Contact
 
-Contact the Speech Arena project team through the project's [issue tracker](https://github.com/Anwesha-Mondal/ml-speech/issues). Don't post personal details there; ask for a private contact and we'll reply.
+Contact the Speech Arena project team through the project's [issue tracker](https://github.com/pushkarverse/orcter/issues). Don't post personal details there; ask for a private contact and we'll reply.
