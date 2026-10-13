@@ -3,9 +3,9 @@ title: Terms and Conditions
 version: 1.0
 effective: 2026-10-10
 ---
-These terms apply when you use Speech Arena. By creating an account you agree to them and to the [Privacy Policy](/privacy).
+These terms apply when you use Speech Guru. By creating an account you agree to them and to the [Privacy Policy](/privacy).
 
-## Who can use Speech Arena
+## Who can use Speech Guru
 
 You must be at least 16 years old. Use one account per person, and keep your password to yourself.
 
@@ -18,7 +18,7 @@ You're responsible for what happens under your account. Use a password you don't
 You may upload or record only audio that you have the right to use. In particular, don't:
 
 - upload another person's voice without their permission;
-- use Speech Arena to imitate, impersonate or deceive anyone;
+- use Speech Guru to imitate, impersonate or deceive anyone;
 - try to get around sign-in, access other people's data, or overload or disrupt the service;
 - use automated tools to create accounts or send requests.
 
@@ -32,15 +32,15 @@ Scores and explanations are deterministic acoustic measurements of pacing, pause
 
 ## Reference material
 
-Reference recordings and passages come from public-domain or licensed sources listed in the app. Use them only for practice within Speech Arena.
+Reference recordings and passages come from public-domain or licensed sources listed in the app. Use them only for practice within Speech Guru.
 
 ## Availability
 
-Speech Arena is a hackathon prototype. It's provided as is, may change or stop without notice, and may have errors. Keep your own copies of anything important.
+Speech Guru is a hackathon prototype. It's provided as is, may change or stop without notice, and may have errors. Keep your own copies of anything important.
 
 ## Liability
 
-To the extent the law allows, the Speech Arena project team isn't liable for indirect or consequential losses arising from your use of the service. Nothing in these terms limits rights you have under consumer protection law.
+To the extent the law allows, the Speech Guru project team isn't liable for indirect or consequential losses arising from your use of the service. Nothing in these terms limits rights you have under consumer protection law.
 
 ## Ending your use
 

@@ -8,7 +8,7 @@ legal:
   dir: "docs/legal"
   documents: ["privacy", "terms", "cookies"]
   required_on_signup: ["terms", "privacy"]
-  controller: "The Speech Arena project team"
+  controller: "The Speech Guru project team"
   # The contact link shown by the API comes from PRIVACY_CONTACT_URL in .env.
   minimum_age: 16
 

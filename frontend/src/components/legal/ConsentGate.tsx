@@ -36,7 +36,7 @@ export default function ConsentGate() {
           <span className="t-label">Updated terms</span>
           <h1 className="t-title">Please review what changed</h1>
           <p className="t-small muted">
-            We updated the following since you last agreed. Read them, then accept to keep using Speech Arena.
+            We updated the following since you last agreed. Read them, then accept to keep using Speech Guru.
           </p>
         </div>
         <ul className="list consent-list">

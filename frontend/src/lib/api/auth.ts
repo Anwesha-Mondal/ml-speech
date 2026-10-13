@@ -126,7 +126,7 @@ export const privacyApi = {
     try {
       res = await fetch(`${API_BASE}/api/privacy/export`, { credentials: 'include' })
     } catch {
-      throw new ApiError(`Can't reach the Speech Arena API at ${API_BASE}.`, 0)
+      throw new ApiError(`Can't reach the Speech Guru API at ${API_BASE}.`, 0)
     }
     if (!res.ok) {
       const body = await res.json().catch(() => ({}))

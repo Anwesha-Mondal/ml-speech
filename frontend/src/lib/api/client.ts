@@ -48,7 +48,7 @@ export async function request<T>(path: string, init?: RequestInit, timeoutMs = 1
   try {
     res = await fetch(`${API_BASE}${path}`, { ...init, headers, credentials: 'include', signal: ctrl.signal })
   } catch {
-    throw new ApiError(`Can't reach the Speech Arena API at ${API_BASE}. Start the backend and try again.`, 0)
+    throw new ApiError(`Can't reach the Speech Guru API at ${API_BASE}. Start the backend and try again.`, 0)
   } finally {
     clearTimeout(timer)
   }

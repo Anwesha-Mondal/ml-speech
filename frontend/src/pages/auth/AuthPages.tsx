@@ -36,7 +36,7 @@ function AuthLayout({ title, subtitle, children }: { title: string; subtitle: st
             <rect x="14" y="2" width="2" height="18" rx="1" fill="currentColor" />
             <rect x="18" y="9" width="2" height="4" rx="1" fill="currentColor" />
           </svg>
-          Speech Arena
+          Speech Guru
         </div>
         <svg className="auth-wave" viewBox="0 0 400 120" preserveAspectRatio="none">
           {Array.from({ length: 80 }, (_, i) => {
@@ -69,7 +69,7 @@ function OfflineNotice({ onRetry }: { onRetry: () => void }) {
     <p className="notice notice-warn" role="alert">
       <CircleAlert size={15} />
       <span>
-        Can't reach the Speech Arena API at <span className="mono">{API_BASE}</span>, or its database (MongoDB)
+        Can't reach the Speech Guru API at <span className="mono">{API_BASE}</span>, or its database (MongoDB)
         isn't running. Start them, then{' '}
         <button type="button" className="link-btn" onClick={onRetry}>
           try again
@@ -162,7 +162,7 @@ export function LoginPage() {
       </p>
       {policy.registration_open && (
         <p className="t-small auth-switch">
-          New to Speech Arena? <Link to={`/register${loc.search}`}>Create an account</Link>
+          New to Speech Guru? <Link to={`/register${loc.search}`}>Create an account</Link>
         </p>
       )}
     </AuthLayout>

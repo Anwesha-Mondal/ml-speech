@@ -35,7 +35,7 @@ export default function Sidebar({
   return (
     <aside className={`sidebar ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'is-open' : ''}`} aria-label="Main navigation">
       <div className="sidebar-brand">
-        <NavLink to="/" className="brand" onClick={onNavigate} aria-label="Speech Arena home">
+        <NavLink to="/" className="brand" onClick={onNavigate} aria-label="Speech Guru home">
           <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
             <rect x="2" y="8" width="2" height="6" rx="1" fill="currentColor" />
             <rect x="6" y="4" width="2" height="14" rx="1" fill="currentColor" />
@@ -43,7 +43,7 @@ export default function Sidebar({
             <rect x="14" y="2" width="2" height="18" rx="1" fill="currentColor" />
             <rect x="18" y="9" width="2" height="4" rx="1" fill="currentColor" />
           </svg>
-          <span className="nav-label brand-name">Speech Arena</span>
+          <span className="nav-label brand-name">Speech Guru</span>
         </NavLink>
       </div>
 

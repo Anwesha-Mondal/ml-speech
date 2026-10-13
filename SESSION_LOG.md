@@ -10,9 +10,9 @@
 | Key | Value |
 | --- | --- |
 | Active phase | Interactive multi-mode workspaces built (megaev M1-Ext to M6); M7 convergence open (Session 56) |
-| Last milestone | Fast-forwarded main to origin/main and restored the pre-pull local changes, preserving local deletions and edits (Session 56) |
+| Last milestone | Rebranded website title, navigation, legal docs, and app UI to Speech Guru (Session 57) |
 | Next action | Run live end-to-end verification of every workspace with the model checkpoint (P13 M7 items) |
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-074 |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-075 |
 | Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
 
 
@@ -96,6 +96,7 @@
 | D-072 | 2026-10-13 | Created frontend/.env with VITE_API_URL=http://localhost:8000; updated dev.py to auto-initialize frontend/.env from frontend/.env.example if missing; installed missing font dependencies (@fontsource/inter, @fontsource/jetbrains-mono); modernized vite.config.ts to resolve import.meta.dirname instead of __dirname to support Vite native configLoader cleanly. | Agent (Session 52) |
 | D-073 | 2026-10-13 | Integrated imageio-ffmpeg static binaries and PyAV decoders with in-memory WAV fast-path in `ml/inference/predict.py` and `pyproject.toml`, resolving LibsndfileError on browser-recorded WebM/Opus audio and verifying end-to-end multi-format audio decoding and scoring. | Agent (Session 53) |
 | D-074 | 2026-10-13 | Fixed speech analysis audio playback by converting browser WebM recordings to seekable WAV blobs via `encodeWav`, resolved React StrictMode unmount-cleanup bug with `ensureAudio()`, added direct `<audio controls>` element to `AnalysisPage.tsx`, added IndexedDB caching (`mediaDb.ts`) to survive page reloads, and eliminated health check flickering via 15s MongoDB ping caching and 2-failure threshold. | Agent (Session 54) |
+| D-075 | 2026-10-13 | Rebranded website title, brand markers, legal texts, and user-facing notifications from Speech Arena to Speech Guru. | User (Session 57) |
 
 
 
@@ -1999,3 +2000,59 @@
 
 **Next step**
 - Confirm the restored working tree, then remove the temporary recovery stash and continue P13 M7 workspace verification.
+
+---
+
+### Session 57 (2026-10-13, ~20:35 IST) [Rebrand Website Name to Speech Guru]
+**User requests**
+- Change the website name to speech guru.
+
+**What was done**
+- Updated web page title (`<title>Speech Guru</title>`) and metadata in `frontend/index.html`.
+- Updated navigation branding and aria labels in `frontend/src/components/shell/Sidebar.tsx` (`Speech Guru`).
+- Updated hero header copy in `frontend/src/pages/overview/Overview.tsx`.
+- Updated authentication pages branding, offline connection alert, and registration links in `frontend/src/pages/auth/AuthPages.tsx`.
+- Updated legal document layout branding and titles in `frontend/src/pages/legal/LegalPage.tsx`.
+- Updated site footer prototype copy in `frontend/src/components/legal/SiteFooter.tsx`.
+- Updated cookie banner and consent gate copies in `CookieBanner.tsx` and `ConsentGate.tsx`.
+- Updated settings page privacy note and source tag tooltip copy.
+- Updated API connection error notices in `client.ts` and `auth.ts`.
+- Updated terms, privacy policy, cookie policy markdown texts in `docs/legal/*.md` and data controller string in `configs/privacy/privacy.yaml`.
+- Updated FastAPI app title in `backend/api/main.py` and local runner logs in `dev.py` and `backend/dev.py`.
+- Ran linter (`oxlint`) and production build (`tsc -b && vite build`) to verify clean compilation.
+
+**Files changed**
+- `frontend/index.html`
+- `frontend/src/components/shell/Sidebar.tsx`
+- `frontend/src/pages/overview/Overview.tsx`
+- `frontend/src/pages/auth/AuthPages.tsx`
+- `frontend/src/pages/legal/LegalPage.tsx`
+- `frontend/src/components/legal/SiteFooter.tsx`
+- `frontend/src/components/legal/CookieBanner.tsx`
+- `frontend/src/components/legal/ConsentGate.tsx`
+- `frontend/src/pages/settings/Settings.tsx`
+- `frontend/src/components/ui/SourceTag.tsx`
+- `frontend/src/lib/api/client.ts`
+- `frontend/src/lib/api/auth.ts`
+- `frontend/README.md`
+- `frontend/.env.example`
+- `frontend/src/styles/tokens.css`
+- `docs/legal/privacy.md`
+- `docs/legal/terms.md`
+- `docs/legal/cookies.md`
+- `configs/privacy/privacy.yaml`
+- `backend/api/main.py`
+- `dev.py`
+- `backend/dev.py`
+- `SESSION_LOG.md`
+- `ROADMAP.md`
+
+**Decisions**
+- D-075: Rebranded website title, brand markers, legal texts, and user-facing notifications from Speech Arena to Speech Guru.
+
+**Problems / bugs found**
+- None.
+
+**Next step**
+- Continue with P13 M7 live workspace verification.
+

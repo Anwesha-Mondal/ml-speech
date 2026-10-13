@@ -15,17 +15,17 @@ export default function LegalPage({ slug }: { slug: LegalSlug }) {
   const signedIn = status === 'signedIn'
 
   useEffect(() => {
-    document.title = `${doc.title} · Speech Arena`
+    document.title = `${doc.title} · Speech Guru`
     window.scrollTo({ top: 0 })
     return () => {
-      document.title = 'Speech Arena'
+      document.title = 'Speech Guru'
     }
   }, [doc.title])
 
   return (
     <div className="legal">
       <header className="legal-top">
-        <Link to={signedIn ? '/' : '/login'} className="brand" aria-label="Speech Arena">
+        <Link to={signedIn ? '/' : '/login'} className="brand" aria-label="Speech Guru">
           <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
             <rect x="2" y="8" width="2" height="6" rx="1" fill="currentColor" />
             <rect x="6" y="4" width="2" height="14" rx="1" fill="currentColor" />
@@ -33,7 +33,7 @@ export default function LegalPage({ slug }: { slug: LegalSlug }) {
             <rect x="14" y="2" width="2" height="18" rx="1" fill="currentColor" />
             <rect x="18" y="9" width="2" height="4" rx="1" fill="currentColor" />
           </svg>
-          <span className="brand-name">Speech Arena</span>
+          <span className="brand-name">Speech Guru</span>
         </Link>
         <Link to={signedIn ? '/' : '/login'} className="btn btn-sm">
           <ArrowLeft size={14} /> {signedIn ? 'Back to the app' : 'Sign in'}

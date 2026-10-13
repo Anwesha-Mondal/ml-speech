@@ -3,7 +3,7 @@ title: Cookie Policy
 version: 1.0
 effective: 2026-10-10
 ---
-Speech Arena uses one cookie, to keep you signed in. With your permission, it also saves a few things in your browser's local storage. There are no advertising, analytics or third-party cookies.
+Speech Guru uses one cookie, to keep you signed in. With your permission, it also saves a few things in your browser's local storage. There are no advertising, analytics or third-party cookies.
 
 ## Strictly necessary
 
@@ -33,4 +33,4 @@ Use **Cookie settings** at the bottom of any page, or Settings → Privacy. Turn
 
 ## Third parties
 
-None. Fonts and all page files are served by Speech Arena itself.
+None. Fonts and all page files are served by Speech Guru itself.

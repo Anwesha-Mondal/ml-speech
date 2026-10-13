@@ -41,7 +41,7 @@ function Hero() {
         Measure how you deliver.
       </h1>
       <p className="hero-sub">
-        Speech Arena compares your delivery with a reference, word by word: pace, pauses, pitch and energy. Every
+        Speech Guru compares your delivery with a reference, word by word: pace, pauses, pitch and energy. Every
         deduction points to the exact moment it happened and says why.
       </p>
       <div className="row gap-8 wrap">

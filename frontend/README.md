@@ -1,6 +1,6 @@
-# Speech Arena frontend
+# Speech Guru frontend
 
-Vite + React 19 + TypeScript dashboard for Speech Arena. The design follows `uiux.md`: light, minimal editorial interface with a cursor-reactive ambient light, black controls, and semantic colour only where it carries meaning.
+Vite + React 19 + TypeScript dashboard for Speech Guru. The design follows `uiux.md`: light, minimal editorial interface with a cursor-reactive ambient light, black controls, and semantic colour only where it carries meaning.
 
 ## Run it
 
