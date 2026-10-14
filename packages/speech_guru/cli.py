@@ -1,11 +1,11 @@
 import argparse
 from pathlib import Path
-from packages.speech_arena.audio.io import normalize_audio, load_audio
-from packages.speech_arena.audio.qc import compute_clipping_ratio, estimate_snr, check_length
-from packages.speech_arena.text.normalize import normalize_text
-from packages.speech_arena.audio.vad import SileroVAD
-from packages.speech_arena.features.frame import extract_frame_features
-from packages.speech_arena.normalize.two_channel import normalize_two_channel
+from packages.speech_guru.audio.io import normalize_audio, load_audio
+from packages.speech_guru.audio.qc import compute_clipping_ratio, estimate_snr, check_length
+from packages.speech_guru.text.normalize import normalize_text
+from packages.speech_guru.audio.vad import SileroVAD
+from packages.speech_guru.features.frame import extract_frame_features
+from packages.speech_guru.normalize.two_channel import normalize_two_channel
 
 def ingest(args):
     input_path = Path(args.audio)
@@ -62,10 +62,10 @@ def inject_flaw(args):
 def analyze(args):
     print(f"Analyzing {args.part} against {args.ref}...")
     import pandas as pd
-    from packages.speech_arena.scoring.contrastive import compute_word_deltas
-    from packages.speech_arena.scoring.detectors import run_detectors
-    from packages.speech_arena.scoring.engine import compute_score
-    from packages.speech_arena.scoring.explain import render_explanation
+    from packages.speech_guru.scoring.contrastive import compute_word_deltas
+    from packages.speech_guru.scoring.detectors import run_detectors
+    from packages.speech_guru.scoring.engine import compute_score
+    from packages.speech_guru.scoring.explain import render_explanation
     
     # Mock M1 execution
     ref_df = pd.DataFrame([{'word': 'hello', 'start': 0.0, 'end': 0.5, 'local_rate': 2.0, 'following_pause': 0.0, 'st_range': 4.0, 'db_mean': -5.0}])

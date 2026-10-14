@@ -104,7 +104,7 @@ def load_settings(config_path: Path | None = None) -> AuthSettings:
             for origin in (
                 csv("CORS_ORIGINS")
                 or csv("CORS_ALLOWED_ORIGINS")
-                or ("https://speech-guru-six.vercel.app", "http://localhost:5173", "http://localhost:8000")
+                or ("http://localhost:5173", "http://localhost:8000")
             )
         ),
     )

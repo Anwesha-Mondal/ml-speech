@@ -1,5 +1,5 @@
 [project]
-name = "speech-arena"
+name = "speech-guru"
 version = "0.1.0"
 description = "Contrastive Speech Analytics & Temporal Flaw Grounding"
 readme = "README.md"

@@ -39,7 +39,7 @@ const ENDPOINTS: { method: string; path: string; returns: string; kind: 'live' |
   { method: 'GET', path: '/api/admin/audit', returns: 'Security audit log (admin only)', kind: 'live' },
   { method: 'POST', path: '/api/analyze', returns: 'Job ID; runs scoring in a background task', kind: 'live' },
   { method: 'GET', path: '/api/jobs/{job_id}', returns: 'Job status and result (owner only)', kind: 'live' },
-  { method: 'GET', path: '/api/progress/history', returns: 'Fixed sample history', kind: 'fixed' },
+  { method: 'GET', path: '/api/progress/history', returns: 'Personal longitudinal score & flaw progression (MongoDB)', kind: 'live' },
   { method: 'GET', path: '/api/leaderboard', returns: 'Opt-in rankings per passage, or all passages (MongoDB)', kind: 'live' },
   { method: 'PUT', path: '/api/leaderboard/opt-in', returns: 'Join or leave the leaderboards', kind: 'live' },
   { method: 'POST', path: '/api/battle/1v1', returns: 'Fixed sample battle (UI scores battles via /analyze)', kind: 'unused' },
@@ -74,7 +74,6 @@ export function SystemApi() {
       detail: 'Accounts, sessions, consent records, audit log, leaderboard',
     },
     { name: 'Alignment / features', state: 'ok', label: 'Connected', detail: 'ml/inference/predict.py (Wav2Vec2 + librosa)' },
-    { name: 'Object storage (S3)', state: 'off', label: 'Not deployed', detail: 'Recordings are not stored' },
   ]
   return (
     <div className="grid-2">
@@ -178,18 +177,17 @@ export function SystemArchitecture() {
           {edge('M440,130 V170')}
           {edge('M440,130 V150 H730 V170')}
           {edge('M440,216 V244')}
-          {edge('M150,216 V244', true)}
-          {edge('M730,216 V244', true)}
+          {edge('M730,216 V244')}
           <Node x={340} y={10} w={200} title="Frontend" sub="Vite · React · TypeScript" />
           <Node x={340} y={84} w={200} title="API" sub="FastAPI · backend/api/main.py" />
-          <Node x={50} y={170} w={200} title="Ingestion" sub="audio/io · qc · vad" planned />
+          <Node x={50} y={170} w={200} title="Ingestion Pipeline" sub="16kHz mono · QC · Silero VAD" />
           <Node x={340} y={170} w={200} title="Analysis router" sub="routers/analysis.py" />
           <Node x={630} y={170} w={200} title="Gamification router" sub="routers/gamification.py" />
-          <Node x={50} y={244} w={200} title="Object storage" sub="S3 · recordings" planned />
-          <Node x={340} y={244} w={200} title="Scoring engine" sub="packages/speech_arena/scoring" />
+          <Node x={50} y={244} w={200} title="In-Memory Audio" sub="Ephemerality · No Raw S3" />
+          <Node x={340} y={244} w={200} title="Scoring engine" sub="packages/speech_guru/scoring" />
           <Node x={630} y={244} w={200} title="MongoDB" sub="accounts · sessions · leaderboard" />
           <text x={340} y={312} className="arch-sub">
-            Jobs run as FastAPI background tasks; results are held in memory.
+            Zero Raw Audio Retention (P1) · Scoring results held in memory
           </text>
         </svg>
       </div>

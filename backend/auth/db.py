@@ -29,6 +29,7 @@ CONSENTS = "consent_records"
 SESSIONS = "sessions"
 LEADERBOARD = "leaderboard_scores"
 PASSWORD_RESETS = "password_resets"
+PROGRESS = "progress_history"
 
 
 def utcnow() -> datetime:
@@ -143,6 +144,7 @@ def ensure_indexes(db: Database[dict[str, Any]]) -> None:
         [("scoring_version", ASCENDING), ("prompt_id", ASCENDING), ("best_score", DESCENDING)], name="by_board"
     )
     db[LEADERBOARD].create_index([("user_id", ASCENDING)], name="by_user")
+    db[PROGRESS].create_index([("user_id", ASCENDING), ("created_at", ASCENDING)], name="by_user_created")
     # Password resets: single-use tokens, deleted by MongoDB once they expire.
     db[PASSWORD_RESETS].create_index([("token_hash", ASCENDING)], unique=True, name="reset_token_unique")
     db[PASSWORD_RESETS].create_index([("email", ASCENDING)], name="reset_email")

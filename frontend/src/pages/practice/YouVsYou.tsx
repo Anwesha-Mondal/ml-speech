@@ -13,57 +13,69 @@ function flawDensity(flawCount: number, duration: number) {
   return duration > 0 ? (flawCount / duration) * 60 : 0
 }
 
-function SamplePreview() {
-  const [data, setData] = useState<ApiHistory | null>(null)
-  const [failed, setFailed] = useState(false)
-  useEffect(() => {
-    getHistory()
-      .then(setData)
-      .catch(() => setFailed(true))
-  }, [])
-  if (failed) return null
-  if (!data) return <div className="skeleton" style={{ height: 220 }} />
-  const h = data.history
-  return (
-    <div className="panel">
-      <div className="panel-head">
-        <span className="t-section">What this page shows after a few attempts</span>
-        <SourceTag kind="sample" />
-      </div>
-      <div className="panel-pad stack gap-12">
-        <LineChart
-          series={[{ label: 'Score', values: h.map((x) => x.score), color: 'var(--participant)' }]}
-          xLabels={h.map((x) => fmtDate(x.date))}
-          yMin={0}
-          yMax={100}
-        />
-        <p className="t-small muted">
-          Response from <span className="mono">/api/progress/history</span>, which returns a fixed sample for now.
-        </p>
-      </div>
-    </div>
-  )
-}
 
 export default function YouVsYou() {
   const all = useAnalyses()
   const attempts = [...all].reverse() // oldest first
+  const [remoteHistory, setRemoteHistory] = useState<ApiHistory | null>(null)
+
+  useEffect(() => {
+    getHistory()
+      .then((res) => {
+        if (res && res.history && res.history.length > 0) {
+          setRemoteHistory(res)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   if (attempts.length < 2) {
     return (
       <div className="stack gap-16">
         <div className="panel">
           <EmptyState
-            title={attempts.length ? 'One attempt so far' : 'Record an attempt to begin'}
+            title={attempts.length === 1 ? 'One attempt recorded' : 'Record your first speech attempt'}
             action={
               <Link to="/practice" className="btn btn-primary">
                 Start a speech test
               </Link>
             }
           >
-            You vs You compares your first and latest attempts. It needs at least two analyses saved in this browser.
+            {attempts.length === 1 ? (
+              <p>
+                Baseline analysis recorded! Complete your second speech attempt to unlock live You vs You longitudinal progression, deduction delta tables, and flaw density trends.
+              </p>
+            ) : (
+              <p>
+                You vs You compares your baseline and latest speech analyses with acoustic metrics and deduction tracking. Record at least two attempts to begin.
+              </p>
+            )}
           </EmptyState>
         </div>
-        <SamplePreview />
+
+        {remoteHistory && remoteHistory.history.length > 0 && (
+          <div className="panel">
+            <div className="panel-head">
+              <span className="t-section">Cloud Synced Progress History</span>
+              <SourceTag kind="live" />
+            </div>
+            <div className="panel-pad stack gap-12">
+              <LineChart
+                series={[{ label: 'Score', values: remoteHistory.history.map((x) => x.score), color: 'var(--participant)' }]}
+                xLabels={remoteHistory.history.map((x) => fmtDate(x.date))}
+                yMin={0}
+                yMax={100}
+              />
+              {remoteHistory.insights && remoteHistory.insights.length > 0 && (
+                <ul className="muted t-small" style={{ paddingLeft: 16 }}>
+                  {remoteHistory.insights.map((ins, i) => (
+                    <li key={i}>{ins}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     )
   }

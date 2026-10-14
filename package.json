@@ -1,13 +1,12 @@
 {
-  "name": "orcter",
+  "name": "speech-guru",
   "version": "0.1.0",
   "private": true,
-  "description": "Speech Arena - Contrastive Speech Analytics & Temporal Flaw Grounding",
+  "description": "Speech Guru - Contrastive Speech Analytics & Temporal Flaw Grounding",
   "scripts": {
     "build": "npm run build --prefix frontend",
     "dev": "python dev.py",
     "dev:frontend": "npm run dev --prefix frontend",
-    "dev:backend": "python dev.py --backend-only",
-    "test": "pytest tests/ -q"
+    "dev:backend": "python dev.py --backend-only"
   }
 }

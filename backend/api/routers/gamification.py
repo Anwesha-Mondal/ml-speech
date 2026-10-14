@@ -4,24 +4,65 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from backend.auth import require_user
 
+from backend.auth.db import PROGRESS, User, get_db
+
 # Every endpoint here requires a signed-in user.
 router = APIRouter(dependencies=[Depends(require_user)])
 
 @router.get("/progress/history")
-async def get_progress_history(user_id: str = "user_1", prompt_id: str = "T1_Gettysburg"):
+async def get_progress_history(
+    user: User = Depends(require_user),
+    prompt_id: str | None = None
+):
+    query: dict = {"user_id": user.id}
+    if prompt_id:
+        query["prompt_id"] = prompt_id
+
+    records = list(
+        get_db()[PROGRESS].find(query).sort("created_at", 1)
+    )
+
+    history = []
+    for i, r in enumerate(records, 1):
+        created_dt = r.get("created_at")
+        date_str = created_dt.strftime("%Y-%m-%d") if hasattr(created_dt, "strftime") else str(created_dt)[:10]
+        history.append({
+            "attempt": i,
+            "date": date_str,
+            "score": r.get("score", 0),
+            "flaw_density": r.get("flaw_density", 0.0),
+            "flaw_count": r.get("flaw_count", 0),
+            "duration": r.get("duration", 0.0),
+        })
+
+    insights = []
+    if len(history) >= 2:
+        first = history[0]
+        latest = history[-1]
+        score_diff = latest["score"] - first["score"]
+        if score_diff > 0:
+            insights.append(f"Acoustic composite score increased by {score_diff:+.1f} points since your baseline attempt.")
+        elif score_diff < 0:
+            insights.append(f"Acoustic score shifted by {score_diff:+.1f} points relative to your baseline attempt.")
+        else:
+            insights.append("Acoustic composite score is stable across attempts.")
+
+        if first["flaw_density"] > 0:
+            density_diff = ((first["flaw_density"] - latest["flaw_density"]) / first["flaw_density"]) * 100
+            if density_diff > 0:
+                insights.append(f"Flaw density decreased by {density_diff:.0f}% from your initial session.")
+            elif density_diff < 0:
+                insights.append(f"Flaw density rose by {abs(density_diff):.0f}% compared to your initial session.")
+    elif len(history) == 1:
+        insights.append("Baseline recording established. Complete a second attempt to unlock longitudinal trend analysis.")
+    else:
+        insights.append("No recorded speech attempts found yet. Complete a speech test to initialize your progress profile.")
+
     return {
-        "user_id": user_id,
-        "prompt_id": prompt_id,
-        "history": [
-            {"attempt": 1, "date": "2026-09-01", "score": 65, "flaw_density": 4.2},
-            {"attempt": 2, "date": "2026-09-15", "score": 75, "flaw_density": 2.8},
-            {"attempt": 3, "date": "2026-10-06", "score": 85, "flaw_density": 1.5}
-        ],
-        "insights": [
-            "Your flaw density has decreased by 64% since your first attempt.",
-            "You are speaking at a more consistent pace.",
-            "Energy drops have been mostly eliminated."
-        ]
+        "user_id": user.id,
+        "prompt_id": prompt_id or "all",
+        "history": history,
+        "insights": insights
     }
 
 @router.post("/battle/1v1")

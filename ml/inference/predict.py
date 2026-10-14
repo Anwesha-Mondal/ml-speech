@@ -21,7 +21,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from ml.models.flaw_classifier import SpeechFlawClassifier
-from packages.speech_arena.scoring.modes import apply_mode_weights, compute_score, get_mode_config, score_analysis
+from packages.speech_guru.scoring.modes import apply_mode_weights, compute_score, get_mode_config, score_analysis
 from ml.features.extraction import extract_acoustic_features
 
 # Flaw mapping: Translates ML model output classes to frontend & scoring schemas
@@ -350,7 +350,7 @@ class SpeechFlawPredictor:
         print(f"[+] Loaded model checkpoint from {self.checkpoint_path} on {self.device} with {num_classes} classes: {self.labels}")
 
     def _empty_result(self, mode: str = "sandbox") -> Dict[str, Any]:
-        from packages.speech_arena.scoring.modes import score_analysis
+        from packages.speech_guru.scoring.modes import score_analysis
         mode_flaws, score_breakdown, delivery_metrics = score_analysis(
             [], [], {"t": [], "pitchPart": [], "energyPart": []}, 0.0, mode
         )
