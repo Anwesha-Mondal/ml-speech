@@ -1,5 +1,5 @@
 import numpy as np
-from packages.speech_arena.inject.base import FlawOperator
+from packages.speech_guru.inject.base import FlawOperator
 
 class EnergyOperator(FlawOperator):
     def __init__(self, gain_map: dict):

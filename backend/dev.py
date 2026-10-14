@@ -21,7 +21,7 @@ from backend.auth.db import use_database
 from backend.env import require
 
 # Initialize in-memory datastore before importing the app
-_mock_mongo = mongomock.MongoClient(tz_aware=True)["speech_arena"]
+_mock_mongo = mongomock.MongoClient(tz_aware=True)["speech_guru"]
 use_database(_mock_mongo)
 
 from backend.api.main import app  # noqa: E402

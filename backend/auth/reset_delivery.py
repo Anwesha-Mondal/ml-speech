@@ -26,7 +26,7 @@ from backend.env import optional, require
 from .config import AuthSettings
 from .db import PASSWORD_RESETS, utcnow
 
-log = logging.getLogger("speech_arena.password_reset")
+log = logging.getLogger("speech_guru.password_reset")
 
 Db = Database[dict[str, Any]]
 CHANNELS = ("none", "log")
@@ -57,7 +57,7 @@ def issue_reset_link(db: Db, email: str, cfg: AuthSettings) -> str:
         }
     )
     # APP_URL (.env) is the address of the web app, e.g. the Vite dev server.
-    return f"{optional('APP_URL', 'https://speech-guru-six.vercel.app').rstrip('/')}/reset-password?token={quote(raw)}"
+    return f"{optional('APP_URL', 'http://localhost:5173').rstrip('/')}/reset-password?token={quote(raw)}"
 
 
 def send_reset_link(email: str, link: str) -> None:

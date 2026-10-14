@@ -44,7 +44,7 @@ export const PIPELINE: PipelineStage[] = [
   {
     key: 'normalize-audio',
     name: 'Audio normalization',
-    module: 'packages/speech_arena/audio/io.py · decode_audio_to_array',
+    module: 'packages/speech_guru/audio/io.py · decode_audio_to_array',
     input: 'raw multi-format audio bytes',
     output: '16 kHz mono float32 waveform + SHA-256 fingerprint',
     status: 'connected',
@@ -53,7 +53,7 @@ export const PIPELINE: PipelineStage[] = [
   {
     key: 'qc',
     name: 'Quality control',
-    module: 'packages/speech_arena/audio/qc.py',
+    module: 'packages/speech_guru/audio/qc.py',
     input: '16 kHz standardized waveform',
     output: 'SNR estimate (dB), clipping ratio, duration bounds',
     status: 'connected',
@@ -62,7 +62,7 @@ export const PIPELINE: PipelineStage[] = [
   {
     key: 'transcript',
     name: 'Transcript',
-    module: 'packages/speech_arena/text/normalize.py + Whisper ASR',
+    module: 'packages/speech_guru/text/normalize.py + Whisper ASR',
     input: 'raw transcript or speech audio',
     output: 'canonical words + spoken forms',
     status: 'connected',
@@ -71,7 +71,7 @@ export const PIPELINE: PipelineStage[] = [
   {
     key: 'vad',
     name: 'VAD / segmentation',
-    module: 'packages/speech_arena/audio/vad.py · SileroVAD',
+    module: 'packages/speech_guru/audio/vad.py · SileroVAD',
     input: 'normalized audio waveform',
     output: 'speech segments, pause boundaries, ≤ 30 s chunks',
     status: 'connected',
@@ -98,7 +98,7 @@ export const PIPELINE: PipelineStage[] = [
   {
     key: 'normalize',
     name: 'Normalization',
-    module: 'packages/speech_arena/normalize/two_channel.py',
+    module: 'packages/speech_guru/normalize/two_channel.py',
     input: 'per-word features',
     output: 'semitone/dB magnitude + z-score shape (ADR-001)',
     status: 'connected',
@@ -116,7 +116,7 @@ export const PIPELINE: PipelineStage[] = [
   {
     key: 'scoring',
     name: 'Scoring',
-    module: 'packages/speech_arena/scoring/modes.py · compute_score',
+    module: 'packages/speech_guru/scoring/modes.py · compute_score',
     input: 'detected flaw instances + delivery metrics',
     output: '100-point calibrated score + bucket deductions + bonuses',
     status: 'connected',
@@ -125,7 +125,7 @@ export const PIPELINE: PipelineStage[] = [
   {
     key: 'explain',
     name: 'Explanation',
-    module: 'packages/speech_arena/scoring/explain.py',
+    module: 'packages/speech_guru/scoring/explain.py',
     input: 'grounded acoustic flaw events',
     output: 'objective mathematical and rhetorical feedback sentences',
     status: 'connected',

@@ -1,6 +1,6 @@
 import numpy as np
 import librosa
-from packages.speech_arena.inject.base import FlawOperator
+from packages.speech_guru.inject.base import FlawOperator
 
 class PacingOperator(FlawOperator):
     def __init__(self, speed_map: dict):

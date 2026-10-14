@@ -7,13 +7,13 @@
 
 ## Quick State (keep updated at the top)
 
-| Key               | Value                                                                                                                          |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Active phase      | P13 convergence: megaev M1-Ext to M6 built, 24x pipeline acceleration done, M7 live verification open (Session 56)             |
-| Last milestone    | Fixed dev proxy / auth-session startup race so sign-in reaches the API (Sessions 58-59); rebranded to Speech Guru (Session 57) |
-| Next action       | Run live end-to-end verification of every workspace with the model checkpoint (P13 M7 items)                                   |
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-078                                                         |
-| Open questions    | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available                                         |
+| Key               | Value                                                                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Active phase      | P13 convergence: megaev M1-Ext to M6 built, 24x pipeline acceleration done, M7 live verification open (Session 61)           |
+| Last milestone    | Real MongoDB progress sync for You vs You (D-082); removed mock sample preview & S3 traces; clarified noise dampening status |
+| Next action       | Run live end-to-end verification of every workspace with the model checkpoint (P13 M7 items)                                 |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-082                                                       |
+| Open questions    | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available                                       |
 
 ---
 
@@ -100,8 +100,10 @@
 | D-077 | 2026-10-13 | Keep the browser's same-origin dev proxy for session-cookie correctness but normalize its target host from `localhost` to `127.0.0.1` (IPv4 loopback), and retry the initial auth session check up to four 1.5 s intervals so the one-command launcher can start Vite before Uvicorn finishes importing.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Agent (Sessions 58-59)    |
 | D-078 | 2026-10-13 | Resolve the merge-conflict markers that PR #10/#11 had committed into `SESSION_LOG.md` and `ROADMAP.md` by keeping both branches' session entries (Session 57 rebrand, Session 57B PR merge) and both decisions, rather than dropping either side.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Agent (Session 59)        |
 | D-079 | 2026-10-14 | Connect all 12 pipeline stages in backend `process_audio_pipeline` (wiring rights gate verification, 16kHz mono normalization + SHA-256, acoustic QC SNR/clipping, and ADR-001 two-channel normalization) and mark all 12 stages Connected in the frontend Pipeline view.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Agent (Session 60)        |
-| D-080 | 2026-10-14 | Establish official app branding across the favicon, sidebar/topbar navbar with `logo.png`, smooth the analysis progress stepper cadence (`signals` -> `ready` -> redirect), and rewrite README into an executive, publication-grade document without deployment minutiae.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Agent (Session 60)        |
-| D-081 | 2026-10-14 | Implement interactive Acoustic Robustness & Stress Suite UI under `/system/stress` (SystemLayout tab) with live simulated dual-waveform corruption playground, empirical degradation SVG chart, automated stress matrix demo runner, and backend endpoint `GET /api/benchmarks/stress` serving ADR-007 benchmark deliverables.                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Agent (Session 60)        |
+| D-080 | 2026-10-14 | Establish official app branding across the favicon, sidebar/topbar navbar with `logo.png`, smooth the analysis progress stepper cadence (`signals` -> `ready` -> redirect), and rewrite README into an executive, publication-grade document without deployment minutiae.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Agent (Session 60)        |
+| D-081 | 2026-10-14 | Implement interactive Acoustic Robustness & Stress Suite UI under `/system/stress` (SystemLayout tab) with live simulated dual-waveform corruption playground, empirical degradation SVG chart, automated stress matrix demo runner, and backend endpoint `GET /api/benchmarks/stress` serving ADR-007 benchmark deliverables.                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Agent (Session 60)        |
+| D-082 | 2026-10-14 | Store real user speech progress in MongoDB `progress_history` collection with compound index `(user_id, created_at)`. Auto-persist completed analysis metrics from `process_audio_pipeline`. Convert `GET /api/progress/history` to return live, authenticated attempts and calculated longitudinal insights.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Agent (Session 61)        |
+| D-083 | 2026-10-14 | Purge undeployed Object Storage (S3) references from `SystemApi` services and architecture diagrams, reinforcing zero raw audio retention (ADR-011 / P1). Clarify the "Confidence Dampened" status in the Robustness Stress Matrix as active acoustic protection against noise hallucinations.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Agent (Session 61)        |
 
 ---
 
@@ -2415,6 +2417,43 @@
 - D-079: Connect all 12 pipeline stages in backend `process_audio_pipeline` and mark them all `connected` in the frontend pipeline view.
 - D-080: Embed official logo in favicon, navbar, and README, and provide smooth visual pacing for `signals` and `ready` before navigation.
 - D-081: Implement interactive Acoustic Robustness & Stress Suite UI under `/system/stress` (SystemLayout tab) with live simulated dual-waveform corruption playground, empirical degradation SVG chart, automated stress matrix demo runner, and backend endpoint `GET /api/benchmarks/stress` serving ADR-007 benchmark deliverables.
+
+**Next step**
+- Continue with live end-to-end verification of every workspace with the model checkpoint.
+
+### Session 61 (2026-10-14, ~21:40–21:46 IST)
+
+**User requests**
+1. "See the damn thing, damped. Second is the S3 thing. I don't think we have deployed, so remove that. Also, what's the sample in here? To sync it, why is it not syncing? Yes."
+
+**What was done**
+- **Clarified Dampened Status in Robustness Stress Suite**:
+  - In `frontend/src/pages/system/SystemStress.tsx`, changed status label from `• Dampened` to `• Confidence Dampened` and noted in the inspector panel that ADR-011 acoustic confidence scaling reduces flaw weights under low SNR (10 dB café babble) to prevent noise-induced hallucinations.
+- **Removed Undeployed S3 Traces**:
+  - In `frontend/src/pages/system/System.tsx`, removed the undeployed S3 Object Storage row from `services`.
+  - In `SystemArchitecture` SVG, replaced the S3 storage node with `In-Memory Audio (Zero Raw S3 Retention · P1)` reflecting our privacy-first ephemeral pipeline invariant.
+- **Real Progress History Sync in MongoDB**:
+  - Added `PROGRESS = "progress_history"` collection in `backend/auth/db.py` with compound index on `("user_id", "created_at")`.
+  - In `backend/api/routers/analysis.py`, hooked completed pipeline runs in `process_audio_pipeline` to insert longitudinal records (`user_id`, `prompt_id`, `score`, `flaw_count`, `flaw_density`, `duration`, `created_at`).
+  - In `backend/api/routers/gamification.py`, updated `GET /api/progress/history` to query MongoDB for the authenticated user and compute true acoustic delta insights.
+  - In `frontend/src/pages/system/System.tsx`, updated endpoint registry to tag `/api/progress/history` as `live`.
+  - In `frontend/src/pages/practice/YouVsYou.tsx`, eliminated the static mock `SamplePreview` widget. Display clean baseline tracking when 1 attempt exists, and live cloud-synced chart once attempts are recorded.
+- **Verification**:
+  - Built frontend with `npm run build` (`tsc -b && vite build`) — succeeded with 0 errors in 3.56s.
+
+**Files changed**
+- `backend/auth/db.py`
+- `backend/api/routers/analysis.py`
+- `backend/api/routers/gamification.py`
+- `frontend/src/pages/practice/YouVsYou.tsx`
+- `frontend/src/pages/system/System.tsx`
+- `frontend/src/pages/system/SystemStress.tsx`
+- `LICENSE`
+- `SESSION_LOG.md`
+
+**Decisions**
+- D-082: Store real user speech progress in MongoDB `progress_history` collection with compound index `(user_id, created_at)`. Auto-persist completed analysis metrics from `process_audio_pipeline`. Convert `GET /api/progress/history` to return live, authenticated attempts and calculated longitudinal insights.
+- D-083: Purge undeployed Object Storage (S3) references from `SystemApi` services and architecture diagrams, reinforcing zero raw audio retention (ADR-011 / P1). Clarify the "Confidence Dampened" status in the Robustness Stress Matrix as active acoustic protection against noise hallucinations.
 
 **Next step**
 - Continue with live end-to-end verification of every workspace with the model checkpoint.

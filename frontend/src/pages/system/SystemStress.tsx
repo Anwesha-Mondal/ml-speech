@@ -562,7 +562,7 @@ export function SystemStress() {
                     <td>
                       <span className={`status ${pass ? 'status-ok' : 'status-warn'}`}>
                         <span className="dot" />
-                        {pass ? 'Retained (≤15%)' : 'Dampened'}
+                        {pass ? 'Retained (≤15%)' : 'Confidence Dampened'}
                       </span>
                     </td>
                   </tr>

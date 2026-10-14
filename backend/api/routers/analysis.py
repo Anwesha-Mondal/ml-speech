@@ -25,7 +25,7 @@ from backend.api.uploads import per_user_limit, read_audio
 from backend.auth import require_user
 from backend.auth.db import User
 from backend.privacy.config import get_privacy_settings
-from packages.speech_arena.scoring.modes import known_modes
+from packages.speech_guru.scoring.modes import known_modes
 
 router = APIRouter()
 
@@ -90,7 +90,7 @@ def process_audio_pipeline(
         qc_metrics = {}
         try:
             y_audio, sr_audio = decode_audio_to_array(part_bytes, target_sr=16000)
-            from packages.speech_arena.audio.qc import compute_clipping_ratio, estimate_snr, check_length
+            from packages.speech_guru.audio.qc import compute_clipping_ratio, estimate_snr, check_length
             snr_db = estimate_snr(y_audio)
             clip_ratio = compute_clipping_ratio(y_audio)
             length_valid = check_length(y_audio, sr=sr_audio, min_sec=0.2, max_sec=3600.0)
@@ -144,7 +144,7 @@ def process_audio_pipeline(
         norm_summary = {}
         try:
             import pandas as pd
-            from packages.speech_arena.normalize.two_channel import normalize_two_channel
+            from packages.speech_guru.normalize.two_channel import normalize_two_channel
             words_data = ml_result.get("words", [])
             if words_data:
                 norm_records = []
@@ -197,6 +197,28 @@ def process_audio_pipeline(
                 traceback.print_exc()
                 board = {"eligible": True, "submitted": False, "reason": "The leaderboard is unavailable right now."}
             job_store[job_id]["result"]["leaderboard"] = board
+
+            # Persist progress history to MongoDB for You vs You and longitudinal tracking
+            if owner:
+                try:
+                    from backend.auth.db import PROGRESS, get_db, utcnow
+                    total_dur = float(ml_result.get("duration", 0)) or 1.0
+                    flaws_list = ml_result.get("flaws", [])
+                    density = (len(flaws_list) / total_dur) * 60.0
+                    score_val = float(ml_result.get("score", {}).get("total", 0))
+
+                    db = get_db()
+                    db[PROGRESS].insert_one({
+                        "user_id": owner,
+                        "prompt_id": prompt_id or "free_speech",
+                        "score": round(score_val, 1),
+                        "flaw_count": len(flaws_list),
+                        "flaw_density": round(density, 2),
+                        "duration": round(total_dur, 2),
+                        "created_at": utcnow(),
+                    })
+                except Exception:
+                    traceback.print_exc()
     except Exception as e:  # noqa: BLE001 - any pipeline failure becomes a job error, not a crash
         traceback.print_exc()
         print(f"Exception in process_audio_pipeline: {e}")
