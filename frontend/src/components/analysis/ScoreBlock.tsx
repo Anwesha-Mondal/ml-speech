@@ -49,28 +49,41 @@ export default function ScoreBlock({
       <p className="score-summary">{scoreSummary(total)}</p>
       <hr className="rule" />
       <div className="t-label" style={{ marginTop: 14 }}>
-        Deductions
+        Performance by Dimension
       </div>
       <ul className="deductions">
         {BUCKETS.map((b) => {
+          const cap = b.cap ?? 25
           const d = Math.abs(buckets[b.key] ?? 0)
+          const earned = Math.max(0, cap - d)
           return (
-            <li key={b.key}>
+            <li key={b.key} style={{ marginBottom: 12 }}>
               <div className="row between">
-                <span>{b.label}</span>
+                <span style={{ fontWeight: 500 }}>{b.label}</span>
                 <span className="num mono">
-                  {d ? `−${fmtScore(d)}` : '0'}
-                  <span className="faint"> / {b.cap}</span>
+                  <strong style={{ color: earned >= 20 ? 'var(--good)' : earned >= 12 ? 'var(--warn)' : 'var(--bad)' }}>
+                    {fmtScore(earned)}
+                  </strong>
+                  <span className="faint"> / {cap} pts</span>
+                  {d > 0 && <small className="muted" style={{ marginLeft: 6, fontSize: '0.8em', color: 'var(--bad)' }}>(-{fmtScore(d)})</small>}
                 </span>
               </div>
-              <div className="hbar" title={`Capped at ${b.cap} points`}>
-                <i style={{ width: `${(d / b.cap) * 100}%`, background: d >= b.cap * 0.5 ? 'var(--bad)' : d ? 'var(--warn)' : 'var(--good)' }} />
+              <div className="hbar" title={`Earned ${fmtScore(earned)} of ${cap} points (deducted: -${fmtScore(d)})`}>
+                <i
+                  style={{
+                    width: `${(earned / cap) * 100}%`,
+                    background: earned >= 20 ? 'var(--good)' : earned >= 12 ? 'var(--warn)' : 'var(--bad)',
+                    transition: 'width 0.4s ease',
+                  }}
+                />
               </div>
             </li>
           )
         })}
       </ul>
-      <p className="t-small faint">Each bucket's deductions are capped. Score = 100 − total deductions.</p>
+      <p className="t-small faint" style={{ lineHeight: 1.4, marginTop: 8 }}>
+        <strong>Scoring basis:</strong> 100 points total (25 pts each across Pacing, Pitch, Pauses, and Energy). Deviations deduct from each category. Severe speech flaws or silence deduct up to 100 points (scores range 0–100).
+      </p>
     </div>
   )
 }

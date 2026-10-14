@@ -191,7 +191,7 @@ graph LR
 - [ ] Optional: dense embeddings + RRF, LLM dialogue/TTS, speech-synced prompter, webcam overlay
 
 ---
-## Current Status
-- **Active phase:** Production Deployment & Cloud Optimization (Session 65).
-- **Last completed:** Hardened frontend build with resilient `VITE_API_URL` defaults (`https://speech-guru-api.onrender.com`), static define injection, CSP allowlist for Render backend, and verified error-free Vercel production build (Session 65, D-084).
-- **Next action:** Verify live Vercel frontend and Render backend deployments.
+- **Active phase:** Production Deployment & Real Speech Scoring Calibration (Sessions 60–67).
+- **Last completed:** Connected live Render backend URL (`https://speech-api-t8sr.onrender.com`) to frontend `API_BASE` and Vite config; expanded scoring bucket deduction caps to -100 max (25 pts per bucket) for full 0–100 dynamic range; transparent points earned display in `ScoreBlock`; silence/non-speech detector; and automatic Whisper ASR transcription of participant audio (D-079, D-080..D-086).
+- **Next action:** Verify live Vercel frontend and Render backend deployments and test full speech analysis.
+

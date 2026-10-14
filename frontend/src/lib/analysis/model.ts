@@ -2,12 +2,12 @@ import type { ApiAnalysisResult, ApiFlaw, Bucket, Mode } from '../api/types'
 
 export const SCORING_VERSION = 's1.0'
 
-/** Bucket deduction caps, mirrored from packages/speech_arena/scoring/engine.py. */
-export const BUCKETS: { key: Bucket; label: string; cap: number }[] = [
-  { key: 'pacing', label: 'Pacing', cap: 15 },
-  { key: 'pitch', label: 'Pitch control', cap: 15 },
-  { key: 'pauses', label: 'Pauses', cap: 10 },
-  { key: 'energy_clarity', label: 'Energy & clarity', cap: 10 },
+/** Bucket deduction caps and potential points (25 pts per bucket, totaling 100). */
+export const BUCKETS: { key: Bucket; label: string; cap: number; maxPoints: number }[] = [
+  { key: 'pacing', label: 'Pacing', cap: 25, maxPoints: 25 },
+  { key: 'pitch', label: 'Pitch control', cap: 25, maxPoints: 25 },
+  { key: 'pauses', label: 'Pauses', cap: 25, maxPoints: 25 },
+  { key: 'energy_clarity', label: 'Energy & clarity', cap: 25, maxPoints: 25 },
 ]
 
 export const MODES: { key: Mode; label: string; focus: string }[] = [

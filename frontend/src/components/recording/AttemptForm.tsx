@@ -12,9 +12,9 @@ import ProcessingSteps from './ProcessingSteps'
 
 export default function AttemptForm({
   mode,
-  defaultReference = 'asset-07',
+  defaultReference = 'custom',
   transcriptLabel = 'Transcript of what you read',
-  transcriptHelp = 'Optional. With it, the transcript panel follows the audio.',
+  transcriptHelp = 'Optional. Leave blank to automatically transcribe your voice recording with Whisper ASR.',
   showReferencePicker = true,
   stage,
   initialTranscript,
@@ -191,16 +191,40 @@ export default function AttemptForm({
           rows={4}
           value={transcript}
           onChange={(e) => setTranscript(e.target.value)}
-          placeholder="Paste or type the passage. Leave it empty if you improvised."
+          placeholder={isTranscribing ? "Listening and transcribing your speech via Whisper ASR..." : "Speak freely into the mic, or paste/type a reference passage. Auto-transcribe will transcribe your speech."}
         />
-        <span className="t-small faint">{transcriptHelp}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="t-small faint">{transcriptHelp}</span>
+          {isTranscribing && (
+            <span className="t-small" style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Loader2 size={12} className="spin" /> Transcribing your speech...
+            </span>
+          )}
+        </div>
       </div>
 
-      <AudioInput id={`${mode}-participant`} file={participant} onFile={setParticipant} />
+      <AudioInput
+        id={`${mode}-participant`}
+        file={participant}
+        onFile={(file) => {
+          setParticipant(file)
+          if (file && (!transcript || transcript.trim() === '')) {
+            setIsTranscribing(true)
+            transcribeAudio(file)
+              .then((res) => {
+                if (res.transcript) {
+                  setTranscript(res.transcript)
+                }
+              })
+              .catch(() => {})
+              .finally(() => setIsTranscribing(false))
+          }
+        }}
+      />
 
       <div className="row gap-12 wrap attempt-foot">
-        <button type="submit" className="btn btn-primary btn-lg" disabled={!canSubmit}>
-          {submitLabel} <ArrowRight size={15} />
+        <button type="submit" className="btn btn-primary btn-lg" disabled={!canSubmit || isTranscribing}>
+          {isTranscribing ? 'Transcribing speech...' : submitLabel} <ArrowRight size={15} />
         </button>
         {!canSubmit && <span className="t-small muted">Record or upload your attempt first.</span>}
       </div>

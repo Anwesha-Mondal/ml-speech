@@ -349,6 +349,22 @@ class SpeechFlawPredictor:
 
         print(f"[+] Loaded model checkpoint from {self.checkpoint_path} on {self.device} with {num_classes} classes: {self.labels}")
 
+    def _empty_result(self, mode: str = "sandbox") -> Dict[str, Any]:
+        from packages.speech_arena.scoring.modes import score_analysis
+        mode_flaws, score_breakdown, delivery_metrics = score_analysis(
+            [], [], {"t": [], "pitchPart": [], "energyPart": []}, 0.0, mode
+        )
+        return {
+            "mode": mode,
+            "duration": 0.0,
+            "score": score_breakdown,
+            "flaws": [],
+            "metrics": delivery_metrics,
+            "words": [],
+            "contours": {"t": [], "pitchPart": [], "energyPart": []},
+            "raw_probabilities": {lbl: 0.0 for lbl in self.labels}
+        }
+
     def predict_audio(
         self,
         audio_input: Any,
@@ -382,6 +398,101 @@ class SpeechFlawPredictor:
 
         # 2. Extract global frame features and contours in one fast pass
         contours, frame_data = self._extract_contours_and_features(y, sr)
+
+        # Check for silence or absence of audible vocal speech (e.g. silent recording or under 0.25s speech)
+        intervals = librosa.effects.split(y, top_db=30, frame_length=1024, hop_length=256)
+        speech_samples = sum(end - start for start, end in intervals) if len(intervals) > 0 else 0
+        speech_duration = float(speech_samples / sr)
+        voiced_ratio = speech_duration / max(duration, 0.01)
+
+        rms_mean = float(np.mean(librosa.feature.rms(y=y))) if len(y) > 0 else 0.0
+        db_mean = float(20 * np.log10(max(rms_mean, 1e-5)))
+
+        if duration < 0.8 or speech_duration < 0.25 or voiced_ratio < 0.08 or db_mean < -55.0:
+            # Audible vocal speech is absent or completely silent - severe deduction across all buckets
+            flaws = [
+                {
+                    "flaw_id": str(uuid.uuid4())[:8],
+                    "type": "LOW_ENERGY",
+                    "bucket": "energy_clarity",
+                    "start_time": 0.0,
+                    "end_time": round(duration, 2),
+                    "penalty": -25.0,
+                    "confidence": 0.99,
+                    "explanation": f"No audible vocal speech detected (average loudness {db_mean:.1f} dB, voiced duration {speech_duration:.2f}s). Speak clearly into the microphone.",
+                    "evidence": {
+                        "metric": "speech_energy_db",
+                        "reference_value": -20.0,
+                        "participant_value": round(db_mean, 1),
+                        "delta_abs": round(abs(db_mean - (-20.0)), 1),
+                        "delta_rel": 0.0
+                    }
+                },
+                {
+                    "flaw_id": str(uuid.uuid4())[:8],
+                    "type": "EXCESSIVE_PAUSE",
+                    "bucket": "pauses",
+                    "start_time": 0.0,
+                    "end_time": round(duration, 2),
+                    "penalty": -25.0,
+                    "confidence": 0.99,
+                    "explanation": "Continuous silence without spoken delivery across the recording.",
+                    "evidence": {
+                        "metric": "pause_duration_s",
+                        "reference_value": 0.5,
+                        "participant_value": round(duration, 2),
+                        "delta_abs": round(duration, 2),
+                        "delta_rel": 5.0
+                    }
+                },
+                {
+                    "flaw_id": str(uuid.uuid4())[:8],
+                    "type": "PACING_TOO_SLOW",
+                    "bucket": "pacing",
+                    "start_time": 0.0,
+                    "end_time": round(duration, 2),
+                    "penalty": -25.0,
+                    "confidence": 0.99,
+                    "explanation": "Speaking cadence could not be established due to absence of voiced speech.",
+                    "evidence": {
+                        "metric": "words_per_minute",
+                        "reference_value": 140.0,
+                        "participant_value": 0.0,
+                        "delta_abs": -140.0,
+                        "delta_rel": 0.0
+                    }
+                },
+                {
+                    "flaw_id": str(uuid.uuid4())[:8],
+                    "type": "PITCH_MONOTONE",
+                    "bucket": "pitch",
+                    "start_time": 0.0,
+                    "end_time": round(duration, 2),
+                    "penalty": -25.0,
+                    "confidence": 0.99,
+                    "explanation": "No vocal pitch inflection or fundamental frequency detected.",
+                    "evidence": {
+                        "metric": "pitch_range_st",
+                        "reference_value": 8.0,
+                        "participant_value": 0.0,
+                        "delta_abs": -8.0,
+                        "delta_rel": 0.0
+                    }
+                }
+            ]
+            mode_flaws, score_breakdown, delivery_metrics = score_analysis(
+                flaws, [], contours, duration, mode
+            )
+            return {
+                "mode": mode,
+                "duration": round(duration, 2),
+                "score": score_breakdown,
+                "flaws": mode_flaws,
+                "metrics": delivery_metrics,
+                "words": [],
+                "contours": contours,
+                "raw_probabilities": {lbl: 0.0 for lbl in self.labels}
+            }
 
         # Global features and model prediction
         global_features = extract_acoustic_features(y[:min(len(y), sr * 30)], sr=sr)
