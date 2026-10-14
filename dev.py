@@ -131,7 +131,18 @@ def main():
         )
         t_be.start()
 
-    # 2. Start Frontend
+    # 2. Wait briefly for backend to accept connections before starting Vite proxy
+    if not backend_only and not frontend_only:
+        import socket
+        import time
+        for _ in range(30):
+            try:
+                with socket.create_connection(("127.0.0.1", 8000), timeout=0.3):
+                    break
+            except (OSError, ConnectionRefusedError):
+                time.sleep(0.2)
+
+    # 3. Start Frontend
     if not backend_only:
         frontend_cmd = [npm_cmd, "run", "dev"]
         frontend_proc = subprocess.Popen(
