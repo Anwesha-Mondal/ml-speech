@@ -145,6 +145,10 @@ export default function Topbar({ onMenu }: { onMenu: () => void }) {
       <button type="button" className="btn btn-ghost btn-icon topbar-menu" onClick={onMenu} aria-label="Open navigation">
         <Menu size={18} />
       </button>
+      <Link to="/" className="topbar-brand" aria-label="Speech Guru home">
+        <img src="/logo.png" alt="Speech Guru" className="brand-logo" />
+        <span className="brand-name">Speech Guru</span>
+      </Link>
       <nav className="crumbs" aria-label="Breadcrumb">
         {crumbs.map((c, i) => (
           <span key={i} className="crumb">

@@ -29,12 +29,14 @@ export default function Pipeline() {
         description="The stages a recording goes through on the server, and which of them POST /api/analyze runs today."
       />
       <div className="row gap-16 wrap" style={{ marginBottom: 16 }}>
-        {(Object.keys(STAGE_STATUS) as StageStatus[]).map((k) => (
-          <span key={k} className="row gap-8 t-small">
-            <Status s={k} />
-            <span className="mono num muted">{counts[k] ?? 0}</span>
-          </span>
-        ))}
+        {(Object.keys(STAGE_STATUS) as StageStatus[])
+          .filter((k) => (counts[k] ?? 0) > 0)
+          .map((k) => (
+            <span key={k} className="row gap-8 t-small">
+              <Status s={k} />
+              <span className="mono num muted">{counts[k] ?? 0}</span>
+            </span>
+          ))}
       </div>
       <div className="pipe">
         <section className="panel">

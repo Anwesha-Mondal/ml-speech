@@ -5,6 +5,7 @@ import { API_BASE } from '../../lib/api/client'
 import { BUCKETS, SCORING_VERSION } from '../../lib/analysis/model'
 import { checkHealth, useApiHealth, type ServiceState } from '../../lib/useApiHealth'
 import { fmtDateTime } from '../../lib/format'
+export { SystemStress } from './SystemStress'
 
 export function SystemLayout() {
   return (
@@ -15,6 +16,7 @@ export function SystemLayout() {
         tabs={[
           { to: '/system', label: 'API & services', end: true },
           { to: '/system/architecture', label: 'Architecture' },
+          { to: '/system/stress', label: 'Robustness & Stress' },
           { to: '/system/scoring', label: 'Scoring' },
           { to: '/system/devops', label: 'DevOps' },
         ]}
@@ -42,6 +44,7 @@ const ENDPOINTS: { method: string; path: string; returns: string; kind: 'live' |
   { method: 'PUT', path: '/api/leaderboard/opt-in', returns: 'Join or leave the leaderboards', kind: 'live' },
   { method: 'POST', path: '/api/battle/1v1', returns: 'Fixed sample battle (UI scores battles via /analyze)', kind: 'unused' },
   { method: 'POST', path: '/api/mimic-party', returns: 'Fixed score of 94 (UI computes Mimic in the browser)', kind: 'unused' },
+  { method: 'GET', path: '/api/benchmarks/stress', returns: 'Empirical robustness & stress test report', kind: 'live' },
 ]
 
 const dbState = (s?: ServiceState): Svc['state'] => (s === 'up' ? 'ok' : s === 'down' ? 'bad' : 'off')

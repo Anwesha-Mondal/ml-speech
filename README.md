@@ -1,263 +1,207 @@
-# Speech Guru 🎙️
+<p align="center">
+  <img src="docs/assets/logo.png" alt="Speech Guru Logo" width="140" style="border-radius: 28px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);" />
+</p>
 
-> **Multimodal AI Hackathon 2026 — Track C Submission**  
-> *Contrastive Speech Analytics, Temporal Flaw Grounding & Interactive Multimodal Workspaces*
+<h1 align="center">Speech Guru</h1>
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![React 19](https://img.shields.io/badge/react-19-61dafb.svg)](https://react.dev/)
-[![FastAPI](https://img.shields.io/badge/fastapi-0.110+-009688.svg)](https://fastapi.tiangolo.com/)
-[![MongoDB](https://img.shields.io/badge/mongodb-6.0+-47A248.svg)](https://www.mongodb.com/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
+<p align="center">
+  <strong>Objective Oratorical Assessment · Deterministic Acoustic Grounding · Multimodal Workspaces</strong><br />
+  <em>Zero Generative LLM Hallucinations in the Acoustic Scoring Path</em>
+</p>
 
-Speech Guru is an end-to-end multimodal speech evaluation platform designed for objective oratorical assessment. It solves the long-standing problem of subjective speech judging by providing **millisecond-accurate temporal flaw grounding**, **mathematical acoustic evidence**, and **interactive practice workspaces**—with **zero generative LLM hallucinations in the acoustic scoring path**.
-
----
-
-## 🌟 Key Innovations
-
-1. **Deterministic Acoustic Grounding (Zero LLM Hallucinations in Scoring)**  
-   Unlike LLM wrapper coaches that generate arbitrary ratings, Speech Guru evaluates delivery using classical digital signal processing (DSP) and a frozen `facebook/wav2vec2-base` multi-label acoustic classifier. Every score is anchored to exact physical properties: pitch contour variance ($F_0$), local speech rate (WPM / syllables per second), pause durations, and RMS sound energy.
-
-2. **Contrastive Two-Channel Normalization**  
-   Solves biological speaker variance without erasing actual flaws:
-   - *Magnitude Channel*: Semitone and relative decibel scaling for objective flaw detection.
-   - *Shape Channel*: Z-score contour normalization for tempo and melody matching (speaker-invariant).
-
-3. **Tier 1 Scaled Real-World Speech Corpus**  
-   1,680 physical 16 kHz mono WAV audio recordings derived from 40 human speakers (OpenSLR LibriSpeech `dev-clean`), balanced across 7 acoustic flaw categories (`IDEAL`, `TOO_FAST`, `TOO_SLOW`, `LOW_ENERGY`, `HIGH_ENERGY`, `MONOTONE`, `EXCESSIVE_PAUSE`) with strict speaker-disjoint train/validation splits.
-
-4. **24x Accelerated Inference Engine**  
-   Single-pass vectorized frame feature caching, batched PyTorch inference, and in-memory chunked Whisper transcription process a 120-second speech in **under 12 seconds** (accelerated from 365s).
-
-5. **5 Purpose-Built Practice Workspaces**  
-   - **Speech Assessment Sandbox:** Comprehensive acoustic flaw analysis with dual-waveform inspection, pitch ($F_0$) contours, and energy envelopes.
-   - **AI Technical Interviewer:** Industry mock interview turns with STAR methodology checks, filler-word tracking, and dynamic probe follow-ups.
-   - **News Anchor Studio:** Live studio teleprompter with pacing guidance and breaking news copy.
-   - **Public Speaking & Debate Arena:** Parliamentary debate sparring, audience crowd soundscape, and an integrated 4-7-8 breathing pacer.
-   - **Storyteller Studio:** Expressive narration coaching with Freytag's Pyramid dynamic energy arcs.
-
-6. **Privacy-by-Design Architecture**  
-   NIST 800-63B authentication, scrypt password hashing, MongoDB TTL-enforced session and result expiry, zero raw audio persistence on server disks, and strict SameSite session management.
+<p align="center">
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-3776ab.svg?style=flat-square&logo=python&logoColor=white" alt="Python 3.11+" /></a>
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/react-19-61dafb.svg?style=flat-square&logo=react&logoColor=black" alt="React 19" /></a>
+  <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/fastapi-0.110+-009688.svg?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" /></a>
+  <a href="https://pytorch.org/"><img src="https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg?style=flat-square&logo=pytorch&logoColor=white" alt="PyTorch" /></a>
+  <a href="https://www.mongodb.com/"><img src="https://img.shields.io/badge/MongoDB-6.0+-47a248.svg?style=flat-square&logo=mongodb&logoColor=white" alt="MongoDB" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-purple.svg?style=flat-square" alt="License: MIT" /></a>
+</p>
 
 ---
 
-## 🏗️ System Architecture
+## Executive Summary
+
+**Speech Guru** is a state-of-the-art multimodal speech evaluation platform designed to solve the long-standing problem of subjective oratorical judging. While conventional speech-coaching tools rely on conversational LLM wrappers that fabricate impressionistic feedback, Speech Guru operates on a strictly deterministic foundation: **every score deduction, highlight, and critique is mathematically anchored to measurable physical acoustic properties**.
+
+By combining classical digital signal processing (DSP), two-channel speaker normalization, time-aligned speech-to-text tokenization, and a trained neural acoustic feature extractor (`facebook/wav2vec2-base`), Speech Guru identifies fine-grained delivery flaws with millisecond precision.
+
+---
+
+## Key Innovations & Architectural Highlights
+
+### 1. Deterministic Acoustic Grounding (No LLM Scoring Hallucinations)
+- **Zero-hallucination guarantee**: Scoring, deduction calculations, and flaw grounding are completely insulated from generative model drift.
+- **Physical measurements**: Fundamental frequency ($F_0$ via Parselmouth/Praat autocorrelation), Root Mean Square (RMS) energy envelopes, speaking rate (syllables/sec and WPM), and silence boundary durations (>0.5s) directly drive evaluations.
+- **Fact-based feedback**: Jinja2 deterministic explanation templates report exact physical deltas (e.g., *"Speaking rate exceeded target baseline by +1.8 syllables/sec"* or *"Pitch range remained compressed within 1.2 semitones across 4.8 seconds"*).
+
+### 2. Contrastive Two-Channel Normalization (ADR-001)
+Natural pitch and loudness vary dramatically across biological speaker characteristics (e.g., adult male vs. female fundamental frequency). Naive comparisons produce false positives, while aggressive normalization erases actual performance flaws. Speech Guru resolves this tension through two distinct channels:
+- **Magnitude Channel**: Semitones relative to median $F_0$ and decibels relative to speech loudness. Preserves genuine delivery variance without cross-speaker bias.
+- **Shape Channel**: Z-score contour normalization for relative melodic dynamics and contour matching.
+
+### 3. End-to-End Connected 12-Stage Processing Pipeline
+Every submitted recording passes through a transparent, 12-stage audio analytics pipeline:
+
+| # | Pipeline Stage | Underlying Architecture & Implementation | Primary Deliverable |
+|:---:|:---|:---|:---|
+| **01** | **Upload** | FastAPI async streaming & cryptographic SHA-256 fingerprinting | Standardized job descriptor |
+| **02** | **Rights Gate** | Policy manifests verification against public domain & research rights | Compliance clearance |
+| **03** | **Audio Normalization** | Single-channel 16,000 Hz float32 PCM standardization | Uniform sample matrix |
+| **04** | **Quality Control (QC)** | SNR estimation, clipping ratio calculation, duration checks | Acoustic integrity report |
+| **05** | **Transcript** | OpenAI Whisper ASR & text token normalization | Canonical spoken vocabulary |
+| **06** | **VAD / Segmentation** | Silero VAD energy & silence boundary detection | Sub-second pause boundaries |
+| **07** | **Alignment** | Word-level acoustic temporal anchoring | Millisecond timestamp bounds |
+| **08** | **Feature Extraction** | Parselmouth F0, RMS energy, zero-crossing rate, speaking rate | Continuous feature vectors |
+| **09** | **Normalization** | ADR-001 magnitude & shape contour calculations | Speaker-invariant contours |
+| **10** | **Neural Flaw Detection** | Wav2Vec2 + MLP multi-label classifier head | Multi-label flaw instances |
+| **11** | **Scoring Engine** | Mode-weighted calibrated 100-point rubric with capped bucket penalties | Calibrated score breakdown |
+| **12** | **Explanation** | Jinja2 deterministic acoustic fact and critique synthesis | Verifiable user insights |
+
+### 4. Five Purpose-Built Practice Workspaces
+- **🎙️ Speech Assessment Sandbox**: Dual-waveform inspection, synchronized pitch ($F_0$) contours, energy envelopes, and syllable-by-syllable flaw exploration.
+- **💼 AI Technical Interviewer**: Turn-based mock interview turns evaluating STAR framework coherence, filler-word frequency, and dynamic probe follow-ups.
+- **📺 News Anchor Studio**: Live studio teleprompter with auto-scroll cadence, real-time pace guides, and breaking news copy.
+- **🏛️ Public Speaking & Debate Arena**: Parliamentary debate timer, responsive crowd soundscapes, and an interactive 4-7-8 breathing pacer for stage presence.
+- **📖 Storyteller Studio**: Narrative performance coach tracking character voices and dynamic expressive energy arcs across Freytag’s dramatic pyramid.
+
+### 5. High-Throughput Inference Engine
+- Single-pass vectorized frame caching, batched PyTorch tensor operations, and in-memory audio chunking evaluate a 2-minute speech in **under 12 seconds**.
+
+---
+
+## System Architecture
 
 ```
-                  ┌────────────────────────────────────────────────────────┐
-                  │                 Speech Guru Web UI                     │
-                  │   (React 19 + TypeScript + Vite + Minimal Editorial)   │
-                  └───────────▲───────────────────────────────▲────────────┘
-                              │ Audio Upload / Mic            │
-                              │ REST / SSE                    │ Visual Feedback
-                              ▼                               │
-                  ┌───────────────────────────────────────────┴────────────┐
-                  │               FastAPI Backend Gateway                  │
-                  └──────┬──────────────────────────────────────────┬──────┘
-                         │                                          │
-       [Pillar A: Context & Dialogue]             [Pillar B: Acoustic Measurement]
-                         │                                          │
-        ┌────────────────┴───────────────┐         ┌────────────────┴───────────────┐
-        │       Deterministic BM25       │         │    torchaudio MMS_FA / VAD     │
-        │      RAG Knowledge Engine      │         │     (Word Forced Alignment)    │
-        │   • STAR Framework Question DB │         ├────────────────────────────────┤
-        │   • AP News Wire Scripts       │         │    Praat Parselmouth & Librosa │
-        │   • Debate Sparring Motions    │         │  • Pitch (F0) & Semitone Delta │
-        │   • Freytag Story Arc Engine   │         │  • Energy (RMS dBFS) & Pauses  │
-        └────────────────────────────────┘         ├────────────────────────────────┤
-                                                   │   Frozen Wav2Vec2 + MLP Head   │
-                                                   │ (7-Class Acoustic Flaw Neural) │
-                                                   ├────────────────────────────────┤
-                                                   │ Contrastive Scoring (s1.0/2.0) │
-                                                   │  (Pure Math / Zero LLM Halluc) │
-                                                   └────────────────────────────────┘
-                                                                    │
-                                            ┌───────────────────────▼──────────────┐
-                                            │ MongoDB (TTL Sessions, Scores, Auth) │
-                                            └──────────────────────────────────────┘
+                    ┌────────────────────────────────────────────────────────┐
+                    │                    Speech Guru UI                      │
+                    │   (React 19 + TypeScript + Vite + Minimal Editorial)   │
+                    └───────────▲───────────────────────────────▲────────────┘
+                                │ Audio Stream (PCM)            │
+                                │ REST / SSE                    │ Visual Feedback & Metrics
+                                ▼                               │
+                    ┌───────────────────────────────────────────┴────────────┐
+                    │               FastAPI API Gateway                      │
+                    └──────┬──────────────────────────────────────────┬──────┘
+                           │                                          │
+         [Dialogue & Context Flow]                  [Deterministic Scoring Flow]
+                           │                                          │
+          ┌────────────────┴───────────────┐         ┌────────────────┴───────────────┐
+          │      RAG & Practice Models     │         │    12-Stage Acoustic Pipeline  │
+          │   • BM25 Multi-Index Search    │         │   • Silero VAD / Segmentation  │
+          │   • STAR Behavioral Logic      │         │   • 16 kHz Mono Normalization  │
+          │   • Dynamic Teleprompter Pacer │         │   • Parselmouth F0 & Energy    │
+          │   • Audience Ambient Engine    │         │   • Wav2Vec2 Multi-Label MLP   │
+          └────────────────────────────────┘         │   • Two-Channel Normalization  │
+                                                     │   • 100-Point Mode Scorer      │
+                                                     └────────────────────────────────┘
 ```
 
 ---
 
-## 📋 Prerequisites & Dependencies
+## Quickstart Guide
 
-Before running Speech Guru, ensure you have the following installed on your machine:
+### Prerequisites
+- **Python**: Version 3.11 or newer
+- **Node.js**: Version 18 or newer (with npm)
+- **MongoDB**: Community Edition 6.0+ (running locally on port `27017` or configured via `MONGODB_URL`)
+- **FFmpeg**: Installed and available on system path (required for audio decoding)
 
-| Requirement | Supported Version | Notes |
-| :--- | :--- | :--- |
-| **Python** | `3.11.x` – `3.12.x` | Required for PyTorch, Parselmouth, and FastAPI. |
-| **Node.js & npm** | `Node 18.x` or `20.x+` | Required for building and running the Vite frontend. |
-| **MongoDB** | `6.0+` or `7.0+` | Running locally on `mongodb://127.0.0.1:27017`. |
-| **FFmpeg** | `4.x+` / `6.x+` | Required for audio format conversion and resampling. |
-| **Hardware** | CPU or NVIDIA GPU | CUDA optional (auto-detected for GPU acceleration). |
-
----
-
-## 🚀 Step-by-Step Setup & Running
-
-### 1. Clone the Repository
+### 1. Repository Setup
 ```bash
 git clone https://github.com/pushkar-11/Speech-Arena.git
 cd Speech-Arena
 ```
 
-### 2. Configure Environment Variables
-Copy the template `.env` files for both the root backend and the frontend:
-
+### 2. Environment Configuration
+Copy the sample environment configurations:
 ```bash
-# Backend / root environment
+# Backend environment
 cp .env.example .env
 
 # Frontend environment
 cp frontend/.env.example frontend/.env
 ```
 
-Ensure MongoDB is running locally:
-```bash
-# On Linux / macOS:
-mongod --config /usr/local/etc/mongod.conf
-
-# On Windows (PowerShell):
-net start MongoDB
-```
-
-### 3. Install Python Dependencies
-We recommend using a virtual environment:
-
+### 3. Backend Installation
 ```bash
 # Create and activate virtual environment
 python -m venv .venv
 
-# On Windows:
+# Windows:
 .venv\Scripts\activate
-# On Linux / macOS:
+
+# macOS / Linux:
 source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
-# Or using uv (recommended for speed):
-# uv sync --extra dev
 ```
 
-### 4. Install Frontend Dependencies
+### 4. Frontend Installation
 ```bash
 cd frontend
 npm install
 cd ..
 ```
 
-### 5. Launch the Entire Platform (One-Command)
-Run the automated unified runner which checks MongoDB, clears ports, launches the FastAPI backend on port `8000`, and starts the Vite frontend on port `5173`:
+### 5. Starting the Application
 
+#### Option A: Unified Launcher
 ```bash
-# Python runner (cross-platform):
 python dev.py
+```
 
-# Or using npm:
+#### Option B: Standalone Services
+Terminal 1 (Backend):
+```bash
+uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Terminal 2 (Frontend):
+```bash
+cd frontend
 npm run dev
-
-# Or Windows script:
-.\start.ps1
 ```
 
-Once started, open your browser and visit:
-👉 **`http://localhost:5173`** (Dashboard)  
-👉 **`http://localhost:8000/docs`** (API OpenAPI Documentation)
+Visit the application at:
+- **Web Application**: `http://localhost:5173`
+- **Interactive OpenAPI Documentation**: `http://localhost:8000/docs`
 
 ---
 
-## 🐳 Running with Docker Compose
+## Machine Learning & Benchmark Reproducibility
 
-Alternatively, start the entire stack using Docker Compose:
+### Tier 1 Speech Corpus
+- **Audio Basis**: 1,680 standardized physical 16 kHz mono WAV recordings derived from 40 human speakers in OpenSLR LibriSpeech `dev-clean`.
+- **Acoustic Flaw Perturbations**: Phase-vocoder tempo scaling (`TOO_FAST`, `TOO_SLOW`), RMS dynamic attenuation (`LOW_ENERGY`, `HIGH_ENERGY`), fundamental frequency flattening (`MONOTONE`), and boundary insertion (`EXCESSIVE_PAUSE`).
+- **Data Splits**: 80% Train (32 speakers, 1,344 samples) / 20% Validation (8 completely unseen speakers, 336 samples).
+- **Model Checkpoint**: Production weights stored in `ml/checkpoints/best_checkpoint.pt`.
 
-```bash
-docker-compose up -d
-```
-The dashboard will be accessible at `http://localhost:5173` and the backend at `http://localhost:8000`.
-
----
-
-## 🧪 Running Tests & Benchmarks
-
-Speech Guru maintains 100% deterministic test coverage across its API, scoring engine, and RAG catalog:
+### Automated Verification & Quality Suites
+Speech Guru includes strict deterministic testing suites:
 
 ```bash
-# Run backend test suite (unit, scoring, RAG, auth)
+# Execute backend unit and scoring suite
 pytest tests/ -q
 
-# Run frontend type-check and linter
-cd frontend
-npm run build
-npm run lint
-cd ..
+# Execute frontend strict type-checking and linting
+cd frontend && npm run build && npm run lint && cd ..
 
-# Replicate benchmarks and stress-test suite
+# Run reproducible stress-test benchmarks
 python benchmarks/run_benchmarks.py
 ```
 
-Benchmark output is written canonically to `benchmarks/reports/benchmark_report.json`.
+---
+
+## Privacy by Design & Ethics
+
+- **Zero Audio Storage**: Audio recordings processed in `/api/analyze` are held in memory during the execution lifecycle and are never persisted to long-term server storage.
+- **Client-Side Security**: NIST 800-63B compliant password hashing (`scrypt`), secure HTTP-only cookies, and configurable automatic TTL session revocation.
+- **Strictly Acoustic Evaluation**: Speech Guru reports purely acoustic, measurable physical facts. The system does not make inferences about speaker psychology, personality, emotional state, or native accent.
 
 ---
 
-## 📊 Dataset & Machine Learning
+## License
 
-### Tier 1 Real-World Dataset
-- **Seeds:** 240 clean human speech samples from OpenSLR LibriSpeech `dev-clean`.
-- **Perturbations:** Phase vocoder time-stretch (pacing), RMS gain scaling (energy), median F0 flattening (monotone), and silent gap insertions (pauses).
-- **Split:** 80% Train (32 speakers, 1,344 files) / 20% Val (8 unseen speakers, 336 files).
-- **Format:** 16 kHz Mono PCM WAV.
-
-To regenerate or scale the dataset:
-```bash
-python ml/scripts/prepare_real_dataset.py --max-seeds 240
-python ml/training/train_classifier.py --epochs 35
-```
-Production model checkpoint is located at `ml/checkpoints/best_checkpoint.pt`.
-
----
-
-## 📂 Project Structure
-
-```
-orcter/
-├── backend/                  # FastAPI web services & API routers
-│   ├── api/                  # Endpoints: /analyze, /rag, /auth, /leaderboard
-│   └── auth/                 # NIST 800-63B password validation & session management
-├── frontend/                 # React 19 + TypeScript + Vite dashboard
-│   ├── src/pages/practice/   # 5 Dedicated Practice Workspaces
-│   ├── src/components/       # Audio waveform, uPlot curves, teleprompter
-│   └── src/styles/           # Minimal Editorial light-mode design tokens
-├── ml/                       # Machine Learning & Acoustic Models
-│   ├── checkpoints/          # Production PyTorch weights (Wav2Vec2 + MLP)
-│   ├── inference/predict.py  # 24x accelerated hybrid inference pipeline
-│   ├── scripts/              # Dataset generation and augmentation
-│   └── training/             # Multi-label classifier training scripts
-├── packages/speech_arena/    # Core Deterministic Acoustic Engine
-│   ├── align/                # Torchaudio MMS forced alignment & TextGrid
-│   ├── features/             # Parselmouth F0, RMS energy, spectral centroids
-│   ├── inject/               # Time-map grounded flaw injection operators
-│   ├── normalize/            # Two-channel (magnitude + shape) normalization
-│   └── scoring/              # Grounded flaw detectors and Jinja2 explanations
-├── datasets/                 # Rights manifests, source registries, dataset cards
-├── benchmarks/               # Reproducible stress test suite & benchmark runners
-├── configs/                  # Versioned YAML configurations (thresholds, weights)
-├── docs/                     # Full technical report, system card, demo script
-└── dev.py                    # Unified one-command developer launcher
-```
-
----
-
-## 🏆 Hackathon Submission Deliverables
-
-- **Devpost Project Page:** Comprehensive documentation, problem statement, and solution architecture in [`docs/DEVPOST_SUBMISSION.md`](docs/DEVPOST_SUBMISSION.md).
-- **Public GitHub Repository:** [github.com/pushkar-11/Speech-Arena](https://github.com/pushkar-11/Speech-Arena)
-- **Demo Video:** 3-10 minute YouTube walkthrough following [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md).
-- **Technical Report:** 6-page technical report in [`docs/TECHNICAL_REPORT.md`](docs/TECHNICAL_REPORT.md).
-- **System & Dataset Cards:** [`docs/SYSTEM_CARD.md`](docs/SYSTEM_CARD.md) and [`datasets/DATASET_CARD_v1.md`](datasets/DATASET_CARD_v1.md).
-
----
-
-## 📄 License & Ethics
-
-This project is licensed under the MIT License.  
-All evaluation feedback is strictly grounded in verifiable acoustic measurements. Speech Guru does not make psychological or emotional inferences about speakers.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
