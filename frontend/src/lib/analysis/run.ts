@@ -141,9 +141,18 @@ export async function runAnalysis(
     analysis.peaks.reference = computePeaks(ref)
     analysis.referenceDuration = ref.duration
   }
+
+  // Allow waveform rendering state to register visually
+  await sleep(450, signal).catch(() => {})
   states.signals = 'done'
+  states.ready = 'active'
+  emit('ready', { jobId: job.job_id, serverSeconds })
+
+  // Brief pause so the user sees "Ready: Opening the analysis." before navigation
+  await sleep(400, signal).catch(() => {})
   states.ready = 'done'
   emit('ready', { jobId: job.job_id, serverSeconds })
+
   if (save) saveAnalysis(analysis)
   return analysis
 }

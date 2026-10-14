@@ -80,6 +80,7 @@ export const JUMP_TARGETS: { to: string; label: string; section: string; adminOn
   { to: '/pipeline', label: 'Pipeline', section: 'Data' },
   { to: '/system', label: 'API & services', section: 'System' },
   { to: '/system/architecture', label: 'Architecture', section: 'System' },
+  { to: '/system/stress', label: 'Robustness & Stress', section: 'System' },
   { to: '/system/scoring', label: 'Scoring', section: 'System' },
   { to: '/system/devops', label: 'DevOps', section: 'System' },
   { to: '/settings', label: 'Settings', section: 'Settings' },

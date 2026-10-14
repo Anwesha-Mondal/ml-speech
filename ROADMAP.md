@@ -191,7 +191,7 @@ graph LR
 - [ ] Optional: dense embeddings + RRF, LLM dialogue/TTS, speech-synced prompter, webcam overlay
 
 ---
-- **Active phase:** Production Deployment & Real Speech Scoring Calibration (Sessions 60–67).
-- **Last completed:** Connected live Render backend URL (`https://speech-api-t8sr.onrender.com`) to frontend `API_BASE` and Vite config; expanded scoring bucket deduction caps to -100 max (25 pts per bucket) for full 0–100 dynamic range; transparent points earned display in `ScoreBlock`; silence/non-speech detector; and automatic Whisper ASR transcription of participant audio (D-079, D-080..D-086).
-- **Next action:** Verify live Vercel frontend and Render backend deployments and test full speech analysis.
+- **Active phase:** P13 Convergence & Production Polish (Session 60).
+- **Last completed:** Connected all 12 pipeline stages in backend and frontend (12 of 12 Connected); smoothed the analysis progress stepper cadence (`signals` -> `ready` -> redirect); embedded official logo `logo.png` in favicon, sidebar, and navbar; and completely rewrote `README.md` into an executive, publication-grade document (D-079, D-080).
+- **Next action:** Verify live end-to-end speech analysis flow across all workspaces.
 

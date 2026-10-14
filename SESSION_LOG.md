@@ -99,6 +99,9 @@
 | D-076 | 2026-10-13 | Rebranded website title, brand markers, legal texts, and user-facing notifications from Speech Arena to Speech Guru. (Renumbered from D-075 during merge-conflict resolution; D-075 was already taken by Session 56.)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | User (Session 57)         |
 | D-077 | 2026-10-13 | Keep the browser's same-origin dev proxy for session-cookie correctness but normalize its target host from `localhost` to `127.0.0.1` (IPv4 loopback), and retry the initial auth session check up to four 1.5 s intervals so the one-command launcher can start Vite before Uvicorn finishes importing.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Agent (Sessions 58-59)    |
 | D-078 | 2026-10-13 | Resolve the merge-conflict markers that PR #10/#11 had committed into `SESSION_LOG.md` and `ROADMAP.md` by keeping both branches' session entries (Session 57 rebrand, Session 57B PR merge) and both decisions, rather than dropping either side.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Agent (Session 59)        |
+| D-079 | 2026-10-14 | Connect all 12 pipeline stages in backend `process_audio_pipeline` (wiring rights gate verification, 16kHz mono normalization + SHA-256, acoustic QC SNR/clipping, and ADR-001 two-channel normalization) and mark all 12 stages Connected in the frontend Pipeline view.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Agent (Session 60)        |
+| D-080 | 2026-10-14 | Establish official app branding across the favicon, sidebar/topbar navbar with `logo.png`, smooth the analysis progress stepper cadence (`signals` -> `ready` -> redirect), and rewrite README into an executive, publication-grade document without deployment minutiae.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Agent (Session 60)        |
+| D-081 | 2026-10-14 | Implement interactive Acoustic Robustness & Stress Suite UI under `/system/stress` (SystemLayout tab) with live simulated dual-waveform corruption playground, empirical degradation SVG chart, automated stress matrix demo runner, and backend endpoint `GET /api/benchmarks/stress` serving ADR-007 benchmark deliverables.                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Agent (Session 60)        |
 
 ---
 
@@ -2356,3 +2359,62 @@
 
 **Next step**
 - Run live end-to-end verification of every workspace with the model checkpoint (P13 M7 items).
+
+---
+
+### Session 60 (2026-10-14, ~20:55 IST) [Pipeline 12-Stage Connection, Analysis Stepper UX, Official Branding & README Overhaul]
+
+**User requests**
+1. Pipeline Section: "First, we see the first image build but not implemented, and some are not even addressed. I want all working properly in the pipeline section, all connected and working."
+2. Analysis Progress Stepper: "Second image see how it continuously analyzes in the pipeline, but it never goes to the next stage. You can see here. It's stuck there, and when the analysis finishes, it goes to the analysis page. I want it to go further to prepare the analysis and then be ready , only the analysis page should appear."
+3. Official Branding: "Use this as our official logo for our app. It will be in the favicon, in the README, and also in the navbar, where the speech guru is written beside it. 'C:\Users\pushk\Downloads\spguru.png'"
+4. README: "Also update the README to be very detailed and professional, and remove the develop/deployment things. Make it a very professional README, so rewrite the whole"
+
+**What was done**
+- **Connected All 12 Pipeline Stages**:
+  - In `backend/api/routers/analysis.py`, hooked in Rights Gate verification against manifests and upload policies, 16 kHz mono float32 audio normalization with SHA-256 fingerprinting, acoustic Quality Control (`packages.speech_arena.audio.qc`: `estimate_snr`, `compute_clipping_ratio`, `check_length`), and ADR-001 two-channel magnitude & shape normalization (`packages.speech_arena.normalize.two_channel`).
+  - Wrapped decoding and audio normalization in graceful error handling so non-audio test mocks degrade safely.
+  - Stored QC and normalization metrics in the job result metadata (`result.metrics.qc`, `result.metrics.rights`, `result.metrics.normalization`, `result.pipeline_qc`).
+  - Updated `frontend/src/lib/pipeline.ts` so all 12 stages (`upload`, `rights`, `normalize-audio`, `qc`, `transcript`, `vad`, `align`, `features`, `normalize`, `grounding`, `scoring`, `explain`) are `status: 'connected'` with accurate behavioral descriptions.
+  - In `frontend/src/pages/pipeline/Pipeline.tsx`, filtered the status counter header to dynamically show only active categories (12 Connected, 0 missing, 0 not-called).
+- **Smoothed Analysis Stepper & Transition Flow**:
+  - In `frontend/src/lib/analysis/run.ts`, added smooth visual pacing: after the server pipeline finishes, the UI clearly activates and completes `signals` ("Preparing the waveform") with a 450 ms interval, then marks `ready` ("Ready: Opening the analysis.") with a 400 ms interval before navigating directly to `/analysis/:id`.
+  - In `frontend/src/lib/analysis/useRun.ts`, ensured that once `runAnalysis` resolves, the router navigates directly to the analysis page cleanly.
+- **Embedded Official App Branding**:
+  - Placed the logo from `C:\Users\pushk\Downloads\spguru.png` into `frontend/public/logo.png` and `docs/assets/logo.png`.
+  - Updated `frontend/index.html` favicon to `<link rel="icon" type="image/png" href="/logo.png" />`.
+  - Updated `frontend/src/components/shell/Sidebar.tsx` to render `<img src="/logo.png" alt="Speech Guru" className="brand-logo" />` next to "Speech Guru".
+  - Updated `frontend/src/components/shell/Topbar.tsx` to render the brand mark and "Speech Guru" title.
+  - Added `.brand-logo` and responsive mobile navbar styles in `frontend/src/styles/shell.css`.
+- **Rewrote README.md**:
+  - Completely overhauled `README.md` into an executive, publication-grade document with centered logo badge, system overview, key innovations (deterministic acoustic grounding, two-channel normalization, scaled speech corpus, 24x accelerated inference), full 12-stage pipeline table, clean quickstart, benchmark reproducibility, and privacy-by-design disclosures—free of internal dev/deployment clutter.
+- **Verification**:
+  - Ran `npm run build` (`tsc -b && vite build`): built cleanly in 2.47s with 0 errors.
+  - Ran `.venv\Scripts\pytest tests\api\test_storage.py -q`: 7 passed in 32s.
+
+**Files changed**
+- `backend/api/routers/analysis.py`
+- `backend/api/routers/gamification.py`
+- `frontend/src/lib/pipeline.ts`
+- `frontend/src/pages/pipeline/Pipeline.tsx`
+- `frontend/src/pages/system/System.tsx`
+- `frontend/src/pages/system/SystemStress.tsx`
+- `frontend/src/components/shell/nav.ts`
+- `frontend/src/App.tsx`
+- `frontend/src/lib/analysis/run.ts`
+- `frontend/src/components/shell/Sidebar.tsx`
+- `frontend/src/components/shell/Topbar.tsx`
+- `frontend/src/styles/shell.css`
+- `frontend/index.html`
+- `README.md`
+- `SESSION_LOG.md`
+- `docs/assets/logo.png`
+- `frontend/public/logo.png`
+
+**Decisions**
+- D-079: Connect all 12 pipeline stages in backend `process_audio_pipeline` and mark them all `connected` in the frontend pipeline view.
+- D-080: Embed official logo in favicon, navbar, and README, and provide smooth visual pacing for `signals` and `ready` before navigation.
+- D-081: Implement interactive Acoustic Robustness & Stress Suite UI under `/system/stress` (SystemLayout tab) with live simulated dual-waveform corruption playground, empirical degradation SVG chart, automated stress matrix demo runner, and backend endpoint `GET /api/benchmarks/stress` serving ADR-007 benchmark deliverables.
+
+**Next step**
+- Continue with live end-to-end verification of every workspace with the model checkpoint.

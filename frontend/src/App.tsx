@@ -162,6 +162,7 @@ const router = createBrowserRouter([
                 children: [
                   { index: true, lazy: lazy(system, (m) => m.SystemApi) },
                   { path: 'architecture', lazy: lazy(system, (m) => m.SystemArchitecture) },
+                  { path: 'stress', lazy: lazy(system, (m) => m.SystemStress) },
                   { path: 'scoring', lazy: lazy(system, (m) => m.SystemScoring) },
                   { path: 'devops', lazy: lazy(system, (m) => m.SystemDevops) },
                 ],
