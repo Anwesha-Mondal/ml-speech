@@ -192,6 +192,6 @@ graph LR
 
 ---
 ## Current Status
-- **Active phase:** P13 Interactive multi-mode workspaces: M1-Ext to M6 built, M7 convergence open / 24x Pipeline Acceleration & Error Recovery (Session 56).
-- **Last completed:** Fixed dev proxy / auth-session startup race so sign-in reaches the API (Sessions 58-59); resolved committed merge-conflict markers (Session 59); rebranded website to Speech Guru (Session 57); accelerated inference 24x (Session 56); merged PR #10 dev relative API proxy (Session 57B).
-- **Next action:** Run live end-to-end verification of every workspace with the model checkpoint (P13 M7 items).
+- **Active phase:** P13 convergence: Scoring Transparency & Real Speech Whisper Transcription (Session 60).
+- **Last completed:** Expanded scoring bucket caps to -100 max (25 pts per bucket), allowing the full 0–100 score range so poor delivery or silence drops below 50 to 0. ScoreBlock now shows points earned alongside deductions with transparent scoring basis. Added silence/non-speech detector emitting severe deductions. Defaulted Practice reference to free speech and added automatic Whisper ASR transcription of participant audio (Session 60, D-079).
+- **Next action:** Verify live audio recording analysis on localhost:5173.

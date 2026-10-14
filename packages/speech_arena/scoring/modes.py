@@ -262,12 +262,16 @@ def compute_score(
         if b in sums:
             sums[b] += float(f["penalty"])
     buckets = {b: round(max(s, float(caps[b])), 1) for b, s in sums.items()}
+    bucket_caps_abs = {b: abs(float(caps[b])) for b in BUCKETS}
+    earned = {b: round(max(0.0, bucket_caps_abs[b] + buckets[b]), 1) for b in BUCKETS}
     bonuses = evaluate_bonuses(metrics or {}, mode, cfg)
     start = float(cfg["start_score"])
     total = start + sum(buckets.values()) + sum(b["points"] for b in bonuses)
     return {
         "total": round(min(start, max(0.0, total)), 1),
         "buckets": buckets,
+        "earned": earned,
+        "bucket_caps": bucket_caps_abs,
         "bonuses": round(sum(b["points"] for b in bonuses), 1),
         "bonus_rules": bonuses,
         "scoring_version": cfg["scoring_version"],

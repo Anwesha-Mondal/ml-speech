@@ -68,12 +68,34 @@ def process_audio_pipeline(
     and populates the job_store with structured results.
     """
     try:
-        if not transcript:
-            transcript = "Speech test recording"
-
         # Check if participant audio data was received
         if not part_bytes:
             raise ValueError("Participant audio file is empty.")
+
+        # If transcript was not provided or is empty/generic, transcribe what the participant actually said
+        if not transcript or transcript.strip() in ("", "Speech test recording"):
+            try:
+                import warnings
+                from transformers import pipeline
+                from ml.inference.predict import decode_audio_to_array
+                global _asr_pipeline
+                if _asr_pipeline is None:
+                    _asr_pipeline = pipeline("automatic-speech-recognition", model="openai/whisper-tiny.en", chunk_length_s=30)
+                    if hasattr(_asr_pipeline, "tokenizer") and _asr_pipeline.tokenizer is not None:
+                        _asr_pipeline.tokenizer.clean_up_tokenization_spaces = False
+                y_trans, sr_trans = decode_audio_to_array(part_bytes, target_sr=16000)
+                if len(y_trans) >= int(sr_trans * 0.5):
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        res = _asr_pipeline({"raw": y_trans, "sampling_rate": sr_trans})
+                    if res and res.get("text", "").strip():
+                        transcript = res["text"].strip()
+                        print(f"[+] Transcribed participant speech for analysis: '{transcript}'")
+            except Exception as e:
+                print(f"[!] Auto-transcribe fallback: {e}")
+
+        if not transcript:
+            transcript = "Speech test recording"
 
         # Run neural inference
         # Imported here, not at module load, so the API (sign-in, accounts, other pages)
@@ -97,6 +119,7 @@ def process_audio_pipeline(
                 "metrics": ml_result.get("metrics", {}),
                 "flaws": ml_result["flaws"],
                 "words": ml_result.get("words", []),
+                "transcript": transcript,
                 "duration": ml_result.get("duration", 0.0),
                 "contours": ml_result.get("contours", None)
             }

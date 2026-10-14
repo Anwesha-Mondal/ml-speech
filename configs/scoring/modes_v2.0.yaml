@@ -6,12 +6,12 @@
 scoring_version: "s2.0"
 start_score: 100.0
 
-# Default deduction caps per bucket (a mode may override them).
+# Default deduction caps per bucket (a mode may override them). Total = -100.0.
 bucket_caps:
-  pacing: -15.0
-  pitch: -15.0
-  pauses: -10.0
-  energy_clarity: -10.0
+  pacing: -25.0
+  pitch: -25.0
+  pauses: -25.0
+  energy_clarity: -25.0
 
 # Base penalties for flaw types the rule-based detectors add. Model-detected flaws keep the
 # penalty attached by the predictor; only the mode multiplier is applied to them.
@@ -59,14 +59,14 @@ modes:
   sandbox:
     label: "Speech Test"
     description: "Neutral diagnostic baseline; all four buckets balanced equally."
-    bucket_caps: {pacing: -15.0, pitch: -15.0, pauses: -10.0, energy_clarity: -10.0}
+    bucket_caps: {pacing: -25.0, pitch: -25.0, pauses: -25.0, energy_clarity: -25.0}
     multipliers: {pacing: 1.0, pitch: 1.0, pauses: 1.0, energy_clarity: 1.0}
     bonus_rules: []
 
   interviewer:
     label: "Industry AI Interviewer"
     description: "Weighs hesitation, filler words and rising terminals on statements."
-    bucket_caps: {pacing: -10.0, pitch: -10.0, pauses: -15.0, energy_clarity: -15.0}
+    bucket_caps: {pacing: -20.0, pitch: -20.0, pauses: -30.0, energy_clarity: -30.0}
     multipliers: {pacing: 0.9, pitch: 0.8, pauses: 1.5, energy_clarity: 1.4}
     bonus_rules:
       - rule_id: concise_answer
@@ -80,7 +80,7 @@ modes:
   news_anchor:
     label: "News Anchor & Broadcast"
     description: "Steady 130-150 WPM cadence, articulation, and no rising terminals."
-    bucket_caps: {pacing: -20.0, pitch: -15.0, pauses: -10.0, energy_clarity: -10.0}
+    bucket_caps: {pacing: -35.0, pitch: -25.0, pauses: -20.0, energy_clarity: -20.0}
     multipliers: {pacing: 1.6, pitch: 1.4, pauses: 1.0, energy_clarity: 1.2}
     bonus_rules:
       - rule_id: cadence_lock
@@ -94,7 +94,7 @@ modes:
   public_speaking:
     label: "Public Speaking & Debate"
     description: "Projection, pitch variation, tempo and deliberate pauses."
-    bucket_caps: {pacing: -12.0, pitch: -12.0, pauses: -10.0, energy_clarity: -16.0}
+    bucket_caps: {pacing: -25.0, pitch: -25.0, pauses: -20.0, energy_clarity: -30.0}
     multipliers: {pacing: 1.1, pitch: 1.2, pauses: 0.8, energy_clarity: 1.5}
     bonus_rules:
       - rule_id: rhetorical_power_pause
@@ -107,7 +107,7 @@ modes:
   storytelling:
     label: "Storyteller, Author & Director"
     description: "Pitch and energy dynamic range, voice contrast and dramatic pauses."
-    bucket_caps: {pacing: -10.0, pitch: -20.0, pauses: -8.0, energy_clarity: -12.0}
+    bucket_caps: {pacing: -20.0, pitch: -35.0, pauses: -15.0, energy_clarity: -30.0}
     multipliers: {pacing: 0.8, pitch: 1.8, pauses: 0.6, energy_clarity: 1.4}
     bonus_rules:
       - rule_id: dramatic_excursion

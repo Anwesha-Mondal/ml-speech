@@ -9,11 +9,11 @@
 
 | Key | Value |
 | --- | --- |
-| Active phase | P13 convergence: megaev M1-Ext to M6 built, 24x pipeline acceleration done, M7 live verification open (Session 56) |
-| Last milestone | Fixed dev proxy / auth-session startup race so sign-in reaches the API (Sessions 58-59); rebranded to Speech Guru (Session 57) |
-| Next action | Run live end-to-end verification of every workspace with the model checkpoint (P13 M7 items) |
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-078 |
-| Open questions | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available |
+| Active phase | Scoring Transparency & Real Speech Whisper Transcription (Session 60) |
+| Last milestone | Expanded scoring bucket deduction caps from -50 max to -100 max (25 pts per bucket), allowing the full 0–100 score range so severe flaws or silence can drop scores below 50 down to 0. ScoreBlock UI now displays points earned alongside deductions (e.g., 10 / 25 pts) and transparent scoring basis. Added silence/non-speech detector emitting severe deductions for unvoiced or missing audio. Defaulted Practice reference to free speech and added automatic Whisper ASR transcription of participant audio. (Session 60, D-079) |
+| Next action | Test full live audio recording analysis on localhost:5173 |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-079 |
+| Open questions | None |
 
 
 ---
@@ -100,6 +100,7 @@
 | D-076 | 2026-10-13 | Rebranded website title, brand markers, legal texts, and user-facing notifications from Speech Arena to Speech Guru. (Renumbered from D-075 during merge-conflict resolution; D-075 was already taken by Session 56.) | User (Session 57) |
 | D-077 | 2026-10-13 | Keep the browser's same-origin dev proxy for session-cookie correctness but normalize its target host from `localhost` to `127.0.0.1` (IPv4 loopback), and retry the initial auth session check up to four 1.5 s intervals so the one-command launcher can start Vite before Uvicorn finishes importing. | Agent (Sessions 58-59) |
 | D-078 | 2026-10-13 | Resolve the merge-conflict markers that PR #10/#11 had committed into `SESSION_LOG.md` and `ROADMAP.md` by keeping both branches' session entries (Session 57 rebrand, Session 57B PR merge) and both decisions, rather than dropping either side. | Agent (Session 59) |
+| D-079 | 2026-10-14 | Expanded scoring bucket deduction caps from -50 max to -100 max (25 pts per bucket), allowing the full 0–100 score range so severe flaws or silence can drop scores below 50 down to 0. ScoreBlock UI now displays points earned alongside deductions (e.g., 10 / 25 pts) and transparent scoring basis. Added silence/non-speech detector emitting severe deductions for unvoiced or missing audio. Defaulted Practice reference to free speech and added automatic Whisper ASR transcription of participant audio. | User & Agent (Session 60) |
 
 
 
@@ -2166,3 +2167,53 @@
 
 **Next step**
 - Run live end-to-end verification of every workspace with the model checkpoint (P13 M7 items).
+
+---
+
+### Session 60 (2026-10-14, ~15:20 IST) [Scoring Transparency, Full 0–100 Range & Real Speech Whisper Transcription]
+
+**User request**
+- "is the minimum scoring is 50? because total deduction is out of 50 so that means the miminum that someone can score is 50 , on what basis the system is giving 50 poiints , make sure to show that aswell that in what basis its giving points , along side with the deduction , make sure to transcribe what i say and point out the flaws and score according to that , listen to my uploaded recording and carefully analyse it and grade it accordingly , not just any random scoring , also give score less than 50 , if the user doesnt say anything or spoke too bad"
+
+**What was done**
+- Root cause diagnosis:
+  1. Minimum score was locked at 50 / 100 because default `bucket_caps` in `modes_v2.0.yaml` and `s1.0.yaml` capped deductions at: Pacing (-15), Pitch (-15), Pauses (-10), Energy (-10) = -50 total. Since Score = 100 - deductions, even silent or completely flawed speech could never drop below 50.
+  2. The UI displayed deductions without showing the positive points earned in each category or explaining the mathematical basis.
+  3. When testing recordings in Practice mode, `AttemptForm.tsx` defaulted to `asset-07` (The Gettysburg Address) and pre-filled the textarea with Lincoln's speech. Consequently, the user's unscripted speech was mismatched against Gettysburg text, causing false flaws and hiding real words spoken.
+  4. Complete silence was not penalized with zero-speech detection, letting silent files score arbitrarily high.
+- Fixes implemented:
+  1. Full 0–100 Scoring Range:
+     - Updated `configs/scoring/modes_v2.0.yaml` and `configs/scoring/s1.0.yaml` so each of the 4 buckets has a deduction cap of -25.0 points (totaling -100.0 max deduction).
+     - Score can now range completely from 0 to 100.
+  2. Points Earned & Transparent Scoring Basis:
+     - `ScoreBlock.tsx` and `model.ts` now display **Points Earned** out of 25 for each category alongside deductions (e.g. `10 / 25 pts (-15)`).
+     - Added transparent breakdown and explanation: "100 points total (25 pts each across Pacing, Pitch, Pauses, and Energy). Deviations deduct from each category. Severe speech flaws or silence deduct up to 100 points (scores range 0–100)."
+  3. Silence / Non-Speech Detector:
+     - In `ml/inference/predict.py`, added silence & low-speech detection: if audio duration < 0.8s, voiced speech < 0.25s, voiced ratio < 8%, or energy < -55 dB, the system emits severe flaws across all 4 buckets and drops the score to 0 / 100 with clear acoustic evidence.
+  4. Real Speech Transcription & Default Free Speech:
+     - In `frontend/src/lib/references.ts`, added "Free speech / Improvised (Auto-transcribe)" as the first default option (`custom`) with empty text.
+     - In `AttemptForm.tsx`, when participant audio is recorded or selected, it automatically invokes `transcribeAudio()` with Whisper ASR, filling the user's actual spoken words into the transcript.
+     - In `backend/api/routers/analysis.py`, `process_audio_pipeline` auto-transcribes with Whisper if transcript is empty, attaching real spoken words and timestamps to the result.
+- Verification:
+  - `uv run pytest tests/ -q`: all 95 tests passed.
+  - `npm run build`: frontend built cleanly in 962ms.
+
+**Files changed**
+- `configs/scoring/modes_v2.0.yaml`
+- `configs/scoring/s1.0.yaml`
+- `packages/speech_arena/scoring/modes.py`
+- `ml/inference/predict.py`
+- `backend/api/routers/analysis.py`
+- `frontend/src/lib/analysis/model.ts`
+- `frontend/src/components/analysis/ScoreBlock.tsx`
+- `frontend/src/lib/references.ts`
+- `frontend/src/components/recording/AttemptForm.tsx`
+- `SESSION_LOG.md`
+- `ROADMAP.md`
+
+**Decisions**
+- D-079: Expanded scoring bucket deduction caps from -50 max to -100 max (25 pts per bucket), allowing the full 0–100 score range so severe flaws or silence can drop scores below 50 down to 0. ScoreBlock UI now displays points earned alongside deductions (e.g., 10 / 25 pts) and transparent scoring basis. Added silence/non-speech detector emitting severe deductions for unvoiced or missing audio. Defaulted Practice reference to free speech and added automatic Whisper ASR transcription of participant audio.
+
+**Next step**
+- Test on localhost:5173 with voice recording and silence to verify full dynamic range and real transcription.
+
