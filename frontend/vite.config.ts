@@ -27,7 +27,7 @@ function contentSecurityPolicy(apiOrigin: string): Plugin {
     "img-src 'self' data: blob:",
     "media-src 'self' blob:", // playback of your own recording
     "font-src 'self'",
-    `connect-src 'self' ${apiOrigin}`,
+    `connect-src 'self' ${apiOrigin} https://*.onrender.com https://speech-api-t8sr.onrender.com`,
     "object-src 'none'",
     "frame-src 'none'",
     "base-uri 'self'",
@@ -45,12 +45,18 @@ function contentSecurityPolicy(apiOrigin: string): Plugin {
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  // The API address lives in frontend/.env (gitignored); see frontend/.env.example.
-  if (!env.VITE_API_URL) {
-    throw new Error('VITE_API_URL is not set. Copy frontend/.env.example to frontend/.env and fill it in.')
+  const defaultApiUrl = mode === 'development' ? 'http://localhost:8000' : 'https://speech-api-t8sr.onrender.com'
+  const rawApiUrl = (env.VITE_API_URL || process.env.VITE_API_URL || '').trim() || defaultApiUrl
+  let api = defaultApiUrl
+  let proxyTarget: URL
+  try {
+    proxyTarget = new URL(rawApiUrl)
+    api = proxyTarget.origin
+  } catch {
+    console.warn(`[vite] Invalid VITE_API_URL "${rawApiUrl}", falling back to ${defaultApiUrl}`)
+    proxyTarget = new URL(defaultApiUrl)
+    api = proxyTarget.origin
   }
-  const api = new URL(env.VITE_API_URL).origin
-  const proxyTarget = new URL(env.VITE_API_URL)
   // Uvicorn is configured for IPv4 loopback by default. Node may resolve
   // "localhost" to ::1 first, which makes the dev proxy report ECONNREFUSED
   // even though the API is listening on 127.0.0.1.
@@ -58,6 +64,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), contentSecurityPolicy(api)],
     define: {
+      'import.meta.env.VITE_API_URL': JSON.stringify(rawApiUrl),
       __BUILD__: JSON.stringify({
         commit: git('rev-parse --short HEAD'),
         branch: git('rev-parse --abbrev-ref HEAD'),

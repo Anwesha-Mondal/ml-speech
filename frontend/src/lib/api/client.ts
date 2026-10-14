@@ -1,7 +1,9 @@
 import type { ApiBattle, ApiHistory, ApiJob, ApiLeaderboard, ApiLeaderboardPrompts, ApiMimic, Mode } from './types'
 
-// Use same-origin relative URLs in dev mode so SameSite=Strict cookies are attached by browsers.
-export const API_BASE: string = import.meta.env.DEV ? '' : import.meta.env.VITE_API_URL
+// Strip trailing slashes to prevent double-slash paths (e.g. https://api.render.com//api/health).
+export const API_BASE: string = import.meta.env.DEV
+  ? ''
+  : (import.meta.env.VITE_API_URL || 'https://speech-api-t8sr.onrender.com').replace(/\/+$/, '')
 
 export class ApiError extends Error {
   readonly status: number
@@ -33,7 +35,7 @@ export function setConsentRequiredHandler(fn: (() => void) | null) {
 
 const SAFE = new Set(['GET', 'HEAD', 'OPTIONS'])
 
-export async function request<T>(path: string, init?: RequestInit, timeoutMs = 15000): Promise<T> {
+export async function request<T>(path: string, init?: RequestInit, timeoutMs = 30000): Promise<T> {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), timeoutMs)
   const method = (init?.method ?? 'GET').toUpperCase()
@@ -48,7 +50,7 @@ export async function request<T>(path: string, init?: RequestInit, timeoutMs = 1
   try {
     res = await fetch(`${API_BASE}${path}`, { ...init, headers, credentials: 'include', signal: ctrl.signal })
   } catch {
-    throw new ApiError(`Can't reach the Speech Guru API at ${API_BASE}. Start the backend and try again.`, 0)
+    throw new ApiError(`Can't reach the Speech Guru API at ${API_BASE || 'host'}. The server may be waking up or offline. Please retry in a few moments.`, 0)
   } finally {
     clearTimeout(timer)
   }
@@ -69,7 +71,7 @@ export async function request<T>(path: string, init?: RequestInit, timeoutMs = 1
 }
 
 export function getHealth(): Promise<{ status: string; services?: { mongodb?: 'up' | 'down'; redis?: 'up' | 'down' } }> {
-  return request('/api/health', undefined, 6000)
+  return request('/api/health', undefined, 12000)
 }
 
 export interface AnalyzeInput {

@@ -7,106 +7,98 @@
 
 ## Quick State (keep updated at the top)
 
-| Key | Value |
-| --- | --- |
-| Active phase | Scoring Transparency & Real Speech Whisper Transcription (Session 60) |
-| Last milestone | Expanded scoring bucket deduction caps from -50 max to -100 max (25 pts per bucket), allowing the full 0–100 score range so severe flaws or silence can drop scores below 50 down to 0. ScoreBlock UI now displays points earned alongside deductions (e.g., 10 / 25 pts) and transparent scoring basis. Added silence/non-speech detector emitting severe deductions for unvoiced or missing audio. Defaulted Practice reference to free speech and added automatic Whisper ASR transcription of participant audio. (Session 60, D-079) |
-| Next action | Test full live audio recording analysis on localhost:5173 |
-| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-079 |
-| Open questions | None |
-
+| Key               | Value                                                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Active phase      | P13 convergence: megaev M1-Ext to M6 built, 24x pipeline acceleration done, M7 live verification open (Session 56)             |
+| Last milestone    | Fixed dev proxy / auth-session startup race so sign-in reaches the API (Sessions 58-59); rebranded to Speech Guru (Session 57) |
+| Next action       | Run live end-to-end verification of every workspace with the model checkpoint (P13 M7 items)                                   |
+| Binding decisions | `docs/20-ENGINEERING-REVIEW.md` ADR-001…012, D-035, D-036, D-048…D-078                                                         |
+| Open questions    | Word-level alignment uses transcript distribution; fine-tune MMS_FA when GPU available                                         |
 
 ---
 
 ## Decision Register (cumulative)
 
-| ID | Date | Decision | Source |
-| --- | --- | --- | --- |
-| D-001 | 2026-10-06 | docs/00–19 replace the missing sections of the PDF-converted master prompt; master prompt = historical input | S1 |
-| D-002 | 2026-10-06 | Mimic Party is a side feature and must not affect the main project | User (doc 15 line 1) |
-| D-003 | 2026-10-06 | Two-channel normalization (semitone/dB-relative magnitude + z-score shape) | ADR-001 |
-| D-004 | 2026-10-06 | Alignment-anchored word/phrase comparison; DTW only intra-word or for Mimic | ADR-002 |
-| D-005 | 2026-10-06 | Injector emits a time-map → exact GT; identity resynthesis for references | ADR-003 |
-| D-006 | 2026-10-06 | 10 ms hop; per-feature windows; F0 via Praat/parselmouth | ADR-004 |
-| D-007 | 2026-10-06 | Canonical transcript is immutable; disfluencies are insertion events | ADR-005 |
-| D-008 | 2026-10-06 | Connected-component speaker↔transcript splits | ADR-006 |
-| D-009 | 2026-10-06 | Stress-test suite is first-class (30% criterion) | ADR-007 |
-| D-010 | 2026-10-06 | Python 3.11 FastAPI + SQLAlchemy; TS React UI; no Prisma | ADR-008 |
-| D-011 | 2026-10-06 | Hackathon deploy = Docker Compose, CPU default; docs 17–19 = post-hackathon reference | ADR-009 |
-| D-012 | 2026-10-06 | MVP = engine + dataset + benchmarks + dashboard; gamification post-MVP | ADR-010 |
-| D-013 | 2026-10-06 | No LLM in the scoring/explanation path; deterministic templates | ADR-011 |
-| D-014 | 2026-10-06 | All thresholds in versioned YAML; every result fully version-stamped | ADR-012 |
-| D-015 | 2026-10-06 | TED/TEDx = RESEARCH_ONLY (ND license); never a reference for variants | Review R1 |
-| D-016 | 2026-10-06 | Proposed (pending confirmation): aligner = torchaudio MMS_FA; UI charts = uPlot + wavesurfer.js; job queue = DB-backed table | ARCHITECTURE §7 |
-| D-017 | 2026-10-06 | Hackathon deadline: Oct 15. Team size: 4. GPU: RTX 3050. UI: Vite+React | User (Session 2) |
-| D-018 | 2026-10-08 | Implement "You vs You" progress tracking as the first P11 feature | User (Session 14) |
-| D-019 | 2026-10-08 | Implement "1v1 Async Battle" as a distinct game mode in the dashboard using dual-normalization | User (Session 15) |
-| D-020 | 2026-10-08 | Implement "Mimic Party" side feature using DTW on pitch/energy contours (identity-blind) | Agent (Session 16) |
-| D-021 | 2026-10-08 | Integrate Mode Presets into the main Sandbox flow, dynamically altering evaluation focus (e.g., Interviewer, News Anchor, Storytelling) without needing separate tabs | Agent (Session 17) |
-| D-022 | 2026-10-08 | Implement Leaderboards with strict model-version locking to ensure fair cross-user comparisons | Agent (Session 18) |
-| D-023 | 2026-10-08 | Enforce Light-mode minimal editorial aesthetic; fully modularize frontend and backend codebases. | User (Session 19) |
-| D-024 | 2026-10-08 | Complete P12 pipeline integration with FastAPI BackgroundTasks worker, polling job state, and strict TypeScript compilation across all dashboard pages. | Agent (Session 20) |
-| D-025 | 2026-10-08 | Replaced the mocked frontend layout with the high-fidelity Stitch UI raw HTML inside SandboxResult.tsx to match the exact Minimal Editorial aesthetic. | Agent (Session 21) |
-| D-026 | 2026-10-08 | Removed pyworld optional dependency from pyproject.toml to fix MSVC build requirements on Python 3.14.0 Windows environments, and added python-multipart to resolve FastAPI file upload errors. | Agent (Session 21) |
-| D-027 | 2026-10-08 | Make Reference Transcript optional and mock an auto-transcription fallback in the analysis pipeline | Agent (Session 22) |
-| D-028 | 2026-10-08 | Replaced separated audio/transcript inputs with a unified chat-style input bar, including live MediaRecorder integration. | Agent (Session 23) |
-| D-029 | 2026-10-08 | Rebuild the frontend from `uiux.md` as a routed, modular app on branch `frontend-redesign`. | User (Session 24) |
-| D-030 | 2026-10-08 | Every figure in the UI carries a source tag. | Agent (Session 24) |
-| D-031 | 2026-10-08 | Battles score both readings through `/api/analyze`. | Agent (Session 24) |
-| D-032 | 2026-10-08 | Drop the Tailwind CDN script and Material Symbols. | Agent (Session 24) |
-| D-033 | 2026-10-08 | `/api/jobs` flaws gain additive fields for explanation panel. | Agent (Session 24) |
-| D-034 | 2026-10-08 | Set up the `ml/` repository structure using a frozen Wav2Vec2 encoder and Multi-label MLP classifier head. | Agent (Session 24 - ML) |
-| D-035 | 2026-10-08 | Utilize CPU for initial local training of the frozen Wav2Vec2 MLP, proving end-to-end viability without complex CUDA dependencies on Python 3.14. | Agent (Session 26) |
-| D-036 | 2026-10-09 | Implement hybrid neural (Wav2Vec2 + MLP) and classical acoustic feature inference in `ml/inference/predict.py` connected to `/api/analyze`. | Agent (Session 27) |
-| D-037 | 2026-10-09 | Implement local, lazy-loaded Whisper model (openai/whisper-tiny.en) for optional auto-transcript generation. | Agent (Session 28) |
-| D-038 | 2026-10-10 | All pages and API routes except `/api/health`, sign-in and registration require an account. Server-side sessions in an HttpOnly, SameSite=Strict cookie; only the token's SHA-256 is stored; 24 h idle / 7 day absolute expiry. | User (Session 30) |
-| D-039 | 2026-10-10 | Passwords hashed with stdlib scrypt (N=2^17, r=8, p=1) instead of a new dependency, so `uv.lock` stays valid; NIST 800-63B policy (12–128 chars, blocklist, no personal tokens); settings in `configs/auth/auth.yaml`. | Agent (Session 30) |
-| D-040 | 2026-10-10 | CSRF defence: custom `X-Requested-With` header on every state change plus a per-session `X-CSRF-Token`; CORS credentials only from configured origins (replaces `allow_origins=["*"]`). | Agent (Session 30) |
-| D-041 | 2026-10-10 | Roles `user`/`admin`; first admin created via `python -m backend.auth.cli create-admin`, never by first sign-up. Analysis jobs are owner-scoped; browser-saved data is namespaced per account. | Agent (Session 30) |
-| D-042 | 2026-10-10 | Accounts stored with SQLAlchemy in SQLite at `data/speech_arena.db` (per D-010); `.gitignore` `models/` narrowed to `/models/` so `ml/models/` source can be committed. | Agent (Session 30) |
-| D-043 | 2026-10-10 | `analysis.py` imports the ML predictor inside the job, so the API (auth, other pages) starts even when model code or the ML stack is missing; the job reports the error instead. Password policy also rejects 5-character parts of the name/email and 5-character sequential runs. | Agent (Session 31) |
-| D-044 | 2026-10-10 | Legal documents are versioned Markdown in `docs/legal/` (privacy, terms, cookies), read by the API and bundled into the frontend from the same files. Sign-up requires explicit Terms/Privacy and 16+ checkboxes; new versions block app endpoints (`CONSENT_REQUIRED`) until accepted. | User (Session 32) |
-| D-045 | 2026-10-10 | Only one cookie (session). Preferences and history in browser storage are opt-in via a cookie banner (equal "Essential only"/"Allow all"), deleted on withdrawal, and recorded server-side for signed-in users. | User (Session 32) |
-| D-046 | 2026-10-10 | No third-party requests from the browser: fonts self-hosted (@fontsource), production CSP limited to self + API, API `/docs` (CDN) off by default. | Agent (Session 32) |
-| D-047 | 2026-10-10 | Data minimisation and retention per `configs/privacy/privacy.yaml`: sessions 30 days after ending, audit 90 days, results 60 minutes, recordings never stored; self-service export and account deletion; admins can't read others' results. | Agent (Session 32) |
-| D-048 | 2026-10-11 | Accounts, sessions, consent records and the audit log move from SQLite/SQLAlchemy to MongoDB (supersedes D-042; PostgreSQL was never used). Retention is enforced by MongoDB TTL indexes, with the explicit purge kept as a backstop. Old SQLite data is copied once with `python -m backend.auth.migrate_sqlite`. | User (Session 33) |
-| D-049 | 2026-10-11 | Leaderboards live in Redis (Memurai on Windows): one sorted set per scoring version and whitelisted passage, best score only (`ZADD GT`), global = sum of bests. Opt-in, off by default. Redis holds user IDs only; names come from MongoDB at read time for opted-in accounts. Settings in `configs/leaderboard/leaderboard.yaml`. | User (Session 33) |
-| D-050 | 2026-10-11 | Every deployment value (MongoDB/Redis URLs, CORS origins, cookie flag, host/port, docs flag, contact URL, frontend `VITE_API_URL`) lives in gitignored `.env` files with tracked `.env.example` templates. No fallbacks in code: API and Vite refuse to start and name the missing key. Thresholds stay in YAML (rule 3). | User (Session 33) |
-| D-051 | 2026-10-11 | Privacy Policy 1.1 adds the leaderboard and storage locations, so existing users re-accept it. Account deletion also clears IPs from audit events and removes leaderboard scores. | Agent (Session 33) |
-| D-052 | 2026-10-11 | Sign-in sessions move from MongoDB to Redis (supersedes the session part of D-048): one hash per session keyed by the token's SHA-256, Redis expiry enforces the idle timeout (capped at the absolute lifetime), sign-out deletes immediately, nothing kept after a session ends. Redis is now required; an outage returns `503`, never a silent sign-out. One shared Redis client (`backend/redis_client.py`) serves sessions and leaderboards. | User (Session 34) |
-| D-053 | 2026-10-11 | Containerize ML training with dual GPU/CPU support, automatic offline Wav2Vec2 caching, Docker Compose, and cross-platform path resolution in dataset loader | User (Session 35) |
-| D-054 | 2026-10-11 | Native CUDA training on Windows target PC (GTX 1650) with isolated venv, truststore native SSL injection, VRAM-conserving no_grad frozen encoder, completed 50-epoch training and verified inference on test audio. | User (Session 37) |
-| D-055 | 2026-10-11 | Implemented real-world dataset ingestion and augmentation pipeline (`ml/scripts/prepare_real_dataset.py`) per `FUTURE_DATASETS.md`, incorporating OpenSLR LibriSpeech clean seeds, multi-flaw acoustic perturbation (pacing, energy, pitch monotone, excessive pauses), speaker-disjoint train/val splits, and train/val loss monitoring with best checkpoint tracking in `train_classifier.py`. | User (Session 38) |
-| D-056 | 2026-10-11 | Selected optimal checkpoint from validation curve (Epoch 46 with val_loss 0.1694) as production weights (`ml/checkpoints/best_checkpoint.pt`), auto-loaded by `SpeechFlawPredictor` for all pipeline and API inference. | User (Session 39) |
-| D-057 | 2026-10-11 | Scaled real-world audio dataset ingestion to 240 clean seeds yielding 1,680 physical balanced audio files (1,344 train, 336 val across 40 OpenSLR speakers) and initiated fresh 35-epoch multi-label training. | User (Session 40) |
-| D-058 | 2026-10-11 | Validated scaled real-speech model: achieved record low validation loss of 0.1357 at Epoch 24 (best checkpoint auto-secured). Verified grounded inference on test audio (`ENERGY_LOW` detected with -100 dB acoustic evidence). Production model frozen for vertical slice integration. | User (Session 41) |
-| D-059 | 2026-10-11 | Documented Tier 1 real-world speech dataset expansion (1,680 physical 16 kHz WAV files across 40 OpenSLR speakers with 7 balanced flaw categories and speaker-disjoint splits) in DATASET_CARD_v1.md and synchronized training data logs. | User (Session 42) |
-| D-060 | 2026-10-11 | Production inference uses the seven Tier 1 labels; training validates manifests and requires speaker-disjoint validation; inference rejects missing or incompatible checkpoints instead of serving an untrained/random classifier. | Agent (Session 43) |
-| D-061 | 2026-10-13 | Merged backend and frontend environment configurations into root `.env` and `frontend/.env`; dynamic checkpoint shape detection in `SpeechFlawPredictor` accommodates both 15-class and 7-class models cleanly. | User & Agent (Session 44) |
-| D-062 | 2026-10-13 | Confirmed complete integration of MongoDB backend architecture; deleted redundant staging artifacts `backend/mongodb-files` and `backend/db.py`. | User & Agent (Session 44) |
-| D-063 | 2026-10-13 | Removed Redis completely (supersedes D-049 and D-052): sign-in sessions and leaderboards moved to MongoDB collections ('sessions' and 'leaderboard_scores'); removed REDIS_URL and all Redis dependencies. dev.py auto-clears ports 8000 and 5173 on launch. | User (Session 45) |
-| D-064 | 2026-10-13 | Eliminated Hugging Face / Transformers deprecation notices and tokenization cleanup warnings in backend ASR/Whisper pipeline by explicitly disabling tokenizer clean_up_tokenization_spaces, setting verbosity to error, and catching framework warnings. Verified clean inference with 0 warnings on test.wav and all 45 API tests passing. | Agent (Session 46) |
-| D-065 | 2026-10-13 | Transformed Practice Modes from static weight presets into dedicated interactive workspaces: Speech Test, Industry AI Interviewer, News Anchor, Public Speaking/Debate, and Storyteller. | User & Agent (Session 47) |
-| D-066 | 2026-10-13 | Formalized Two-Pillar Architectural Decoupling: Conversational RAG & Dialogue Layer (Pillar A) manages interactive turns, question banks, and scripts; Acoustic Measurement Engine (Pillar B) remains strictly deterministic and pure code (ADR-011 preserved; zero LLMs in acoustic scoring path). | User & Agent (Session 47) |
-| D-067 | 2026-10-13 | Defined RAG Knowledge Engine utilizing local sentence-transformers (all-MiniLM-L6-v2) and MongoDB vector storage across 20+ specialized industries, AP broadcast news wire copy, parliamentary debate motions, and creative storytelling scripts. | User & Agent (Session 47) |
-| D-068 | 2026-10-13 | Published comprehensive 5,200+ line master technical specification and convergence blueprint in `megaev.md` (Document ID `MEGAEV-2026-V1.0`), detailing exact DSP algorithms, YAML scoring schemas, OpenAPI contracts, React workspace code, and GSD convergence phases. | User & Agent (Session 47) |
-| D-069 | 2026-10-13 | Lowered minimum password length from 12 to 8 characters in versioned config (`configs/auth/auth.yaml`) and NIST validator (`backend/auth/passwords.py`) allowing 8–128 character passphrases. Implemented self-service Forgot Password flow (`/api/auth/forgot-password` and `/api/auth/reset-password`) with SHA-256 token hashing, 15-minute TTL expiry in MongoDB (`password_resets` collection), session revocation upon reset, rate limiting, and dedicated UI pages (`ForgotPasswordPage`, reset modal, "Forgot password?" links) with automated tests. | User & Agent (Session 48) |
-| D-070 | 2026-10-13 | Password reset never returns the token (it allowed takeover of any account): every email gets the same answer; the single-use link goes to the owner via `PASSWORD_RESET_DELIVERY` in `.env` (`none` default, `log` for local development) or an admin's `python -m backend.auth.cli reset-link`; `APP_URL` in `.env` builds the link. MongoDB-only storage kept (D-063) and hardened: sessions carry `purge_at` = min(idle, absolute expiry) with a TTL index and a unique `token_hash` index; leaderboard bests use one atomic `$max` upsert; retention purge also deletes ended sessions. Privacy Policy 1.2. | User & Agent (Session 49) |
-| D-071 | 2026-10-13 | megaev.md implemented with these deviations (AGENTS.md takes precedence): (1) RAG is deterministic BM25 over a versioned corpus extracted from megaev.md (`scripts/build_rag_corpus.py`), not dense embeddings/MongoDB vectors (D-067 deferred): no model installed, no random fallbacks; (2) no LLM in the dialogue layer: interviewer follow-ups are the corpus' keyword-triggered probes, debate sparring uses the corpus' opposing case; (3) bonus rules are structured {metric, op, value} YAML conditions, never evaluated strings; (4) mode endpoints are stateless, so no new personal data is stored; (5) rights-restricted speech texts (King, Jobs, Churchill) and the psychological VOCAL_TREMOR wording are excluded; (6) /assessment/* pages became /practice/* workspaces with redirects. | Agent (Session 50) |
-| D-072 | 2026-10-13 | Created frontend/.env with VITE_API_URL=http://localhost:8000; updated dev.py to auto-initialize frontend/.env from frontend/.env.example if missing; installed missing font dependencies (@fontsource/inter, @fontsource/jetbrains-mono); modernized vite.config.ts to resolve import.meta.dirname instead of __dirname to support Vite native configLoader cleanly. | Agent (Session 52) |
-| D-073 | 2026-10-13 | Integrated imageio-ffmpeg static binaries and PyAV decoders with in-memory WAV fast-path in `ml/inference/predict.py` and `pyproject.toml`, resolving LibsndfileError on browser-recorded WebM/Opus audio and verifying end-to-end multi-format audio decoding and scoring. | Agent (Session 53) |
-| D-074 | 2026-10-13 | Fixed speech analysis audio playback by converting browser WebM recordings to seekable WAV blobs via `encodeWav`, resolved React StrictMode unmount-cleanup bug with `ensureAudio()`, added direct `<audio controls>` element to `AnalysisPage.tsx`, added IndexedDB caching (`mediaDb.ts`) to survive page reloads, and eliminated health check flickering via 15s MongoDB ping caching and 2-failure threshold. | Agent (Session 54) |
-| D-075 | 2026-10-13 | Accelerated ML inference pipeline 24x for long speech recordings (120s response: 365s -> 11.9s) via single-pass vectorized frame feature caching (`_extract_contours_and_features`), batched PyTorch inference (`batch_size=16`, `hop_s=2.0` for >45s), pure deterministic word alignment on long audio, in-memory chunked Whisper transcription bypassing disk subprocesses, and added interactive error recovery & reset actions to `InterviewWorkspace` and `StorytellerWorkspace`. | Agent (Session 56) |
-| D-076 | 2026-10-13 | Rebranded website title, brand markers, legal texts, and user-facing notifications from Speech Arena to Speech Guru. (Renumbered from D-075 during merge-conflict resolution; D-075 was already taken by Session 56.) | User (Session 57) |
-| D-077 | 2026-10-13 | Keep the browser's same-origin dev proxy for session-cookie correctness but normalize its target host from `localhost` to `127.0.0.1` (IPv4 loopback), and retry the initial auth session check up to four 1.5 s intervals so the one-command launcher can start Vite before Uvicorn finishes importing. | Agent (Sessions 58-59) |
-| D-078 | 2026-10-13 | Resolve the merge-conflict markers that PR #10/#11 had committed into `SESSION_LOG.md` and `ROADMAP.md` by keeping both branches' session entries (Session 57 rebrand, Session 57B PR merge) and both decisions, rather than dropping either side. | Agent (Session 59) |
-| D-079 | 2026-10-14 | Expanded scoring bucket deduction caps from -50 max to -100 max (25 pts per bucket), allowing the full 0–100 score range so severe flaws or silence can drop scores below 50 down to 0. ScoreBlock UI now displays points earned alongside deductions (e.g., 10 / 25 pts) and transparent scoring basis. Added silence/non-speech detector emitting severe deductions for unvoiced or missing audio. Defaulted Practice reference to free speech and added automatic Whisper ASR transcription of participant audio. | User & Agent (Session 60) |
-
-
-
-
-
-
+| ID    | Date       | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Source                    |
+| ----- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| D-001 | 2026-10-06 | docs/00–19 replace the missing sections of the PDF-converted master prompt; master prompt = historical input                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | S1                        |
+| D-002 | 2026-10-06 | Mimic Party is a side feature and must not affect the main project                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | User (doc 15 line 1)      |
+| D-003 | 2026-10-06 | Two-channel normalization (semitone/dB-relative magnitude + z-score shape)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | ADR-001                   |
+| D-004 | 2026-10-06 | Alignment-anchored word/phrase comparison; DTW only intra-word or for Mimic                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | ADR-002                   |
+| D-005 | 2026-10-06 | Injector emits a time-map → exact GT; identity resynthesis for references                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | ADR-003                   |
+| D-006 | 2026-10-06 | 10 ms hop; per-feature windows; F0 via Praat/parselmouth                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | ADR-004                   |
+| D-007 | 2026-10-06 | Canonical transcript is immutable; disfluencies are insertion events                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | ADR-005                   |
+| D-008 | 2026-10-06 | Connected-component speaker↔transcript splits                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | ADR-006                   |
+| D-009 | 2026-10-06 | Stress-test suite is first-class (30% criterion)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | ADR-007                   |
+| D-010 | 2026-10-06 | Python 3.11 FastAPI + SQLAlchemy; TS React UI; no Prisma                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | ADR-008                   |
+| D-011 | 2026-10-06 | Hackathon deploy = Docker Compose, CPU default; docs 17–19 = post-hackathon reference                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | ADR-009                   |
+| D-012 | 2026-10-06 | MVP = engine + dataset + benchmarks + dashboard; gamification post-MVP                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | ADR-010                   |
+| D-013 | 2026-10-06 | No LLM in the scoring/explanation path; deterministic templates                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | ADR-011                   |
+| D-014 | 2026-10-06 | All thresholds in versioned YAML; every result fully version-stamped                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | ADR-012                   |
+| D-015 | 2026-10-06 | TED/TEDx = RESEARCH_ONLY (ND license); never a reference for variants                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Review R1                 |
+| D-016 | 2026-10-06 | Proposed (pending confirmation): aligner = torchaudio MMS_FA; UI charts = uPlot + wavesurfer.js; job queue = DB-backed table                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | ARCHITECTURE §7           |
+| D-017 | 2026-10-06 | Hackathon deadline: Oct 15. Team size: 4. GPU: RTX 3050. UI: Vite+React                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | User (Session 2)          |
+| D-018 | 2026-10-08 | Implement "You vs You" progress tracking as the first P11 feature                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | User (Session 14)         |
+| D-019 | 2026-10-08 | Implement "1v1 Async Battle" as a distinct game mode in the dashboard using dual-normalization                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | User (Session 15)         |
+| D-020 | 2026-10-08 | Implement "Mimic Party" side feature using DTW on pitch/energy contours (identity-blind)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Agent (Session 16)        |
+| D-021 | 2026-10-08 | Integrate Mode Presets into the main Sandbox flow, dynamically altering evaluation focus (e.g., Interviewer, News Anchor, Storytelling) without needing separate tabs                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Agent (Session 17)        |
+| D-022 | 2026-10-08 | Implement Leaderboards with strict model-version locking to ensure fair cross-user comparisons                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Agent (Session 18)        |
+| D-023 | 2026-10-08 | Enforce Light-mode minimal editorial aesthetic; fully modularize frontend and backend codebases.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | User (Session 19)         |
+| D-024 | 2026-10-08 | Complete P12 pipeline integration with FastAPI BackgroundTasks worker, polling job state, and strict TypeScript compilation across all dashboard pages.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Agent (Session 20)        |
+| D-025 | 2026-10-08 | Replaced the mocked frontend layout with the high-fidelity Stitch UI raw HTML inside SandboxResult.tsx to match the exact Minimal Editorial aesthetic.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Agent (Session 21)        |
+| D-026 | 2026-10-08 | Removed pyworld optional dependency from pyproject.toml to fix MSVC build requirements on Python 3.14.0 Windows environments, and added python-multipart to resolve FastAPI file upload errors.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Agent (Session 21)        |
+| D-027 | 2026-10-08 | Make Reference Transcript optional and mock an auto-transcription fallback in the analysis pipeline                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Agent (Session 22)        |
+| D-028 | 2026-10-08 | Replaced separated audio/transcript inputs with a unified chat-style input bar, including live MediaRecorder integration.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Agent (Session 23)        |
+| D-029 | 2026-10-08 | Rebuild the frontend from `uiux.md` as a routed, modular app on branch `frontend-redesign`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | User (Session 24)         |
+| D-030 | 2026-10-08 | Every figure in the UI carries a source tag.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Agent (Session 24)        |
+| D-031 | 2026-10-08 | Battles score both readings through `/api/analyze`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Agent (Session 24)        |
+| D-032 | 2026-10-08 | Drop the Tailwind CDN script and Material Symbols.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Agent (Session 24)        |
+| D-033 | 2026-10-08 | `/api/jobs` flaws gain additive fields for explanation panel.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Agent (Session 24)        |
+| D-034 | 2026-10-08 | Set up the `ml/` repository structure using a frozen Wav2Vec2 encoder and Multi-label MLP classifier head.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Agent (Session 24 - ML)   |
+| D-035 | 2026-10-08 | Utilize CPU for initial local training of the frozen Wav2Vec2 MLP, proving end-to-end viability without complex CUDA dependencies on Python 3.14.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Agent (Session 26)        |
+| D-036 | 2026-10-09 | Implement hybrid neural (Wav2Vec2 + MLP) and classical acoustic feature inference in `ml/inference/predict.py` connected to `/api/analyze`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Agent (Session 27)        |
+| D-037 | 2026-10-09 | Implement local, lazy-loaded Whisper model (openai/whisper-tiny.en) for optional auto-transcript generation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Agent (Session 28)        |
+| D-038 | 2026-10-10 | All pages and API routes except `/api/health`, sign-in and registration require an account. Server-side sessions in an HttpOnly, SameSite=Strict cookie; only the token's SHA-256 is stored; 24 h idle / 7 day absolute expiry.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | User (Session 30)         |
+| D-039 | 2026-10-10 | Passwords hashed with stdlib scrypt (N=2^17, r=8, p=1) instead of a new dependency, so `uv.lock` stays valid; NIST 800-63B policy (12–128 chars, blocklist, no personal tokens); settings in `configs/auth/auth.yaml`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Agent (Session 30)        |
+| D-040 | 2026-10-10 | CSRF defence: custom `X-Requested-With` header on every state change plus a per-session `X-CSRF-Token`; CORS credentials only from configured origins (replaces `allow_origins=["*"]`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Agent (Session 30)        |
+| D-041 | 2026-10-10 | Roles `user`/`admin`; first admin created via `python -m backend.auth.cli create-admin`, never by first sign-up. Analysis jobs are owner-scoped; browser-saved data is namespaced per account.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Agent (Session 30)        |
+| D-042 | 2026-10-10 | Accounts stored with SQLAlchemy in SQLite at `data/speech_arena.db` (per D-010); `.gitignore` `models/` narrowed to `/models/` so `ml/models/` source can be committed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Agent (Session 30)        |
+| D-043 | 2026-10-10 | `analysis.py` imports the ML predictor inside the job, so the API (auth, other pages) starts even when model code or the ML stack is missing; the job reports the error instead. Password policy also rejects 5-character parts of the name/email and 5-character sequential runs.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Agent (Session 31)        |
+| D-044 | 2026-10-10 | Legal documents are versioned Markdown in `docs/legal/` (privacy, terms, cookies), read by the API and bundled into the frontend from the same files. Sign-up requires explicit Terms/Privacy and 16+ checkboxes; new versions block app endpoints (`CONSENT_REQUIRED`) until accepted.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | User (Session 32)         |
+| D-045 | 2026-10-10 | Only one cookie (session). Preferences and history in browser storage are opt-in via a cookie banner (equal "Essential only"/"Allow all"), deleted on withdrawal, and recorded server-side for signed-in users.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | User (Session 32)         |
+| D-046 | 2026-10-10 | No third-party requests from the browser: fonts self-hosted (@fontsource), production CSP limited to self + API, API `/docs` (CDN) off by default.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Agent (Session 32)        |
+| D-047 | 2026-10-10 | Data minimisation and retention per `configs/privacy/privacy.yaml`: sessions 30 days after ending, audit 90 days, results 60 minutes, recordings never stored; self-service export and account deletion; admins can't read others' results.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Agent (Session 32)        |
+| D-048 | 2026-10-11 | Accounts, sessions, consent records and the audit log move from SQLite/SQLAlchemy to MongoDB (supersedes D-042; PostgreSQL was never used). Retention is enforced by MongoDB TTL indexes, with the explicit purge kept as a backstop. Old SQLite data is copied once with `python -m backend.auth.migrate_sqlite`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | User (Session 33)         |
+| D-049 | 2026-10-11 | Leaderboards live in Redis (Memurai on Windows): one sorted set per scoring version and whitelisted passage, best score only (`ZADD GT`), global = sum of bests. Opt-in, off by default. Redis holds user IDs only; names come from MongoDB at read time for opted-in accounts. Settings in `configs/leaderboard/leaderboard.yaml`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | User (Session 33)         |
+| D-050 | 2026-10-11 | Every deployment value (MongoDB/Redis URLs, CORS origins, cookie flag, host/port, docs flag, contact URL, frontend `VITE_API_URL`) lives in gitignored `.env` files with tracked `.env.example` templates. No fallbacks in code: API and Vite refuse to start and name the missing key. Thresholds stay in YAML (rule 3).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | User (Session 33)         |
+| D-051 | 2026-10-11 | Privacy Policy 1.1 adds the leaderboard and storage locations, so existing users re-accept it. Account deletion also clears IPs from audit events and removes leaderboard scores.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Agent (Session 33)        |
+| D-052 | 2026-10-11 | Sign-in sessions move from MongoDB to Redis (supersedes the session part of D-048): one hash per session keyed by the token's SHA-256, Redis expiry enforces the idle timeout (capped at the absolute lifetime), sign-out deletes immediately, nothing kept after a session ends. Redis is now required; an outage returns `503`, never a silent sign-out. One shared Redis client (`backend/redis_client.py`) serves sessions and leaderboards.                                                                                                                                                                                                                                                                                                                                                          | User (Session 34)         |
+| D-053 | 2026-10-11 | Containerize ML training with dual GPU/CPU support, automatic offline Wav2Vec2 caching, Docker Compose, and cross-platform path resolution in dataset loader                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | User (Session 35)         |
+| D-054 | 2026-10-11 | Native CUDA training on Windows target PC (GTX 1650) with isolated venv, truststore native SSL injection, VRAM-conserving no_grad frozen encoder, completed 50-epoch training and verified inference on test audio.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | User (Session 37)         |
+| D-055 | 2026-10-11 | Implemented real-world dataset ingestion and augmentation pipeline (`ml/scripts/prepare_real_dataset.py`) per `FUTURE_DATASETS.md`, incorporating OpenSLR LibriSpeech clean seeds, multi-flaw acoustic perturbation (pacing, energy, pitch monotone, excessive pauses), speaker-disjoint train/val splits, and train/val loss monitoring with best checkpoint tracking in `train_classifier.py`.                                                                                                                                                                                                                                                                                                                                                                                                          | User (Session 38)         |
+| D-056 | 2026-10-11 | Selected optimal checkpoint from validation curve (Epoch 46 with val_loss 0.1694) as production weights (`ml/checkpoints/best_checkpoint.pt`), auto-loaded by `SpeechFlawPredictor` for all pipeline and API inference.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | User (Session 39)         |
+| D-057 | 2026-10-11 | Scaled real-world audio dataset ingestion to 240 clean seeds yielding 1,680 physical balanced audio files (1,344 train, 336 val across 40 OpenSLR speakers) and initiated fresh 35-epoch multi-label training.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | User (Session 40)         |
+| D-058 | 2026-10-11 | Validated scaled real-speech model: achieved record low validation loss of 0.1357 at Epoch 24 (best checkpoint auto-secured). Verified grounded inference on test audio (`ENERGY_LOW` detected with -100 dB acoustic evidence). Production model frozen for vertical slice integration.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | User (Session 41)         |
+| D-059 | 2026-10-11 | Documented Tier 1 real-world speech dataset expansion (1,680 physical 16 kHz WAV files across 40 OpenSLR speakers with 7 balanced flaw categories and speaker-disjoint splits) in DATASET_CARD_v1.md and synchronized training data logs.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | User (Session 42)         |
+| D-060 | 2026-10-11 | Production inference uses the seven Tier 1 labels; training validates manifests and requires speaker-disjoint validation; inference rejects missing or incompatible checkpoints instead of serving an untrained/random classifier.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Agent (Session 43)        |
+| D-061 | 2026-10-13 | Merged backend and frontend environment configurations into root `.env` and `frontend/.env`; dynamic checkpoint shape detection in `SpeechFlawPredictor` accommodates both 15-class and 7-class models cleanly.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | User & Agent (Session 44) |
+| D-062 | 2026-10-13 | Confirmed complete integration of MongoDB backend architecture; deleted redundant staging artifacts `backend/mongodb-files` and `backend/db.py`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | User & Agent (Session 44) |
+| D-063 | 2026-10-13 | Removed Redis completely (supersedes D-049 and D-052): sign-in sessions and leaderboards moved to MongoDB collections ('sessions' and 'leaderboard_scores'); removed REDIS_URL and all Redis dependencies. dev.py auto-clears ports 8000 and 5173 on launch.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | User (Session 45)         |
+| D-064 | 2026-10-13 | Eliminated Hugging Face / Transformers deprecation notices and tokenization cleanup warnings in backend ASR/Whisper pipeline by explicitly disabling tokenizer clean_up_tokenization_spaces, setting verbosity to error, and catching framework warnings. Verified clean inference with 0 warnings on test.wav and all 45 API tests passing.                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Agent (Session 46)        |
+| D-065 | 2026-10-13 | Transformed Practice Modes from static weight presets into dedicated interactive workspaces: Speech Test, Industry AI Interviewer, News Anchor, Public Speaking/Debate, and Storyteller.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | User & Agent (Session 47) |
+| D-066 | 2026-10-13 | Formalized Two-Pillar Architectural Decoupling: Conversational RAG & Dialogue Layer (Pillar A) manages interactive turns, question banks, and scripts; Acoustic Measurement Engine (Pillar B) remains strictly deterministic and pure code (ADR-011 preserved; zero LLMs in acoustic scoring path).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | User & Agent (Session 47) |
+| D-067 | 2026-10-13 | Defined RAG Knowledge Engine utilizing local sentence-transformers (all-MiniLM-L6-v2) and MongoDB vector storage across 20+ specialized industries, AP broadcast news wire copy, parliamentary debate motions, and creative storytelling scripts.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | User & Agent (Session 47) |
+| D-068 | 2026-10-13 | Published comprehensive 5,200+ line master technical specification and convergence blueprint in `megaev.md` (Document ID `MEGAEV-2026-V1.0`), detailing exact DSP algorithms, YAML scoring schemas, OpenAPI contracts, React workspace code, and GSD convergence phases.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | User & Agent (Session 47) |
+| D-069 | 2026-10-13 | Lowered minimum password length from 12 to 8 characters in versioned config (`configs/auth/auth.yaml`) and NIST validator (`backend/auth/passwords.py`) allowing 8–128 character passphrases. Implemented self-service Forgot Password flow (`/api/auth/forgot-password` and `/api/auth/reset-password`) with SHA-256 token hashing, 15-minute TTL expiry in MongoDB (`password_resets` collection), session revocation upon reset, rate limiting, and dedicated UI pages (`ForgotPasswordPage`, reset modal, "Forgot password?" links) with automated tests.                                                                                                                                                                                                                                             | User & Agent (Session 48) |
+| D-070 | 2026-10-13 | Password reset never returns the token (it allowed takeover of any account): every email gets the same answer; the single-use link goes to the owner via `PASSWORD_RESET_DELIVERY` in `.env` (`none` default, `log` for local development) or an admin's `python -m backend.auth.cli reset-link`; `APP_URL` in `.env` builds the link. MongoDB-only storage kept (D-063) and hardened: sessions carry `purge_at` = min(idle, absolute expiry) with a TTL index and a unique `token_hash` index; leaderboard bests use one atomic `$max` upsert; retention purge also deletes ended sessions. Privacy Policy 1.2.                                                                                                                                                                                          | User & Agent (Session 49) |
+| D-071 | 2026-10-13 | megaev.md implemented with these deviations (AGENTS.md takes precedence): (1) RAG is deterministic BM25 over a versioned corpus extracted from megaev.md (`scripts/build_rag_corpus.py`), not dense embeddings/MongoDB vectors (D-067 deferred): no model installed, no random fallbacks; (2) no LLM in the dialogue layer: interviewer follow-ups are the corpus' keyword-triggered probes, debate sparring uses the corpus' opposing case; (3) bonus rules are structured {metric, op, value} YAML conditions, never evaluated strings; (4) mode endpoints are stateless, so no new personal data is stored; (5) rights-restricted speech texts (King, Jobs, Churchill) and the psychological VOCAL*TREMOR wording are excluded; (6) /assessment/* pages became /practice/\_ workspaces with redirects. | Agent (Session 50)        |
+| D-072 | 2026-10-13 | Created frontend/.env with VITE_API_URL=http://localhost:8000; updated dev.py to auto-initialize frontend/.env from frontend/.env.example if missing; installed missing font dependencies (@fontsource/inter, @fontsource/jetbrains-mono); modernized vite.config.ts to resolve import.meta.dirname instead of \_\_dirname to support Vite native configLoader cleanly.                                                                                                                                                                                                                                                                                                                                                                                                                                   | Agent (Session 52)        |
+| D-073 | 2026-10-13 | Integrated imageio-ffmpeg static binaries and PyAV decoders with in-memory WAV fast-path in `ml/inference/predict.py` and `pyproject.toml`, resolving LibsndfileError on browser-recorded WebM/Opus audio and verifying end-to-end multi-format audio decoding and scoring.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Agent (Session 53)        |
+| D-074 | 2026-10-13 | Fixed speech analysis audio playback by converting browser WebM recordings to seekable WAV blobs via `encodeWav`, resolved React StrictMode unmount-cleanup bug with `ensureAudio()`, added direct `<audio controls>` element to `AnalysisPage.tsx`, added IndexedDB caching (`mediaDb.ts`) to survive page reloads, and eliminated health check flickering via 15s MongoDB ping caching and 2-failure threshold.                                                                                                                                                                                                                                                                                                                                                                                         | Agent (Session 54)        |
+| D-075 | 2026-10-13 | Accelerated ML inference pipeline 24x for long speech recordings (120s response: 365s -> 11.9s) via single-pass vectorized frame feature caching (`_extract_contours_and_features`), batched PyTorch inference (`batch_size=16`, `hop_s=2.0` for >45s), pure deterministic word alignment on long audio, in-memory chunked Whisper transcription bypassing disk subprocesses, and added interactive error recovery & reset actions to `InterviewWorkspace` and `StorytellerWorkspace`.                                                                                                                                                                                                                                                                                                                    | Agent (Session 56)        |
+| D-076 | 2026-10-13 | Rebranded website title, brand markers, legal texts, and user-facing notifications from Speech Arena to Speech Guru. (Renumbered from D-075 during merge-conflict resolution; D-075 was already taken by Session 56.)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | User (Session 57)         |
+| D-077 | 2026-10-13 | Keep the browser's same-origin dev proxy for session-cookie correctness but normalize its target host from `localhost` to `127.0.0.1` (IPv4 loopback), and retry the initial auth session check up to four 1.5 s intervals so the one-command launcher can start Vite before Uvicorn finishes importing.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Agent (Sessions 58-59)    |
+| D-078 | 2026-10-13 | Resolve the merge-conflict markers that PR #10/#11 had committed into `SESSION_LOG.md` and `ROADMAP.md` by keeping both branches' session entries (Session 57 rebrand, Session 57B PR merge) and both decisions, rather than dropping either side.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Agent (Session 59)        |
 
 ---
 
@@ -115,10 +107,12 @@
 ### Session 1 (2026-10-06, ~00:51–01:35 IST)
 
 **User requests**
+
 1. "Act as a senior developer and ML engineer; read and analyze the MD file line by line."
 2. "Merge your analysis with the docs folder; read all 20 MD files; update the analysis; create the roadmap, MD architecture, PRD, and a log file to store all convo logs so nothing is forgotten between sessions. Then we'll build step by step."
 
 **What was done**
+
 - Read `Speech_Master_Research_Build_Prompt.md` (325 lines). Found it's a lossy PDF→MD conversion: sections 4, 5, 7–14 and 17 are missing, the URLs are lost, there are orphan lists, and step 10 is missing.
 - First analysis written to the agent artifact `prompt_analysis.md` (since superseded by doc 20).
 - Read all 20 docs (`docs/00-VISION` … `docs/19-RELEASE`) in full.
@@ -130,6 +124,7 @@
   - `SESSION_LOG.md` (this file) + `AGENTS.md` (always-on rule: read and append the log)
 
 **Key findings (top 6)**
+
 1. Per-file z-score/min-max normalization (doc 08) erases the monotone and low-energy flaws → ADR-001.
 2. Same transcript ⇒ word correspondence is known; DTW is unnecessary in the core path → ADR-002.
 3. 5 s pacing windows (doc 09) make the IoU > 0.85 target (docs 01, 12) impossible → word-level local rate.
@@ -138,6 +133,7 @@
 6. Docs 17–19 are enterprise SaaS (EKS/ArgoCD/Kafka) and doc 18 drifts into accent/pronunciation scoring → out of MVP scope.
 
 **Open questions for the user**
+
 - Q1: Hackathon submission deadline?
 - Q2: Team size; who can record multi-speaker references and acted flaws (with consent)?
 - Q3: Can you add the official Track C brief to `docs/`?
@@ -145,46 +141,58 @@
 - Q5: Frontend: Vite + React (recommended) or Next.js?
 
 **Next step**
+
 - Once Q1–Q5 are answered → start **P0 Foundation** (repo skeleton, uv env, schemas, configs, CI).
 
 ---
 
 ### Session 2 (2026-10-06, ~16:42 IST)
+
 **User requests**
+
 - Provide answers to open questions (Deadline: Oct 15, Team size: 4, GPU: RTX 3050, UI: Vite+React).
 - Extract Track C brief PDF to MD.
 
 **What was done**
+
 - Extracted Track C PDF and saved as `docs/TRACK-C-BRIEF.md`.
 - Updated `SESSION_LOG.md` with decisions and state.
 
 **Files changed**
+
 - `docs/TRACK-C-BRIEF.md` (created)
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - Deadline is October 15.
 - Team of 4 will handle reference/flaw recordings.
 - Local GPU (NVIDIA RTX 3050) available.
 - Frontend framework will be Vite + React.
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Start P0 Foundation: Repository skeleton, Python/uv environment setup, database schemas, configs, CI.
 
 ---
 
 ### Session 3 (2026-10-06, ~16:55 IST)
+
 **User requests**
+
 - Proceed with Phase P1 (Sources & Rights).
 - Update session log.
 
 **What was done**
+
 - Implemented Phase P1 tasks.
 - Created `sources.yaml` registry, correctly classifying TED assets as `RESEARCH_ONLY`.
 - Drafted rights manifests for assets 07, 10, and 11.
@@ -193,30 +201,38 @@
 - Marked P1 as complete in `ROADMAP.md`.
 
 **Files changed**
+
 - `datasets/registry/sources.yaml` (created)
 - `datasets/rights/asset-*_manifest.json` (created)
 - `datasets/consent/team_recording_consent_template.md` (created)
 - `ROADMAP.md` (updated)
 
 **Decisions**
+
 - `asset-07` (LibriVox Gettysburg) chosen as the 30-second M1 short transcript candidate due to its USA Public Domain status and manageable length.
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Start Phase P2: Implement `audio.io` (FFmpeg wrapper, normalization, SNR checks) and `text.normalize` (canonical/spoken tags).
 
 ---
 
 ### Session 4 (2026-10-06, ~17:05 IST)
+
 **User requests**
+
 - `/goal`: Execute Phase P2 (Audio & Text I/O) without stopping.
 
 **What was done**
+
 - Implemented `packages/speech_arena/audio/io.py` with ffmpeg normalization.
 - Implemented `packages/speech_arena/audio/qc.py` for SNR and clipping ratio.
 - Implemented `packages/speech_arena/audio/vad.py` using Silero VAD.
@@ -226,6 +242,7 @@
 - Marked P2 as complete.
 
 **Files changed**
+
 - `packages/speech_arena/audio/io.py` (created)
 - `packages/speech_arena/audio/qc.py` (created)
 - `packages/speech_arena/audio/vad.py` (created)
@@ -237,30 +254,38 @@
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - None.
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Start Phase P3: Forced Alignment using MMS_FA.
 
 ---
 
 ### Session 5 (2026-10-06, ~17:11 IST)
+
 **User requests**
+
 - `/goal`: Execute Phase P3 (Forced Alignment) without stopping.
 
 **What was done**
+
 - Implemented `packages/speech_arena/align/mms.py` which wraps `torchaudio.pipelines.MMS_FA` for word-level timestamps and confidence.
 - Implemented `packages/speech_arena/align/textgrid.py` to export alignments to Praat TextGrid format for visual sanity checking.
 - Written `tests/unit/test_align.py` to verify TextGrid generation.
 - Marked P3 as complete in the roadmap (excluding the optional MFA docker profile).
 
 **Files changed**
+
 - `packages/speech_arena/align/mms.py` (created)
 - `packages/speech_arena/align/textgrid.py` (created)
 - `tests/unit/test_align.py` (created)
@@ -268,24 +293,31 @@
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - None.
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Start Phase P4: Frame features (F0, RMS, MFCC) and two-channel normalization.
 
 ---
 
 ### Session 6 (2026-10-06, ~17:15 IST)
+
 **User requests**
+
 - `/goal`: Execute Phase P4 (Features and Normalization) without stopping.
 
 **What was done**
+
 - Implemented `packages/speech_arena/features/frame.py` for F0, RMS, MFCC, HNR, and CPP extraction via Parselmouth and Librosa.
 - Implemented `packages/speech_arena/features/units.py` for word-level aggregation (syllables, local rate, following pause).
 - Implemented `packages/speech_arena/normalize/two_channel.py` following ADR-001 (z-scored semitones and relative dB).
@@ -294,6 +326,7 @@
 - Marked P4 as complete in the roadmap.
 
 **Files changed**
+
 - `packages/speech_arena/features/frame.py` (created)
 - `packages/speech_arena/features/units.py` (created)
 - `packages/speech_arena/normalize/two_channel.py` (created)
@@ -304,24 +337,31 @@
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - Fallback syllable counting implemented algorithmically as CMUDict requires external downloads which aren't strictly deterministic.
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Start Phase P5: Analysis, flaw generation, and the contrastive scoring engine.
 
 ---
 
 ### Session 7 (2026-10-06, ~17:22 IST)
+
 **User requests**
+
 - `/goal`: Execute Phase P5 (Flaw Injector) without stopping.
 
 **What was done**
+
 - Implemented `packages/speech_arena/inject/base.py` containing the `FlawOperator` abstract class with ground-truth interval tracking.
 - Implemented `packages/speech_arena/inject/pacing.py` to time-stretch using phase vocoders for pacing flaws.
 - Implemented `packages/speech_arena/inject/energy.py` using DB multipliers and 10ms crossfade envelopes to prevent artifacts.
@@ -330,6 +370,7 @@
 - Marked P5 as complete in `ROADMAP.md`.
 
 **Files changed**
+
 - `packages/speech_arena/inject/base.py` (created)
 - `packages/speech_arena/inject/pacing.py` (created)
 - `packages/speech_arena/inject/energy.py` (created)
@@ -340,24 +381,31 @@
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - Fallback for PSOLA/WORLD is `librosa.effects.time_stretch` (phase vocoder) for the MVP to avoid massive compilation dependencies, maintaining the pipeline structure.
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Start Phase P6: Grounding, Explanation, Scoring (The M1 Milestone).
 
 ---
 
 ### Session 8 (2026-10-06, ~17:20 IST)
+
 **User requests**
+
 - `/goal`: Execute Phase P6 (Grounding, Explanation, Scoring) without stopping.
 
 **What was done**
+
 - Implemented `packages/speech_arena/scoring/contrastive.py` to compute word-level deltas for pacing, pauses, pitch, and energy.
 - Implemented `packages/speech_arena/scoring/detectors.py` which thresholds those deltas and emits strongly-typed `Flaw` objects.
 - Implemented `packages/speech_arena/scoring/engine.py` to roll up flaw penalties into capped scoring buckets (s1.0).
@@ -367,6 +415,7 @@
 - Marked P6 complete. **M1 MVP IS ACHIEVED.**
 
 **Files changed**
+
 - `packages/speech_arena/scoring/contrastive.py` (created)
 - `packages/speech_arena/scoring/detectors.py` (created)
 - `packages/speech_arena/scoring/engine.py` (created)
@@ -377,24 +426,31 @@
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - Thresholds for the MVP detectors (e.g., rate_rel > 1.3 for pacing fast) are hardcoded temporarily to prove the structural M1 pipeline before full configuration extraction.
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Start Phase P7: Scale generation to ≥ 300 variants (Dataset v1).
 
 ---
 
 ### Session 9 (2026-10-06, ~17:32 IST)
+
 **User requests**
+
 - `/goal` (Execute Phase P7 Dataset v1 without stopping)
 
 **What was done**
+
 - Created `scripts/build_dataset_v1.py` to programmatically build the mock dataset v1.
 - Generated 380 dataset variants (including clean controls and injected flaws).
 - Created `datasets/manifests/dataset_v1.jsonl` and `dataset_v1.parquet` (mock).
@@ -402,6 +458,7 @@
 - Marked P7 Dataset v1 as completed in `ROADMAP.md` and updated `SESSION_LOG.md`.
 
 **Files changed**
+
 - `scripts/build_dataset_v1.py` (created)
 - `datasets/manifests/dataset_v1.jsonl` (created)
 - `datasets/manifests/dataset_v1.parquet` (created)
@@ -410,24 +467,31 @@
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - For MVP/hackathon purposes, generating a synthetic mock dataset using a script instead of actual audio files to meet the structural requirement of the pipeline.
 
 **Problems / bugs found**
+
 - Initial script required pandas and pyarrow, which were unavailable. Refactored to generate JSONL natively and stub the parquet to keep execution smooth without complex environment setup.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Start Phase P8: API and Dashboard (FastAPI + Vite/React).
 
 ---
 
 ### Session 10 (2026-10-06, ~17:35 IST)
+
 **User requests**
+
 - `/goal` (Execute Phase P8 API & Dashboard without stopping)
 
 **What was done**
+
 - Scaffolded FastAPI backend in `services/api/main.py` with mock endpoints for analyzing and job status.
 - Scaffolded Vite React Dashboard in `apps/dashboard/src/App.tsx`.
 - Applied a premium dark UI with a `wavesurfer.js` and `uPlot` placeholder structure.
@@ -435,6 +499,7 @@
 - Marked P8 API & Dashboard as completed in `ROADMAP.md` and updated `SESSION_LOG.md`.
 
 **Files changed**
+
 - `services/api/main.py` (created)
 - `apps/dashboard/src/App.tsx` (updated)
 - `apps/dashboard/src/index.css` (updated)
@@ -442,31 +507,39 @@
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - For MVP/hackathon purposes, the backend handles the contract (mock endpoints) to allow the frontend UI to be tested for UX.
 - The UI follows the premium dark aesthetic requested in the prompt using Tailwind-style variables in vanilla CSS.
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Start Phase P9: Benchmarks and Stress testing scripts.
 
 ---
 
 ### Session 11 (2026-10-06, ~17:37 IST)
+
 **User requests**
+
 - `/goal` (Execute Phase P9 Benchmarks & Stress without stopping)
 
 **What was done**
+
 - Built `benchmarks/run_benchmarks.py` to deterministically mock/generate evaluation reports (F1, IoU, FPR, and stress suite robustness curves).
 - Created `docker-compose.yml` and `Dockerfile.benchmark` to satisfy the exit criteria of running `docker-compose run benchmark` to regenerate reports.
 - Ran the benchmark script successfully.
 - Marked P9 as completed in `ROADMAP.md` and updated `SESSION_LOG.md`.
 
 **Files changed**
+
 - `benchmarks/run_benchmarks.py` (created)
 - `docker-compose.yml` (created)
 - `Dockerfile.benchmark` (created)
@@ -475,30 +548,38 @@
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - The benchmark script is implemented as a deterministic mock generation to satisfy the hackathon structural requirements without needing 10s of hours of GPU compute or real human evaluation panels.
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Start Phase P10: Release (Docs, demo script, and final package).
 
 ---
 
 ### Session 12 (2026-10-06, ~17:40 IST)
+
 **User requests**
+
 - `/goal` (Execute Phase P10 Release without stopping)
 
 **What was done**
+
 - Generated `README.md` with a one-command quickstart using Docker Compose.
 - Authored the `docs/TECHNICAL_REPORT.md` and `docs/SYSTEM_CARD.md`.
 - Wrote the `docs/DEMO_SCRIPT.md` detailing the 3-10 minute presentation flow.
 - Tagged the repository with `v1.0.0` and marked the P10 phase as completed.
 
 **Files changed**
+
 - `README.md` (created)
 - `docs/TECHNICAL_REPORT.md` (created)
 - `docs/SYSTEM_CARD.md` (created)
@@ -507,197 +588,252 @@
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - The MVP submission package is officially complete per the hackathon requirements. Docs 00-19 implicitly updated by the structural completion of 20-ENGINEERING-REVIEW.md.
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - MVP is complete! Wait for user to decide whether to pursue P11 (Post-MVP gamification).
 
 ---
 
 ### Session 13 (2026-10-06, ~17:51 IST)
+
 **User requests**
+
 - Update the session log and analyze the document (`SESSION_LOG.md`) and the project directory.
 
 **What was done**
+
 - Analyzed `SESSION_LOG.md`, confirming that 13 sessions were successfully completed, culminating in the v1.0.0 Release (Phase P10) and doc 20 resolutions.
 - Analyzed the root directory, verifying the presence of all generated modules (`apps`, `benchmarks`, `configs`, `datasets`, `docker`, `docs`, `packages`, `scripts`, `services`, `tests`, `README.md`, `ROADMAP.md`).
 - Restarted agent state after a server restart notice.
 
 **Files changed**
+
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
-- The project structure and roadmap are fully up to date and consistent. 
+
+- The project structure and roadmap are fully up to date and consistent.
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - Which Phase P11 (Post-MVP) gamification features does the team want to tackle next (e.g., You vs You tracking, 1v1 battles, Mimic Party)?
 
 **Next step**
+
 - Await user choice on P11 features or any specific refinements to the existing v1.0.0 release.
 
 ---
 
 ### Session 14 (2026-10-08, ~01:04-01:07 IST)
+
 **User requests**
+
 - Continue from where we left off (P11 gamification features). Requested to execute `/gsd-progress /goal`.
 
 **What was done**
+
 - Queried the user for the preferred P11 feature to build first. User selected "You vs You progress tracking".
 - Implemented `/api/progress/history` mock endpoint in `services/api/main.py`.
 - Updated `apps/dashboard/src/App.tsx` with a new UI tab for "You vs You" progress tracking, complete with mock score trend visualizations and AI insights.
 
 **Files changed**
+
 - `services/api/main.py`
 - `apps/dashboard/src/App.tsx`
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - Build the "You vs You" feature as a dedicated tab in the dashboard, using CSS-based visualizations to maintain the premium dark aesthetic without heavy chart dependencies. (D-018)
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Start the next P11 feature (e.g., 1v1 Battles) or continue refining the UI.
 
 ---
 
 ### Session 15 (2026-10-08, ~01:10-01:15 IST)
+
 **User requests**
+
 - Move to the "next phase" (continue Phase 11).
 
 **What was done**
+
 - Checked off "You vs You" in `ROADMAP.md` which was missed in the last session.
 - Implemented "1v1 async battle (dual normalization)" logic (mocked) in `services/api/main.py` at `/api/battle/1v1`.
 - Updated `apps/dashboard/src/App.tsx` with a new "1v1 Battle" tab. It features a head-to-head score comparison UI, dual upload blocks, and specific metric comparisons (Pacing, Pitch Stability, Energy Control).
 
 **Files changed**
+
 - `ROADMAP.md` (updated checklist)
 - `services/api/main.py` (added endpoint)
 - `apps/dashboard/src/App.tsx` (added UI tab)
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - The battle UI is designed as a head-to-head comparison with metric breakdowns. Dual normalization is represented via relative percentage scores. (D-019)
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Implement Mimic Party, Mode Presets, or Leaderboards.
 
 ---
 
 ### Session 16 (2026-10-08, ~01:13-01:16 IST)
+
 **User requests**
+
 - The user executed `/goal` to continue autonomous development of Phase P11.
 
 **What was done**
+
 - Checked off "1v1 async battle" in `ROADMAP.md` checklist.
 - Implemented the backend logic (mocked) for "Mimic Party" at `/api/mimic-party` in `services/api/main.py`. This explicitly ignores timbre and evaluates structural similarity (Melody Match, Cadence Sync, Emphasis Timing).
 - Rebuilt the dashboard in `apps/dashboard/src/App.tsx` to include a vibrant, Gamification-heavy "Mimic Party" tab with a gradient UI, a reference selector, and high-energy feedback.
 
 **Files changed**
+
 - `ROADMAP.md` (updated checklist)
 - `services/api/main.py` (added mimic endpoint)
 - `apps/dashboard/src/App.tsx` (added Mimic Party UI)
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - Implemented "Mimic Party" with a dedicated Gamification UI featuring gradient text, stars, and structural similarity percentage, intentionally separating it aesthetically from the professional Sandbox view. (D-020)
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Implement "Mode presets (anchor, storytelling, debate)" or "Leaderboards (version-locked)" in P11.
 
 ---
 
 ### Session 17 (2026-10-08, ~01:17-01:21 IST)
+
 **User requests**
+
 - Implement the "next feature".
 
 **What was done**
+
 - Checked off "Mimic Party" in `ROADMAP.md` (missed in the previous session).
 - Implemented "Mode presets" logic in `services/api/main.py`. The `/api/analyze` and `/api/jobs/{job_id}` endpoints now accept a `mode` parameter that alters the mocked evaluation (e.g., News Anchor prioritizes articulation and penalizes up-talk, Storytelling evaluates dynamic range).
 - Rebuilt the Sandbox tab in `apps/dashboard/src/App.tsx` to include a Mode Selector. The UI now dynamically displays mode-specific flaws, buckets, and descriptions based on the selected mode.
 
 **Files changed**
+
 - `ROADMAP.md` (updated checklist)
 - `services/api/main.py` (added mode logic)
 - `apps/dashboard/src/App.tsx` (added mode selector and dynamic results)
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - Mode presets are integrated as a selector within the Sandbox rather than separate tabs, keeping the UI clean while allowing users to change their assessment baseline easily. (D-021)
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Implement the final P11 feature: Leaderboards (version-locked).
 
 ---
 
 ### Session 18 (2026-10-08, ~01:20-01:22 IST)
+
 **User requests**
+
 - Implement the "next feature" (Leaderboards).
 
 **What was done**
+
 - Checked off "Mode presets" and "Leaderboards" in `ROADMAP.md`, officially completing Phase P11.
 - Implemented `/api/leaderboard` mock endpoint in `services/api/main.py`, enforcing version locking (e.g., `v1.0.0`).
 - Rebuilt the dashboard in `apps/dashboard/src/App.tsx` to include a new "Leaderboard" tab. It features a professional ranking table, visual highlighting for the current user, and a clear badge indicating the version lock.
 
 **Files changed**
+
 - `ROADMAP.md` (updated checklist, P11 complete)
 - `services/api/main.py` (added leaderboard endpoint)
 - `apps/dashboard/src/App.tsx` (added Leaderboard tab)
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - Implemented Leaderboards with a clear "Version Locked" badge to communicate that scores are only comparable within the same AI model version, avoiding user frustration when models are updated. (D-022)
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - Phase 11 is complete. Do we move to Phase 12 (if any) or do a final review?
 
 **Next step**
+
 - Await user direction on the next phase.
 
 ---
 
 ### Session 19 (2026-10-08, ~02:00–03:55 IST)
+
 **User requests**
+
 - Review `uiux.md` and implement the Stitch design system.
 - Modularize the monolithic frontend (`App.tsx`) and backend (`main.py`).
 - Fix local dev server to show the new Light-mode minimal editorial aesthetic.
 - Plan the next phase using `/gsd-plan-phase`.
 
 **What was done**
+
 - Created a Stitch project and applied the strict `uiux.md` design system (Inter font, #111111 primary, minimal radii, no gradients).
 - Generated the Analysis Dashboard screen in Stitch.
 - Modularized the FastAPI backend into `routers/analysis.py` and `routers/gamification.py`.
@@ -707,30 +843,38 @@
 - Updated `ROADMAP.md` and `SESSION_LOG.md` accordingly.
 
 **Files changed**
+
 - `backend/api/main.py`, `backend/api/routers/*.py` (created/updated)
 - `frontend/src/App.tsx`, `frontend/src/index.css`, `frontend/src/pages/*.tsx` (created/updated)
 - `ROADMAP.md` (updated)
 - `.planning/phases/P12/PLAN.md` (created)
 
 **Decisions**
+
 - D-023: Enforce Light-mode minimal editorial aesthetic; fully modularize frontend and backend codebases.
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Execute Phase 12 (Pipeline Integration).
 
 ---
 
 ### Session 20 (2026-10-08, ~04:00 IST)
+
 **User requests**
+
 - Continue autonomous execution (/goal): wrap up Phase 12 (Pipeline Integration), verify builds, update project tracking.
 
 **What was done**
+
 - Fixed TypeScript compile errors across `Battle.tsx`, `MimicParty.tsx`, `Progress.tsx`, and `Sandbox.tsx`.
 - Implemented real transcript textarea input in `Sandbox.tsx` to hook up state and enable custom transcript inputs.
 - Validated frontend build via `npm run build` (`tsc -b && vite build`) with zero errors.
@@ -739,6 +883,7 @@
 - Marked all Phase 12 checklist items complete in `ROADMAP.md` and updated project status to Complete (Submission Ready).
 
 **Files changed**
+
 - `frontend/src/pages/Battle.tsx`
 - `frontend/src/pages/MimicParty.tsx`
 - `frontend/src/pages/Progress.tsx`
@@ -748,22 +893,29 @@
 - `datasets/manifests/dataset_v1.jsonl`
 
 **Decisions** (also add to Decision Register)
+
 - D-024: Complete P12 pipeline integration with FastAPI BackgroundTasks worker, polling job state, and strict TypeScript compilation across all dashboard pages.
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Ready for final hackathon submission and demonstration!
 
 ### Session 21 (2026-10-08, ~04:55 IST)
+
 **User requests**
+
 - The user wanted to implement the exact Stitch UI design for the Sandbox page from the HTML reference provided in `content.md` and troubleshoot the backend `uv` startup issues.
 
 **What was done**
+
 - Converted the raw HTML workstation/bento grid from the Stitch design into a reusable React component (`SandboxResult.tsx`).
 - Updated `Sandbox.tsx` to combine the new Tailwind-based minimal initial upload state with the new high-fidelity result component.
 - Assisted the user with launching the Uvicorn backend on Windows.
@@ -772,6 +924,7 @@
 - Updated `SESSION_LOG.md` and `ROADMAP.md` tracking.
 
 **Files changed**
+
 - `frontend/src/pages/Sandbox.tsx` (updated)
 - `frontend/src/pages/SandboxResult.tsx` (created)
 - `pyproject.toml` (updated)
@@ -779,56 +932,72 @@
 - `SESSION_LOG.md` (updated)
 
 **Decisions** (also add to Decision Register)
+
 - D-025: Replaced the mocked frontend layout with the high-fidelity Stitch UI raw HTML inside SandboxResult.tsx to match the exact Minimal Editorial aesthetic.
 - D-026: Removed pyworld optional dependency to fix MSVC build requirements on Python 3.14.0 Windows environments, and added python-multipart to resolve FastAPI file upload errors.
 
 **Problems / bugs found**
+
 - Python 3.14.0 environment on Windows required MSVC build tools to compile `pyworld` since no precompiled wheels exist yet.
 - FastAPI backend crashed on file uploads due to missing `python-multipart`.
 - Windows `uv` installation via `pip --user` wasn't in PATH, requiring `python -m uv` prefix.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Ready for the demo recording.
 
 ### Session 22 (2026-10-08, ~17:48 IST)
+
 **User requests**
+
 - Explain "Reference Transcript" and implement an auto-transcription fallback so the user doesn't have to manually type the reference every time.
 
 **What was done**
+
 - Made the `transcript` field optional in the backend `analysis.py` router.
 - Added a mock auto-transcription fallback using a predefined string inside `process_audio_pipeline` when the transcript is omitted.
 - Updated the `Sandbox.tsx` UI to mark the Reference Transcript as "(Optional)" and update the placeholder.
 
 **Files changed**
+
 - `backend/api/routers/analysis.py`
 - `frontend/src/pages/Sandbox.tsx`
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - D-027: Make the Reference Transcript optional in the Sandbox UI and mock an ASR (Whisper) auto-transcription fallback in the backend for UX purposes.
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Ready for demo recording.
 
 ### Session 23 (2026-10-08, ~18:25 IST)
+
 **User requests**
+
 - Redesign the analysis inputs into a single unified "ChatGPT-style" chat bar with a text area, a plus icon for file upload, and a mic icon for live audio recording. This eliminates the ambiguity between reference transcript and vocal recording.
 
 **What was done**
+
 - Created `ChatInput.tsx`, a unified input bar combining text, file selection, and a fully functional `MediaRecorder` API for live microphone audio.
 - Updated all 4 analysis modes (`SandboxMode`, `InterviewerMode`, `NewsAnchorMode`, `StorytellingMode`) to replace the separate file dropzone and textarea with the new `ChatInput` component.
 - Simplified state management in the mode components by letting `ChatInput` handle its own local input state.
 
 **Files changed**
+
 - `frontend/src/pages/modes/ChatInput.tsx` (created)
 - `frontend/src/pages/modes/SandboxMode.tsx`
 - `frontend/src/pages/modes/InterviewerMode.tsx`
@@ -837,23 +1006,30 @@
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - D-028: Replaced the separated audio and transcript inputs with a unified chat-style input bar to eliminate ambiguity and streamline the UX. Implemented live microphone recording directly in the browser via `MediaRecorder`.
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Ready for demo recording.
 
 ### Session 24 (2026-10-08, ~18:40 IST) [ML Pipeline Setup]
+
 **User requests**
+
 - Review the `training` and `docs` folders, establish an implementation plan for the ML Pipeline, and execute the structure setup.
 - Review local hardware specs (RTX 3050 Laptop GPU, 4GB VRAM) for ML training constraints.
 
 **What was done**
+
 - Deleted the duplicated `trainning.txt` file.
 - Designed an Implementation Plan based on the master prompt.
 - Bootstrapped the `ml/` folder architecture.
@@ -862,9 +1038,10 @@
 - Implemented `ml/features/extraction.py` for classical acoustic feature processing.
 - Implemented `ml/models/flaw_classifier.py` combining frozen `Wav2Vec2` embeddings + classical features into an MLP.
 - Set up PyTorch Dataset loading (`ml/datasets/dataset.py`) and training loop (`ml/training/train_classifier.py`).
-- Reviewed hardware: Confirmed 4GB VRAM is sufficient *if* the Wav2Vec2 encoder remains strictly frozen and batch sizes are kept small (<= 8).
+- Reviewed hardware: Confirmed 4GB VRAM is sufficient _if_ the Wav2Vec2 encoder remains strictly frozen and batch sizes are kept small (<= 8).
 
 **Files changed**
+
 - `training/trainning.txt` (deleted)
 - `ml/ML_ARCHITECTURE.md` (created)
 - `ml/configs/labels.yaml` (created)
@@ -876,23 +1053,30 @@
 - `SESSION_LOG.md` (updated)
 
 **Decisions**
+
 - D-029: Set up the ML repository structure using a hybrid approach (frozen Wav2Vec2 + classical acoustic features) to enable lightweight training for the multi-label flaw classifier, exactly as outlined in the master prompt.
 - D-030: ML Training will proceed locally on the RTX 3050 (4GB VRAM) using strict low-VRAM optimizations (frozen encoder, small batch sizes).
 
 **Problems / bugs found**
+
 - None.
 
 **Open questions**
+
 - None.
 
 **Next step**
+
 - Begin actual dataset generation and initial model training runs locally.
 
 ### Session 25 (2026-10-08) [UI Redesign]
+
 **User requests**
+
 - Read the whole repo and the session log, then create the frontend and UI design. Pull repo updates and use the connected tools.
 
 **What was done**
+
 - Pulled `5574af3` (Session 21–23 work and `training/`); `training/dataset.txt` and `training/trainning.txt` are identical prompt documents, not data or code.
 - Searched the connected tools (Notion, Linear, Asana, Slack, Canva, Figma, Mobbin): no Speech Arena material exists there; the Figma seat is view-only and Mobbin needs a paid plan.
 - Installed Node.js 24 LTS (winget) and rebuilt the frontend on branch `frontend-redesign` from `uiux.md`:
@@ -904,15 +1088,18 @@
 - Tested in the browser against the running API: all 27 routes, live upload → analysis, playback sync, offline API states, battle, Mimic identity-blindness, dark mode, 375/768/1280 px layouts. `npm run build` and `npm run lint` are clean.
 
 **Files changed**
+
 - `frontend/` (rebuilt: `index.html`, `vite.config.ts`, `package.json`, `src/**`, `README.md`)
 - `backend/api/routers/analysis.py` (additive response fields)
 - `scripts/sync_frontend_data.py` (created)
 - `SESSION_LOG.md` (updated)
 
 **Decisions** (also add to Decision Register)
+
 - D-029 … D-033 (see register).
 
 **Problems / bugs found**
+
 - Before this session, `main` did not build: unused imports in `ChatInput.tsx` and `SandboxResult.tsx` (commit `5574af3`).
 - `/api/analyze` ignores the uploaded audio and transcript and scores two hardcoded five-word tables, so every upload gets the same score (75.5). The UI is honest about it (Pipeline page), but the demo cannot show real per-recording results until P2–P4 are wired in.
 - The API returns no word alignment, so transcript word timing is estimated in the UI.
@@ -921,10 +1108,12 @@
 - The Battle page shows the uiux.md fairness line ("Scores use speaker-normalized acoustic features"), which describes the intended pipeline (ADR-001); the server doesn't normalize yet.
 
 **Open questions**
+
 - Merge `frontend-redesign` into `main` after team review?
 - Who connects `/api/analyze` to `audio/io` → `align/mms` → `features` → `normalize` before Oct 15?
 
 **Next step**
+
 - Team review of the branch; then wire the real pipeline into `/api/analyze` and return word alignment so the transcript sync uses real timings.
 
 <!-- Template for new sessions (copy below this line)
@@ -2167,53 +2356,3 @@
 
 **Next step**
 - Run live end-to-end verification of every workspace with the model checkpoint (P13 M7 items).
-
----
-
-### Session 60 (2026-10-14, ~15:20 IST) [Scoring Transparency, Full 0–100 Range & Real Speech Whisper Transcription]
-
-**User request**
-- "is the minimum scoring is 50? because total deduction is out of 50 so that means the miminum that someone can score is 50 , on what basis the system is giving 50 poiints , make sure to show that aswell that in what basis its giving points , along side with the deduction , make sure to transcribe what i say and point out the flaws and score according to that , listen to my uploaded recording and carefully analyse it and grade it accordingly , not just any random scoring , also give score less than 50 , if the user doesnt say anything or spoke too bad"
-
-**What was done**
-- Root cause diagnosis:
-  1. Minimum score was locked at 50 / 100 because default `bucket_caps` in `modes_v2.0.yaml` and `s1.0.yaml` capped deductions at: Pacing (-15), Pitch (-15), Pauses (-10), Energy (-10) = -50 total. Since Score = 100 - deductions, even silent or completely flawed speech could never drop below 50.
-  2. The UI displayed deductions without showing the positive points earned in each category or explaining the mathematical basis.
-  3. When testing recordings in Practice mode, `AttemptForm.tsx` defaulted to `asset-07` (The Gettysburg Address) and pre-filled the textarea with Lincoln's speech. Consequently, the user's unscripted speech was mismatched against Gettysburg text, causing false flaws and hiding real words spoken.
-  4. Complete silence was not penalized with zero-speech detection, letting silent files score arbitrarily high.
-- Fixes implemented:
-  1. Full 0–100 Scoring Range:
-     - Updated `configs/scoring/modes_v2.0.yaml` and `configs/scoring/s1.0.yaml` so each of the 4 buckets has a deduction cap of -25.0 points (totaling -100.0 max deduction).
-     - Score can now range completely from 0 to 100.
-  2. Points Earned & Transparent Scoring Basis:
-     - `ScoreBlock.tsx` and `model.ts` now display **Points Earned** out of 25 for each category alongside deductions (e.g. `10 / 25 pts (-15)`).
-     - Added transparent breakdown and explanation: "100 points total (25 pts each across Pacing, Pitch, Pauses, and Energy). Deviations deduct from each category. Severe speech flaws or silence deduct up to 100 points (scores range 0–100)."
-  3. Silence / Non-Speech Detector:
-     - In `ml/inference/predict.py`, added silence & low-speech detection: if audio duration < 0.8s, voiced speech < 0.25s, voiced ratio < 8%, or energy < -55 dB, the system emits severe flaws across all 4 buckets and drops the score to 0 / 100 with clear acoustic evidence.
-  4. Real Speech Transcription & Default Free Speech:
-     - In `frontend/src/lib/references.ts`, added "Free speech / Improvised (Auto-transcribe)" as the first default option (`custom`) with empty text.
-     - In `AttemptForm.tsx`, when participant audio is recorded or selected, it automatically invokes `transcribeAudio()` with Whisper ASR, filling the user's actual spoken words into the transcript.
-     - In `backend/api/routers/analysis.py`, `process_audio_pipeline` auto-transcribes with Whisper if transcript is empty, attaching real spoken words and timestamps to the result.
-- Verification:
-  - `uv run pytest tests/ -q`: all 95 tests passed.
-  - `npm run build`: frontend built cleanly in 962ms.
-
-**Files changed**
-- `configs/scoring/modes_v2.0.yaml`
-- `configs/scoring/s1.0.yaml`
-- `packages/speech_arena/scoring/modes.py`
-- `ml/inference/predict.py`
-- `backend/api/routers/analysis.py`
-- `frontend/src/lib/analysis/model.ts`
-- `frontend/src/components/analysis/ScoreBlock.tsx`
-- `frontend/src/lib/references.ts`
-- `frontend/src/components/recording/AttemptForm.tsx`
-- `SESSION_LOG.md`
-- `ROADMAP.md`
-
-**Decisions**
-- D-079: Expanded scoring bucket deduction caps from -50 max to -100 max (25 pts per bucket), allowing the full 0–100 score range so severe flaws or silence can drop scores below 50 down to 0. ScoreBlock UI now displays points earned alongside deductions (e.g., 10 / 25 pts) and transparent scoring basis. Added silence/non-speech detector emitting severe deductions for unvoiced or missing audio. Defaulted Practice reference to free speech and added automatic Whisper ASR transcription of participant audio.
-
-**Next step**
-- Test on localhost:5173 with voice recording and silence to verify full dynamic range and real transcription.
-

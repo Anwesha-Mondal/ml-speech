@@ -10,7 +10,7 @@ from typing import Any
 
 import yaml
 
-from backend.env import require
+from backend.env import optional, require
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = PROJECT_ROOT / "configs" / "privacy" / "privacy.yaml"
@@ -46,7 +46,7 @@ def load_privacy_settings(path: Path | None = None) -> PrivacySettings:
         documents=tuple(legal["documents"]),
         required_on_signup=tuple(legal["required_on_signup"]),
         controller=str(legal["controller"]),
-        contact_url=require("PRIVACY_CONTACT_URL"),
+        contact_url=optional("PRIVACY_CONTACT_URL", "https://speech-guru-six.vercel.app/privacy"),
         minimum_age=int(legal["minimum_age"]),
         audit_days=int(ret["audit_days"]),
         job_results_minutes=int(ret["job_results_minutes"]),

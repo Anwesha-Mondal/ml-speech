@@ -55,12 +55,14 @@ app = FastAPI(
 _auth = get_settings()
 maybe_purge(init_db())
 app.add_middleware(SecurityMiddleware)
+_cors_regex = optional("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(_auth.allowed_origins),
+    allow_origin_regex=_cors_regex if _cors_regex else r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "X-CSRF-Token", "X-Requested-With"],
+    allow_headers=["Content-Type", "X-CSRF-Token", "X-Requested-With", "Authorization", "Accept", "Origin"],
 )
 
 app.include_router(auth_router, prefix="/api")
@@ -82,7 +84,7 @@ def health_check() -> dict[str, object]:
 
 if __name__ == "__main__":
     import uvicorn
-    host = require("API_HOST")
-    port = int(require("API_PORT"))
+    host = optional("API_HOST", "0.0.0.0")
+    port = int(optional("PORT", optional("API_PORT", "8000")))
     print(f"[*] Starting Speech Guru Backend on http://{host}:{port} ...")
     uvicorn.run("backend.api.main:app", host=host, port=port, reload=True)

@@ -6,6 +6,8 @@ FROM python:3.11-slim-bookworm
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
+    PIP_ROOT_USER_ACTION=ignore \
+    HF_HUB_DISABLE_SYMLINKS_WARNING=1 \
     PYTHONPATH=/app \
     DEBIAN_FRONTEND=noninteractive
 
@@ -20,8 +22,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# 1. Install PyTorch with CUDA 12.1 support (seamless CPU fallback on non-GPU systems)
-RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cu121
+# Upgrade pip to latest version
+RUN pip install --no-cache-dir --upgrade pip
+
+# 1. Install PyTorch (default: CPU-optimized for fast, lightweight cloud Docker builds; override with CUDA if needed)
+ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir torch torchaudio --index-url ${TORCH_INDEX_URL}
 
 # 2. Copy dependency manifest and install remaining ML & audio packages
 COPY requirements.txt /app/
@@ -29,7 +35,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # 3. Pre-download & cache facebook/wav2vec2-base weights so container runs fully offline
 RUN python -c "from transformers import Wav2Vec2Model, Wav2Vec2Processor; \
-    print('[*] Caching facebook/wav2vec2-base encoder and processor...'); \
+    print('[*] Pre-caching facebook/wav2vec2-base...'); \
     Wav2Vec2Model.from_pretrained('facebook/wav2vec2-base'); \
     Wav2Vec2Processor.from_pretrained('facebook/wav2vec2-base'); \
     print('[+] Pre-caching complete!')"
@@ -37,8 +43,9 @@ RUN python -c "from transformers import Wav2Vec2Model, Wav2Vec2Processor; \
 # 4. Copy codebase
 COPY . /app/
 
-# 5. Ensure required output directories exist
+# 5. Ensure required runtime output directories exist
 RUN mkdir -p /app/ml/checkpoints /app/ml/runs /app/ml/data/audio /app/ml/data/manifests
 
-# Default action: run the classifier training pipeline
-CMD ["python", "ml/training/train_classifier.py"]
+# Default action: run the FastAPI web service with dynamic PORT support (Render compatibility)
+EXPOSE 8000
+CMD ["sh", "-c", "uvicorn backend.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

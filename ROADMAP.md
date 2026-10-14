@@ -191,7 +191,7 @@ graph LR
 - [ ] Optional: dense embeddings + RRF, LLM dialogue/TTS, speech-synced prompter, webcam overlay
 
 ---
-## Current Status
-- **Active phase:** P13 convergence: Scoring Transparency & Real Speech Whisper Transcription (Session 60).
-- **Last completed:** Expanded scoring bucket caps to -100 max (25 pts per bucket), allowing the full 0–100 score range so poor delivery or silence drops below 50 to 0. ScoreBlock now shows points earned alongside deductions with transparent scoring basis. Added silence/non-speech detector emitting severe deductions. Defaulted Practice reference to free speech and added automatic Whisper ASR transcription of participant audio (Session 60, D-079).
-- **Next action:** Verify live audio recording analysis on localhost:5173.
+- **Active phase:** Production Deployment & Real Speech Scoring Calibration (Sessions 60–67).
+- **Last completed:** Connected live Render backend URL (`https://speech-api-t8sr.onrender.com`) to frontend `API_BASE` and Vite config; expanded scoring bucket deduction caps to -100 max (25 pts per bucket) for full 0–100 dynamic range; transparent points earned display in `ScoreBlock`; silence/non-speech detector; and automatic Whisper ASR transcription of participant audio (D-079, D-080..D-086).
+- **Next action:** Verify live Vercel frontend and Render backend deployments and test full speech analysis.
+

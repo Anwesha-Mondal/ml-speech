@@ -63,4 +63,7 @@ def flag(name: str) -> bool:
 
 
 def csv(name: str) -> tuple[str, ...]:
-    return tuple(v.strip() for v in require(name).split(",") if v.strip())
+    val = optional(name, "")
+    if not val:
+        return ()
+    return tuple(v.strip() for v in val.split(",") if v.strip())

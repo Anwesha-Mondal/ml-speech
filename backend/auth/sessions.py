@@ -161,21 +161,29 @@ def create_session(
     with _session_col(db) as col:
         col.insert_one(doc)
 
+    same_site = cfg.same_site.lower()
+    secure = cfg.cookie_secure or (same_site == "none")
     response.set_cookie(
         cfg.cookie_name,
         token,
         max_age=cfg.absolute_lifetime_hours * 3600,
         httponly=True,
-        secure=cfg.cookie_secure,
-        samesite=cfg.same_site,  # type: ignore[arg-type]
+        secure=secure,
+        samesite=same_site,  # type: ignore[arg-type]
         path="/api",
     )
     return sess
 
 
 def clear_cookie(response: Response, cfg: AuthSettings) -> None:
+    same_site = cfg.same_site.lower()
+    secure = cfg.cookie_secure or (same_site == "none")
     response.delete_cookie(
-        cfg.cookie_name, path="/api", httponly=True, secure=cfg.cookie_secure, samesite=cfg.same_site  # type: ignore[arg-type]
+        cfg.cookie_name,
+        path="/api",
+        httponly=True,
+        secure=secure,
+        samesite=same_site,  # type: ignore[arg-type]
     )
 
 
